@@ -1,13 +1,20 @@
 # Setu
 
-Door-to-door trip planner (prototype). Tokyo → Malvan, Hong Kong, Mainland China, Taiwan, the Philippines.
+Day trips, places to eat and long trips. Prototype.
 
-**Live:** https://YOUR-USERNAME.github.io/setu/
+**Live:** https://celeritas7.github.io/Setu/
 
-- One file: `index.html`. No build step and no server.
-- All fares, carriers, schedules and climate data are **MODELLED** (hand-entered, not live).
-- Trips and rules are saved in your browser only (localStorage `setu.trips.v1`). Use one browser; clearing site data erases them.
-- Akatsuki card: registered as a prototype (R039). Setu doesn't read the hub until it has sign-in.
+## Files
+- `index.html`: home page (search, day trips, places to eat, long trips).
+- `Setu.dc.html`: the long-trip planner (fare year, carriers, route lab, last mile, climate, rules). Opened from Home → Long trips.
+
+Both are self-contained; no build step.
+
+## Data
+- **Signed in** (header → Sign in, Google, hub user): trips, bags and rules save to the hub Supabase (`setu_*` tables). ¥→₹ and climate come from the hub.
+- **Signed out:** everything is saved in this browser only.
+- Home page day trips and places to eat are still browser-only.
+- Fares, carriers, schedules and the day-trip suggestions are MODELLED (hand-entered, not live).
 
 ## Update
-Replace `index.html` with a new export and commit. Pages redeploys in about a minute.
+Replace both HTML files with a new export and commit. Pages redeploys in about a minute.
