@@ -14,14 +14,23 @@ cost_management_shops  one row per restaurant/café (name, category 'Restaurant'
    ↑ shop_id
 setu_food_notes        user's status for a shop: status 'try' | 'done', dish, area, rating 1–5, review, go_back, reviewed_on
 setu_day_trips         places to visit: name, place_id, date, notes
+setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes
+   ↑ hub_id
+setu_spots             shops/sights in a hub: kind 'shop'|'see'|'other', name, address, geo_query, why, status 'try'|'done'|'skip',
+                       suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted
+contacts               Contlas's friends (name, city, lat, lon). Setu reads them for the Friends layer; Contlas owns writes.
 team_requests          notes for other teams (team = 'neurology' | 'psychology' | …), never shown in Setu
 ```
+
+Restaurants always go in `setu_food_notes`, never `setu_spots`. A hub shows saved restaurants within 1.5 × `radius_m`, or whose `area` contains the hub name.
 
 ### Rules
 
 1. **No duplicates.** Before inserting, search `cost_management_shops.name`, `akatsuki_places.label` and `akatsuki_places.aliases` case-insensitively, in English and Japanese. If it exists, update it.
 2. **One location record.** If the location is known, add it to `akatsuki_places` once (`added_by 'setu'`, class must be in the `place_class` vocab: home, office, transit, cafe, out) and point `cost_management_shops.place_id` / `setu_day_trips.place_id` at it. Use the user's OwnTracks visits (`akatsuki_visits`) for coordinates when they are at the place; never guess coordinates.
-3. **Mark Claude's rows.** `added_by = 'claude'` on `setu_food_notes` and `setu_day_trips`.
+3. **Mark Claude's rows.** `added_by = 'claude'` on `setu_food_notes`, `setu_day_trips`, `setu_hubs` and `setu_spots`. A spot Claude found itself (not from the user or a friend) is `accepted = false`, so the user sees Accept / Dismiss.
+9. **Coordinates for hubs and spots.** Fill `geo_query` (an address or station name) and leave `lat/lng` null. The browser geocodes it with OpenStreetMap on next load and saves `geo_source 'nominatim'`. Fill `lat/lng` directly only from OwnTracks visits (`geo_source 'owntracks'`). Record what was checked in `verified`, with a date.
+10. **Source quality.** Say where a spot came from in `suggested_by` and `source_url`. Note it when the source is the shop's own advert.
 4. **Status.** A restaurant the user wants to visit is `status 'try'`. One they have been to is `'done'` with `reviewed_on`. Don't invent a rating; leave it null and ask.
 5. **Never hard-delete.** Set `deleted_at = now()`.
 6. **Short reviews.** One or two lines, the facts the user needs at the door (meal-only vs. work-OK, price, closing time). Date prices and rules ("seen 2026-10-18").
