@@ -42,4 +42,4 @@ team_requests          notes for other teams (team = 'neurology' | 'psychology' 
 
 ## Editing the HTML bundles
 
-`index.html` and `Setu.dc.html` are bundler exports. The page lives in `<script type="__bundler/template">` as a JSON string (`</` written as `</`); scripts and fonts are gzip+base64 in `__bundler/manifest`. Decode, edit, re-encode with the same escaping, and check it round-trips before writing.
+`index.html` and `Setu.dc.html` are bundler exports. The page lives in `<script type="__bundler/template">` as a JSON string (every `</` is written as `<` followed by the JSON escape backslash-u002F); scripts and fonts are gzip+base64 in `__bundler/manifest`. Decode, edit, re-encode with the same escaping, and check it round-trips before writing.
