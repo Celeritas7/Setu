@@ -10,11 +10,14 @@ The Home page (`index.html`) reads these tables when the user is signed in, so a
 ```
 akatsuki_places        one row per real location (id slug, label, aliases, lat/lng, radius_m, class)
    ↑ place_id
-cost_management_shops  one row per restaurant/café (name, category 'Restaurant' | 'Café', region 'JPY', place_id)
-   ↑ shop_id
-setu_food_notes        user's status for a shop: status 'try' | 'done', dish, area, rating 1–5, review, go_back, reviewed_on
+akatsuki_shops         Cost's shop list (view, read-only for Setu). cost_management_shops is Cost's table: Setu never writes it.
+   ↑ shop_id (optional link)
+setu_food_notes        a place to eat: name, area, address, geo_query, lat/lng, geo_source, hub_id, themes[], status 'try' | 'done',
+                       dish, rating 1–5, review, go_back, reviewed_on, source_url, verified
+   ↑ note_id
+setu_menu_items        dishes at a place to eat: name (as on the menu), name_en, price_yen + price_seen, tried, rating, note, has_beef
 setu_day_trips         places to visit: name, place_id, date, notes
-setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes
+setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes, themes[]
    ↑ hub_id
 setu_spots             shops/sights in a hub: kind 'shop'|'see'|'other', name, address, geo_query, why, status 'try'|'done'|'skip',
                        suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted
@@ -22,20 +25,24 @@ contacts               Contlas's friends (name, city, lat, lon). Setu reads them
 team_requests          notes for other teams (team = 'neurology' | 'psychology' | …), never shown in Setu
 ```
 
-Restaurants always go in `setu_food_notes`, never `setu_spots`. A hub shows saved restaurants within 1.5 × `radius_m`, or whose `area` contains the hub name.
+Restaurants, cafés and food stalls always go in `setu_food_notes` (with `hub_id` when they belong to a hub), never `setu_spots`. A hub shows the restaurants linked by `hub_id`, plus saved ones within 1.5 × `radius_m` or whose `area` contains the hub name.
+
+Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`. The app shows them as filter chips (Sick-day food, Camera hunt). Reuse an existing slug before inventing one.
+
+Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
 
 ### Rules
 
-1. **No duplicates.** Before inserting, search `cost_management_shops.name`, `akatsuki_places.label` and `akatsuki_places.aliases` case-insensitively, in English and Japanese. If it exists, update it.
-2. **One location record.** If the location is known, add it to `akatsuki_places` once (`added_by 'setu'`, class must be in the `place_class` vocab: home, office, transit, cafe, out) and point `cost_management_shops.place_id` / `setu_day_trips.place_id` at it. Use the user's OwnTracks visits (`akatsuki_visits`) for coordinates when they are at the place; never guess coordinates.
+1. **No duplicates.** Before inserting, search `setu_food_notes.name`, `setu_spots.name`, `akatsuki_shops.name`, `akatsuki_places.label` and `.aliases` case-insensitively, in English and Japanese. If it exists, update it.
+2. **One location record.** A place to eat, hub or spot keeps its own `lat/lng`. For day trips, add the location to `akatsuki_places` once (`added_by 'setu'`, class in the `place_class` vocab: home, office, transit, cafe, out) and point `setu_day_trips.place_id` at it. Use the user's OwnTracks visits (`akatsuki_visits`) for coordinates when they are at the place; never guess coordinates.
 3. **Mark Claude's rows.** `added_by = 'claude'` on `setu_food_notes`, `setu_day_trips`, `setu_hubs` and `setu_spots`. A spot Claude found itself (not from the user or a friend) is `accepted = false`, so the user sees Accept / Dismiss.
-9. **Coordinates for hubs and spots.** Fill `geo_query` (an address or station name) and leave `lat/lng` null. The browser geocodes it with OpenStreetMap on next load and saves `geo_source 'nominatim'`. Fill `lat/lng` directly only from OwnTracks visits (`geo_source 'owntracks'`). Record what was checked in `verified`, with a date.
-10. **Source quality.** Say where a spot came from in `suggested_by` and `source_url`. Note it when the source is the shop's own advert.
-4. **Status.** A restaurant the user wants to visit is `status 'try'`. One they have been to is `'done'` with `reviewed_on`. Don't invent a rating; leave it null and ask.
-5. **Never hard-delete.** Set `deleted_at = now()`.
-6. **Short reviews.** One or two lines, the facts the user needs at the door (meal-only vs. work-OK, price, closing time). Date prices and rules ("seen 2026-10-18").
-7. **Private notes stay out of the app.** Health, feelings, anything for the neurology/psychology teams goes to `team_requests`, not into a review or note.
-8. **Dietary:** the user eats no beef (牛肉 / ビーフ, hamburg steak, meat sauce). Flag it on dishes.
+4. **Coordinates for hubs and spots.** Fill `geo_query` (an address or station name) and leave `lat/lng` null. The browser geocodes it with OpenStreetMap on next load and saves `geo_source 'nominatim'`. Fill `lat/lng` directly only from OwnTracks visits (`geo_source 'owntracks'`). Record what was checked in `verified`, with a date.
+5. **Source quality.** Say where a spot came from in `suggested_by` and `source_url`. Note it when the source is the shop's own advert.
+6. **Status.** A restaurant the user wants to visit is `status 'try'`. One they have been to is `'done'` with `reviewed_on`. Don't invent a rating; leave it null and ask.
+7. **Never hard-delete.** Set `deleted_at = now()`.
+8. **Short reviews.** One or two lines, the facts the user needs at the door (meal-only vs. work-OK, price, closing time). Date prices and rules ("seen 2026-10-18").
+9. **Private notes stay out of the app.** Health, feelings, anything for the neurology/psychology teams goes to `team_requests`, not into a review or note.
+10. **Dietary:** the user eats no beef (牛肉 / ビーフ, hamburg steak, meat sauce). Flag it on dishes.
 
 ### Writing via SQL
 
@@ -47,7 +54,7 @@ Restaurants always go in `setu_food_notes`, never `setu_spots`. A hub shows save
   commit;
   ```
 - Updates: `set ..., rev = rev + 1`.
-- `cost_management_shops.id` is an identity column; don't pass it.
+- Coordinates: `geo_source` is one of `nominatim`, `owntracks`, `manual`, `link` (from a pasted map URL).
 
 ## Editing the HTML bundles
 
