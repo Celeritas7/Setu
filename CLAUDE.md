@@ -27,7 +27,7 @@ team_requests          notes for other teams (team = 'neurology' | 'psychology' 
 
 Restaurants, cafés and food stalls always go in `setu_food_notes` (with `hub_id` when they belong to a hub), never `setu_spots`. A hub shows the restaurants linked by `hub_id`, plus saved ones within 1.5 × `radius_m` or whose `area` contains the hub name.
 
-Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`. The app shows them as filter chips (Sick-day food, Camera hunt). Reuse an existing slug before inventing one.
+Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`. Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
 
 Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
 
