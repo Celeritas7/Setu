@@ -13,10 +13,11 @@ akatsuki_places        one row per real location (id slug, label, aliases, lat/l
 akatsuki_shops         Cost's shop list (view, read-only for Setu). cost_management_shops is Cost's table: Setu never writes it.
    ↑ shop_id (optional link)
 setu_food_notes        a place to eat: name, area, address, geo_query, lat/lng, geo_source, hub_id, themes[], status 'try' | 'done',
-                       dish, rating 1–5, review, go_back, reviewed_on, source_url, verified
+                       dish, rating 1–5, review, go_back, reviewed_on, source_url, verified, hours, hours_seen, sick_effect, sick_effect_on
    ↑ note_id
 setu_menu_items        dishes at a place to eat: name (as on the menu), name_en, price_yen + price_seen, tried, rating, note, has_beef
 setu_day_trips         places to visit: name, place_id, date, notes
+setu_routes            saved routes: name ('commute'), stops = setu_hubs ids in travel order
 setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes, themes[]
    ↑ hub_id
 setu_spots             shops/sights in a hub: kind 'shop'|'see'|'other', name, address, geo_query, why, status 'try'|'done'|'skip',
@@ -30,6 +31,17 @@ Restaurants, cafés and food stalls always go in `setu_food_notes` (with `hub_id
 Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`. Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
 
 Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
+
+Comfort food (HealthLog → Setu, Akatsuki route `setu → healthlog comfort.spots`, proposed): HealthLog calls
+`rpc('setu_comfort_spots', { p_at, p_route: 'commute', p_limit: 6 })` when a symptom is logged or risky weather is coming.
+It returns name, station, stop_no, open_state (`open` | `closes_soon` | `unknown`), hours_today, suggested_dish, map_link, helped, status, why:
+places that helped before (`sick_effect` some/good) first, then the best open sick-day place at each station in route order. Closed places
+and beef dishes are never returned. To keep it right:
+- `setu_food_notes.hours` (Asia/Tokyo): `{"mon":[["11:00","20:00"]], ...}`; `[]` = closed that day; a missing day = unknown;
+  `[null,"21:00"]` = only the closing time is known. Set `hours_seen` to the date the hours were seen.
+- `sick_effect` / `sick_effect_on`: whether eating there helped when unwell, as last logged (HealthLog's `healthlog_food_remedies.effect`).
+- `dish`: a no-beef suggestion; a tried, rated, no-beef `setu_menu_items` row wins over it.
+- `setu_routes`: `commute` = Ageo → Omiya → Saitama-Shintoshin → Kita-Urawa → Urawa → Minami-Urawa (hub ids in order).
 
 ### Rules
 
