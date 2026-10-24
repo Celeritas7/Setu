@@ -90,6 +90,10 @@ Home → Right now → **+ Save where I am** takes a fresh high-accuracy phone f
 Café / place to eat (`setu_food_notes`, status `try`), Grocery / veg (spot `kind 'shop'`, `local-grocery`), Sight (`kind 'see'`),
 Other shop. Spots go to the nearest hub within 3 km, status `done`. Right now keeps listing `sit-long` and `local-grocery` spots
 after a visit, since they're for going back to.
+**Edit** on a hub's spot card and **Edit · hours** on a place-to-eat page change the name, note (spots) or address (places to eat),
+type (spots), the `sit-long` / `rain-ok` / `local-grocery` tags and the hours (one line per day: `10:00-20:00`, `11:30-14:00, 17:00-22:00`,
+`closed`, `-21:00`, empty = unknown). Changing hours sets `hours_seen` to today. **Hide** (tap twice) sets `deleted_at`.
+Hub cards count shops, sights and places to sit (`sit-long`) separately.
 Akatsuki's `akatsuki_visits_recent` gives apps place labels only, never coordinates, so Setu can't pin from visit history in the browser.
 
 ### Discover around a hub
