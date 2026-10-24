@@ -32,11 +32,16 @@ Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `cam
 
 Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
 
-Comfort food (HealthLog → Setu, Akatsuki route `setu → healthlog comfort.spots`, proposed): HealthLog calls
-`rpc('setu_comfort_spots', { p_at, p_route: 'commute', p_limit: 6 })` when a symptom is logged or risky weather is coming.
-It returns name, station, stop_no, open_state (`open` | `closes_soon` | `unknown`), hours_today, suggested_dish, map_link, helped, status, why:
-places that helped before (`sick_effect` some/good) first, then the best open sick-day place at each station in route order. Closed places
-and beef dishes are never returned. To keep it right:
+Comfort food (HealthLog → Setu, Akatsuki R045, route `setu → healthlog comfort.spots`, proposed until HealthLog's first real call).
+Two functions, signed-in users only (no anon), security invoker so RLS limits each user to their own rows. `setu_spot_id` = `setu_food_notes.id`.
+- `setu_comfort_spots_near(p_lat, p_lng, p_km = 2, p_themes = '{comfort,remedy}', p_ids = null, p_at = now(), p_limit = 6)` →
+  setu_spot_id, kind ('food'), name, address, station, distance_m, open_state, hours_today, suggested_dish, map_link, helped, status.
+  Themes: `remedy` = helped before (`sick_effect` some/good), `comfort` = tagged `sick-day`, other values literal; `p_ids` skips themes.
+  Order: helped first, then known hours, then nearest.
+- `setu_comfort_spots(p_at = now(), p_route = 'commute', p_limit = 6)` → setu_spot_id, name, address, station, stop_no, open_state,
+  hours_today, suggested_dish, map_link, helped, status, why. Helped first, then the best open place at each station in route order.
+- `open_state` returned: `open`, `closes_soon` (closes within 45 min), `unknown` (no hours for that day, or only a closing time
+  and it's before 10:00). Closed places are never returned, and neither is a beef dish. To keep it right:
 - `setu_food_notes.hours` (Asia/Tokyo): `{"mon":[["11:00","20:00"]], ...}`; `[]` = closed that day; a missing day = unknown;
   `[null,"21:00"]` = only the closing time is known. Set `hours_seen` to the date the hours were seen.
 - `sick_effect` / `sick_effect_on`: whether eating there helped when unwell, as last logged (HealthLog's `healthlog_food_remedies.effect`).
