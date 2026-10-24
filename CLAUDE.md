@@ -21,7 +21,7 @@ setu_routes            saved routes: name ('commute'), stops = setu_hubs ids in 
 setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes, themes[]
    ↑ hub_id
 setu_spots             shops/sights in a hub: kind 'shop'|'see'|'other', name, address, geo_query, why, status 'try'|'done'|'skip',
-                       suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted
+                       suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted, hours, hours_seen
 contacts               Contlas's friends (name, city, lat, lon). Setu reads them for the Friends layer; Contlas owns writes.
 team_requests          notes for other teams (team = 'neurology' | 'psychology' | …), never shown in Setu
 ```
@@ -44,6 +44,7 @@ Two functions, signed-in users only (no anon), security invoker so RLS limits ea
   and it's before 10:00). Closed places are never returned, and neither is a beef dish. To keep it right:
 - `setu_food_notes.hours` (Asia/Tokyo): `{"mon":[["11:00","20:00"]], ...}`; `[]` = closed that day; a missing day = unknown;
   `[null,"21:00"]` = only the closing time is known. Set `hours_seen` to the date the hours were seen.
+  `setu_spots.hours` / `hours_seen` use the same shape; shops show the same Open / Closed badge in a hub and on the theme board.
 - `sick_effect` / `sick_effect_on`: whether eating there helped when unwell, as last logged (HealthLog's `healthlog_food_remedies.effect`).
 - `dish`: a no-beef suggestion; a tried, rated, no-beef `setu_menu_items` row wins over it.
 - `setu_routes`: `commute` = Ageo → Omiya → Saitama-Shintoshin → Kita-Urawa → Urawa → Minami-Urawa (hub ids in order).
