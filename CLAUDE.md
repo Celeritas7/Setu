@@ -71,7 +71,7 @@ Two functions, signed-in users only (no anon), security invoker so RLS limits ea
   commit;
   ```
 - Updates: `set ..., rev = rev + 1`.
-- Coordinates: `geo_source` is one of `nominatim`, `owntracks`, `manual`, `link` (from a pasted map URL).
+- Coordinates: `geo_source` is one of `nominatim`, `owntracks`, `manual`, `link` (from a pasted map URL), `places` (Google Places via Discover).
 
 ### Map links
 
@@ -81,6 +81,14 @@ in a hub's "Add a shop" form, and in "Set pin from map link" on places and shops
 (`maps.app.goo.gl/…`) are followed by the Setu edge function **`setu-map-link`** (POST `{url}`, signed-in only, map hosts only,
 no API key) which returns `{status, name, lat, lng, precise, final_url}`. Pins from a link are saved with `geo_source 'link'` and the
 link in `source_url` (places to eat). When you have a Google Maps link for a place, prefer it over geocoding an address.
+
+### Discover around a hub
+
+A hub's "Discover around here" calls the hub's edge function `akatsuki-places-nearby` with `{lat, lng, mode:'explore', types, radius_m}`
+(Akatsuki route `setu → hub place.explore`). Food = `restaurant`,`cafe`; Sights = `tourist_attraction`. It uses the shared monthly Google
+Places budget and is cached 30 days per spot. Saved results get `geo_source 'places'`, `place_ref` = the Google place id (used to spot
+duplicates) and `source_url` = `https://www.google.com/maps/place/?q=place_id:<id>`. Camera shops aren't an explore type: add them by hand,
+by map link, or as Claude suggestions (`accepted = false`, sourced). Hub area links search the hub's `geo_query` (its station name).
 
 ## Editing the HTML bundles
 
