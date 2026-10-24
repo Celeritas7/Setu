@@ -73,6 +73,15 @@ Two functions, signed-in users only (no anon), security invoker so RLS limits ea
 - Updates: `set ..., rev = rev + 1`.
 - Coordinates: `geo_source` is one of `nominatim`, `owntracks`, `manual`, `link` (from a pasted map URL).
 
+### Map links
+
+The app takes a pasted Google / Apple Maps link in the Home search (save as a place to eat, or as a shop in a hub within 3 km),
+in a hub's "Add a shop" form, and in "Set pin from map link" on places and shops without a pin. Full links are read in the browser:
+`!3d<lat>!4d<lng>` is the place itself; `@lat,lng` is only the camera; `/maps/place/<name>/` is the name. Short share links
+(`maps.app.goo.gl/…`) are followed by the Setu edge function **`setu-map-link`** (POST `{url}`, signed-in only, map hosts only,
+no API key) which returns `{status, name, lat, lng, precise, final_url}`. Pins from a link are saved with `geo_source 'link'` and the
+link in `source_url` (places to eat). When you have a Google Maps link for a place, prefer it over geocoding an address.
+
 ## Editing the HTML bundles
 
 `index.html` and `Setu.dc.html` are bundler exports. The page lives in `<script type="__bundler/template">` as a JSON string (every `</` is written as `<` followed by the JSON escape backslash-u002F); scripts and fonts are gzip+base64 in `__bundler/manifest`. Decode, edit, re-encode with the same escaping, and check it round-trips before writing.
