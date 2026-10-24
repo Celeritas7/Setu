@@ -28,7 +28,7 @@ team_requests          notes for other teams (team = 'neurology' | 'psychology' 
 
 Restaurants, cafés and food stalls always go in `setu_food_notes` (with `hub_id` when they belong to a hub), never `setu_spots`. A hub shows the restaurants linked by `hub_id`, plus saved ones within 1.5 × `radius_m` or whose `area` contains the hub name.
 
-Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`. Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
+Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`, `local-grocery`, `sit-long` (somewhere to sit for a while: benches, gardens, cafés that let you stay), `rain-ok` (covered; add it next to `sit-long`). Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
 
 Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
 
@@ -82,6 +82,15 @@ in a hub's "Add a shop" form, and in "Set pin from map link" on places and shops
 (`maps.app.goo.gl/…`) are followed by the Setu edge function **`setu-map-link`** (POST `{url}`, signed-in only, map hosts only,
 no API key) which returns `{status, name, lat, lng, precise, final_url}`. Pins from a link are saved with `geo_source 'link'` and the
 link in `source_url` (places to eat). When you have a Google Maps link for a place, prefer it over geocoding an address.
+
+### Save where I am
+
+Home → Right now → **+ Save where I am** takes a fresh high-accuracy phone fix and saves it with `geo_source 'manual'` and
+`verified` = "Pinned from phone GPS ±N m, <date>". Types: Sit long outdoors / covered (spot `kind 'other'`, `sit-long` [+ `rain-ok`]),
+Café / place to eat (`setu_food_notes`, status `try`), Grocery / veg (spot `kind 'shop'`, `local-grocery`), Sight (`kind 'see'`),
+Other shop. Spots go to the nearest hub within 3 km, status `done`. Right now keeps listing `sit-long` and `local-grocery` spots
+after a visit, since they're for going back to.
+Akatsuki's `akatsuki_visits_recent` gives apps place labels only, never coordinates, so Setu can't pin from visit history in the browser.
 
 ### Discover around a hub
 
