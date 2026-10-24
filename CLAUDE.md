@@ -103,7 +103,8 @@ plan lists, hubs' Eat nearby, Right now or the comfort-food functions until acce
 
 The app takes a pasted Google / Apple Maps link in the Home search (save as a place to eat, or as a shop in a hub within 3 km),
 in a hub's "Add a shop" form, and in "Set pin from map link" on places and shops without a pin. Full links are read in the browser:
-`!3d<lat>!4d<lng>` is the place itself; `@lat,lng` is only the camera; `/maps/place/<name>/` is the name. Short share links
+`!3d<lat>!4d<lng>` is the place itself; `@lat,lng` is only the camera; `/maps/place/<name>/` is the name. A dropped pin (no place name)
+shares as `/maps/search/<lat>,<lng>`, `/maps/place/35°50'39.6"N 139°38'50.0"E` or `/maps/dir/…/<lat>,<lng>`; those coordinates are the pin. Short share links
 (`maps.app.goo.gl/…`) are followed by the Setu edge function **`setu-map-link`** (POST `{url}`, signed-in only, map hosts only,
 no API key) which returns `{status, name, lat, lng, precise, final_url}`. Pins from a link are saved with `geo_source 'link'` and the
 link in `source_url` (places to eat). When you have a Google Maps link for a place, prefer it over geocoding an address.
