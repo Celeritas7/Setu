@@ -13,7 +13,8 @@ akatsuki_places        one row per real location (id slug, label, aliases, lat/l
 akatsuki_shops         Cost's shop list (view, read-only for Setu). cost_management_shops is Cost's table: Setu never writes it.
    ↑ shop_id (optional link)
 setu_food_notes        a place to eat: name, area, address, geo_query, lat/lng, geo_source, hub_id, themes[], status 'try' | 'done',
-                       dish, rating 1–5, review, go_back, reviewed_on, source_url, verified, hours, hours_seen, sick_effect, sick_effect_on
+                       dish, rating 1–5, review, go_back, reviewed_on, source_url, verified, hours, hours_seen, sick_effect, sick_effect_on,
+                       accepted (false = suggestion), intro, spend_yen + spend_seen, suggested_by
    ↑ note_id
 setu_menu_items        dishes at a place to eat: name (as on the menu), name_en, price_yen + price_seen, tried, rating, note, has_beef
 setu_day_trips         places to visit: name, place_id, date, notes
@@ -21,14 +22,15 @@ setu_routes            saved routes: name ('commute'), stops = setu_hubs ids in 
 setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes, themes[]
    ↑ hub_id
 setu_spots             shops/sights in a hub: kind 'shop'|'see'|'other', name, address, geo_query, why, status 'try'|'done'|'skip',
-                       suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted, hours, hours_seen
+                       suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted, hours, hours_seen,
+                       intro, spend_yen + spend_seen
 contacts               Contlas's friends (name, city, lat, lon). Setu reads them for the Friends layer; Contlas owns writes.
 team_requests          notes for other teams (team = 'neurology' | 'psychology' | …), never shown in Setu
 ```
 
 Restaurants, cafés and food stalls always go in `setu_food_notes` (with `hub_id` when they belong to a hub), never `setu_spots`. A hub shows the restaurants linked by `hub_id`, plus saved ones within 1.5 × `radius_m` or whose `area` contains the hub name.
 
-Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`, `local-grocery`, `sit-long` (somewhere to sit for a while: benches, gardens, cafés that let you stay), `rain-ok` (covered; add it next to `sit-long`). Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
+Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`, `local-grocery`, `cafe`, `group-visit` (costs ¥3,000+ per person: only with friends), `sit-long` (somewhere to sit for a while: benches, gardens, cafés that let you stay), `rain-ok` (covered; add it next to `sit-long`). Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
 
 Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
 
@@ -48,6 +50,29 @@ Two functions, signed-in users only (no anon), security invoker so RLS limits ea
 - `sick_effect` / `sick_effect_on`: whether eating there helped when unwell, as last logged (HealthLog's `healthlog_food_remedies.effect`).
 - `dish`: a no-beef suggestion; a tried, rated, no-beef `setu_menu_items` row wins over it.
 - `setu_routes`: `commute` = Ageo → Omiya → Saitama-Shintoshin → Kita-Urawa → Urawa → Minami-Urawa (hub ids in order).
+
+### Searching an area ("search <area> for local shops")
+
+When the user asks for an area, record **everything worth knowing in that circle**, not a sample:
+cafés (`setu_food_notes`, theme `cafe`), places to eat, big vegetable / grocery shops (spot `kind 'shop'`, `local-grocery`),
+famous places to visit (`kind 'see'`), and places to sit for a long time, both covered for rainy days (`sit-long` + `rain-ok`:
+cafés that let you stay, station concourses, libraries, malls with seating) and outdoors for dry days (`sit-long`: parks, gardens,
+benches). Go wide: places up to 1–2 hours' walk from the station are welcome; say the walk time in the intro.
+Make the hub first if the area has none (rule 4 for its coordinates).
+
+Every row: `added_by 'claude'`, **`accepted = false`** (so it waits in Browse, not in the plan), `intro` (2–3 lines: what it is,
+what it's like inside, how long you can stay, anything to know at the door), `dish` = what it's known for (no beef), `spend_yen` =
+typical spend per person with `spend_seen` (from a source, never invented; leave null if unknown), `hours` + `hours_seen` when a source
+gives them, `suggested_by` + `source_url` (rule 5), `verified` with the date. **¥3,000 or more per person → add `group-visit`**:
+the user goes to those only with friends. Check duplicates first (rule 1). Afterwards tell the user how many landed in Browse.
+
+### Browse (the "screensaver")
+
+Home → **Browse suggestions** (also in ☰) shows every `accepted = false` place to eat and spot full-screen, one at a time, every 15 s:
+kind, hub + walk from the station, name, "Known for", intro, cost per person (gold at ¥3,000+ with a Group visit badge), open now,
+source. Holding the card pauses it. **+ Add to plan / Add to try list** sets `accepted = true, status 'try'`; **Group visit** toggles
+the `group-visit` tag; **Not for me** sets a spot to `status 'skip'` and soft-deletes a place to eat. Suggestions never show in the
+plan lists, hubs' Eat nearby, Right now or the comfort-food functions until accepted.
 
 ### Rules
 
