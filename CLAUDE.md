@@ -94,7 +94,11 @@ after a visit, since they're for going back to.
 type (spots), the `sit-long` / `rain-ok` / `local-grocery` tags and the hours (one line per day: `10:00-20:00`, `11:30-14:00, 17:00-22:00`,
 `closed`, `-21:00`, empty = unknown). Changing hours sets `hours_seen` to today. **Hide** (tap twice) sets `deleted_at`.
 Hub cards count shops, sights and places to sit (`sit-long`) separately.
-Akatsuki's `akatsuki_visits_recent` gives apps place labels only, never coordinates, so Setu can't pin from visit history in the browser.
+Location history: Setu reads Akatsuki's **`akatsuki_visit_points`** (R048, route `hub → setu visit.points`; own stays with lat/lng,
+last 90 days, signed-in only). Other apps keep `akatsuki_visits_recent` (no coordinates). Setu uses it for: **Set pin / Fix pin**
+(spots and places to eat with no pin or a rough `nominatim` pin list the stays within 1.5 km; picking one saves `geo_source 'owntracks'`
+and "Pinned from your stay <date> <times> (OwnTracks ±N m)" in `verified`), **Last here <date>** on spots and places to eat (a stay
+within ~100 m), and the **Right now** fallback when the phone won't share location (latest stay, "<hub> area").
 
 ### Discover around a hub
 
