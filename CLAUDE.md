@@ -24,6 +24,8 @@ setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo
 setu_spots             shops/sights in a hub: kind 'shop'|'see'|'other', name, address, geo_query, why, status 'try'|'done'|'skip',
                        suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted, hours, hours_seen,
                        intro, spend_yen + spend_seen
+setu_outings           a planned day out: date, hub_id, title, stops jsonb [{t:'food'|'spot', id}] in visiting order, rainy, status
+                       'planned'|'done'|'cancelled'
 contacts               Contlas's friends (name, city, lat, lon). Setu reads them for the Friends layer; Contlas owns writes.
 team_requests          notes for other teams (team = 'neurology' | 'psychology' | …), never shown in Setu
 ```
@@ -73,6 +75,16 @@ kind, hub + walk from the station, name, "Known for", intro, cost per person (go
 source. Holding the card pauses it. **+ Add to plan / Add to try list** sets `accepted = true, status 'try'`; **Group visit** toggles
 the `group-visit` tag; **Not for me** sets a spot to `status 'skip'` and soft-deletes a place to eat. Suggestions never show in the
 plan lists, hubs' Eat nearby, Right now or the comfort-food functions until accepted.
+
+### My plan / Plan a day
+
+Home strip and ☰ → **My plan**: planned days (`setu_outings`) and everything you want to visit (accepted places to eat with
+status `try`, accepted spots with status `try`) grouped by hub. **Plan a day**: pick a date and an area; **Suggest stops** picks up
+to 5 places open that day (a day with `hours` `[]` is closed; unknown hours are allowed), about 2 sights, a café, a meal under
+¥3,000, a place to sit, then shops, in nearest-first walking order from the hub station. **Rain plan** drops outdoor stops (sights or
+`sit-long` without `rain-ok`). Suggest also swaps out stops that are closed that day. The day shows walk times (80 m/min), total
+cost from `spend_yen`, warnings, and one Google Maps walking route. **Mark visited** sets the outing `done` and its spots `done`;
+places to eat stay `try` until reviewed. Phases and what's next: `ROADMAP.md`.
 
 ### Rules
 
