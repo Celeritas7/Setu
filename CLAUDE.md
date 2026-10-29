@@ -48,6 +48,8 @@ Two functions, signed-in users only (no anon), security invoker so RLS limits ea
   and it's before 10:00). Closed places are never returned, and neither is a beef dish. To keep it right:
 - `setu_food_notes.hours` (Asia/Tokyo): `{"mon":[["11:00","20:00"]], ...}`; `[]` = closed that day; a missing day = unknown;
   `[null,"21:00"]` = only the closing time is known. Set `hours_seen` to the date the hours were seen.
+  A closing time past midnight is stored past 24:00 (`["17:00","26:00"]` = 17:00–02:00, up to `30:00`) and shown as the clock
+  time; `setu_open_state` / the app treat last night's slot as open in the early hours. Type `17:00-02:00` in the editor.
   `setu_spots.hours` / `hours_seen` use the same shape; shops show the same Open / Closed badge in a hub and on the theme board.
 - `sick_effect` / `sick_effect_on`: whether eating there helped when unwell, as last logged (HealthLog's `healthlog_food_remedies.effect`).
 - `dish`: a no-beef suggestion; a tried, rated, no-beef `setu_menu_items` row wins over it.
@@ -130,7 +132,7 @@ Other shop. Spots go to the nearest hub within 3 km, status `done`. Right now ke
 after a visit, since they're for going back to.
 **Edit** on a hub's spot card and **Edit · hours** on a place-to-eat page change the name, note (spots) or address (places to eat),
 type (spots), the `sit-long` / `rain-ok` / `local-grocery` tags and the hours (one line per day: `10:00-20:00`, `11:30-14:00, 17:00-22:00`,
-`closed`, `-21:00`, empty = unknown). Changing hours sets `hours_seen` to today. **Hide** (tap twice) sets `deleted_at`.
+`closed`, `-21:00`, `17:00-02:00` past midnight, empty = unknown). Changing hours sets `hours_seen` to today. **Hide** (tap twice) sets `deleted_at`.
 Hub cards count shops, sights and places to sit (`sit-long`) separately.
 Location history: Setu reads Akatsuki's **`akatsuki_visit_points`** (R048, route `hub → setu visit.points`; own stays with lat/lng,
 last 90 days, signed-in only). Other apps keep `akatsuki_visits_recent` (no coordinates). Setu uses it for: **Set pin / Fix pin**
