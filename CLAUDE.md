@@ -138,6 +138,15 @@ last 90 days, signed-in only). Other apps keep `akatsuki_visits_recent` (no coor
 and "Pinned from your stay <date> <times> (OwnTracks ±N m)" in `verified`), **Last here <date>** on spots and places to eat (a stay
 within ~100 m), and the **Right now** fallback when the phone won't share location (latest stay, "<hub> area").
 
+### Map (☰ → Map)
+
+A d3 globe that zooms (wheel, two fingers, + / −) and, past `GLOBE_MAX` (60×), switches to a Leaflet street map at the same
+centre; zooming the street map out to level 5 returns to the globe. Jump chips: 📍 Where am I (phone location or last stay),
+World / Japan (globe), Kanto / Saitama / Tokyo (street), friends' cities abroad (globe), every hub (street, zoom 15). **Show** chips
+filter by theme. Pins: hubs white, places to eat red, shops and sights yellow, `sit-long` green, suggestions faint and dashed,
+friends teal, you blue; on the globe places appear from 8× zoom. Tap a pin for details; accepted to-visit places can be
+**picked**, then **Plan a day with these** opens the day editor with them as stops.
+
 ### Discover around a hub
 
 A hub's "Discover around here" calls the hub's edge function `akatsuki-places-nearby` with `{lat, lng, mode:'explore', types, radius_m}`

@@ -24,11 +24,11 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [ ] A7 · Real weather for the planned date (Akatsuki `akatsuki_weather`) to switch the rain plan on automatically
 
 ## Phase B — Map: globe to street
-- [ ] B1 · Zoom on the globe (pinch, scroll, + / −)
-- [ ] B2 · Jump chips: regions (Saitama, Tokyo, Japan, abroad), hubs, tags (Sit long, Camera hunt, Local grocery…)
-- [ ] B3 · Close zoom switches to the street map with every saved place pinned (food / shop / sit colours, suggestions faint)
-- [ ] B4 · "Where am I" button (phone location or last stay)
-- [ ] B5 · Pick places on the map → "Plan a day with these"
+- [x] B1 · Zoom on the globe (pinch, scroll, + / −)
+- [x] B2 · Jump chips: regions (Saitama, Tokyo, Japan, abroad), hubs, tags (Sit long, Camera hunt, Local grocery…)
+- [x] B3 · Close zoom switches to the street map with every saved place pinned (food / shop / sit colours, suggestions faint)
+- [x] B4 · "Where am I" button (phone location or last stay)
+- [x] B5 · Pick places on the map → "Plan a day with these"
 
 ## Phase C — Tidy-up
 - [ ] C1 · Move the old Musashi-Urawa café cards (S PRESS CAFE, Saint Marc Café) from spots to places to eat
