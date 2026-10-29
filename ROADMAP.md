@@ -37,8 +37,8 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [x] C4 · Overnight hours (e.g. 17:00–02:00) instead of ending at 24:00
 
 ## Phase D — More areas
-- [ ] D1 · Area searches: Minami-Urawa, Warabi, Urawa, Kita-Urawa, Omiya (each fills Browse)
-- [ ] D2 · "Search this area" button in a hub that queues a request for Claude
+- [x] D1 · Area searches: Minami-Urawa, Warabi, Urawa, Kita-Urawa, Omiya (each fills Browse) — 136 places on 2026-10-29; grocery shops thin, search again later
+- [x] D2 · "Search this area" button in a hub that queues a request for Claude
 
 ## Phase E — Day trips
 - [ ] E1 · Weather on day-trip pages (Akatsuki weather view)

@@ -19,7 +19,8 @@ setu_food_notes        a place to eat: name, area, address, geo_query, lat/lng, 
 setu_menu_items        dishes at a place to eat: name (as on the menu), name_en, price_yen + price_seen, tried, rating, note, has_beef
 setu_day_trips         places to visit: name, place_id, date, notes
 setu_routes            saved routes: name ('commute'), stops = setu_hubs ids in travel order
-setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes, themes[]
+setu_hubs              an area worth half a day (Kichijoji, Ebisu…): name, geo_query, lat/lng, radius_m, notes, themes[],
+                       search_requested_at (the hub's "Search this area" button), searched_at (Claude's last area search)
    ↑ hub_id
 setu_spots             shops/sights in a hub: kind 'shop'|'see'|'other', name, address, geo_query, why, status 'try'|'done'|'skip',
                        suggested_by, suggested_contact (→ contacts.id), source_url, verified, accepted, hours, hours_seen,
@@ -32,7 +33,7 @@ team_requests          notes for other teams (team = 'neurology' | 'psychology' 
 
 Restaurants, cafés and food stalls always go in `setu_food_notes` (with `hub_id` when they belong to a hub), never `setu_spots`. A hub shows the restaurants linked by `hub_id`, plus saved ones within 1.5 × `radius_m` or whose `area` contains the hub name.
 
-Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`, `local-grocery`, `cafe`, `group-visit` (costs ¥3,000+ per person: only with friends), `sit-long` (somewhere to sit for a while: benches, gardens, cafés that let you stay), `rain-ok` (covered; add it next to `sit-long`). Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
+Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`, `local-grocery`, `cafe`, `group-visit` (costs ¥3,000+ per person: only with friends), `sit-long` (somewhere to sit for a while: benches, gardens, cafés that let you stay), `rain-ok` (covered; add it next to `sit-long`); also in use from other sessions: `asian-grocery`, `toilet`, `crowded`, `less-crowded`. Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
 
 Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
 
@@ -63,6 +64,10 @@ famous places to visit (`kind 'see'`), and places to sit for a long time, both c
 cafés that let you stay, station concourses, libraries, malls with seating) and outdoors for dry days (`sit-long`: parks, gardens,
 benches). Go wide: places up to 1–2 hours' walk from the station are welcome; say the walk time in the intro.
 Make the hub first if the area has none (rule 4 for its coordinates).
+
+**Pending requests.** A hub's **Search this area** button sets `setu_hubs.search_requested_at`. At the start of a Setu session, check
+`select name from setu_hubs where deleted_at is null and search_requested_at > coalesce(searched_at, 'epoch')` and offer to run those
+searches. After any area search, set the hub's `searched_at = now()` (and `rev = rev + 1`).
 
 Every row: `added_by 'claude'`, **`accepted = false`** (so it waits in Browse, not in the plan), `intro` (2–3 lines: what it is,
 what it's like inside, how long you can stay, anything to know at the door), `dish` = what it's known for (no beef), `spend_yen` =
