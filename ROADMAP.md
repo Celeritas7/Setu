@@ -31,10 +31,10 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [x] B5 · Pick places on the map → "Plan a day with these"
 
 ## Phase C — Tidy-up
-- [ ] C1 · Move the old Musashi-Urawa café cards (S PRESS CAFE, Saint Marc Café) from spots to places to eat
-- [ ] C2 · Set pin from a map link also updates `verified`
+- [x] C1 · Move the old Musashi-Urawa café cards (S PRESS CAFE, Saint Marc Café) from spots to places to eat
+- [x] C2 · Set pin from a map link also updates `verified`
 - [ ] C3 · Indoor benches near Musashi-Urawa: building name + exact pin (needs the user)
-- [ ] C4 · Overnight hours (e.g. 17:00–02:00) instead of ending at 24:00
+- [x] C4 · Overnight hours (e.g. 17:00–02:00) instead of ending at 24:00
 
 ## Phase D — More areas
 - [ ] D1 · Area searches: Minami-Urawa, Warabi, Urawa, Kita-Urawa, Omiya (each fills Browse)
