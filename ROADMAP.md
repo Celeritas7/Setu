@@ -38,7 +38,7 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 
 ## Phase D — More areas
 - [ ] D1 · Area searches: Minami-Urawa, Warabi, Urawa, Kita-Urawa, Omiya (each fills Browse)
-- [ ] D2 · "Search this area" button in a hub that queues a request for Claude
+- [x] D2 · "Search this area" button in a hub that queues a request for Claude
 
 ## Phase E — Day trips
 - [ ] E1 · Weather on day-trip pages (Akatsuki weather view)
