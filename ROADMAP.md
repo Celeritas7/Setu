@@ -44,6 +44,12 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [ ] E1 · Weather on day-trip pages (Akatsuki weather view)
 - [ ] E2 · "Eat there" lists saved places nearby plus sourced suggestions
 - [ ] E3 · Fares, once there is a real source
+- [ ] E4 · "Getting back" card on every day trip (requested 2026-11-01, after a friend's train home from Otaki turned out
+      to be suspended): last train and last bus home, each with `source_url` + checked date (operator's own page, not only
+      Google Maps; watch for 運休 / 廃止 / 代行バス); a backup way back (the other mode, or a local taxi phone number and a
+      sourced fare); a "Leave by" time that aims for the second-to-last departure; a stale warning after 60 days;
+      a short checklist (ask at the station on arrival, photo of the stop timetable, cash for the bus, power bank).
+      Never fill a time without a source.
 
 ## Phase F — Other apps (need the user's OK; touch the hub)
 - [ ] F1 · Contlas hub card shows places to eat and hides sick-day items
