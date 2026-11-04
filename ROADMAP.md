@@ -93,6 +93,9 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [ ] J3 · A refresh never deletes or overwrites a spot the user marked visited (`status 'done'`); it only adds a note
       or flags it stale
 
+**Data first (2026-11-04):** the fields and `setu_festivals` table for G1, H1–H6 and I1 are in `sql/setu_g_to_i_fields.sql`;
+the user fills them with Claude.ai using `docs/fill-guide.md`. The screens (G2–G4, H7, I3–I5, J) come after.
+
 ### Open questions for G–J
 - Reminders (H7, I4): Setu has no push. Options: a Home strip when the app opens, or send to the Calendar app via A6.
 - Pre-fetch (J1): the browser can't run Claude. A hub add can queue the request; a scheduled task (or the next session)

@@ -33,7 +33,7 @@ team_requests          notes for other teams (team = 'neurology' | 'psychology' 
 
 Restaurants, cafés and food stalls always go in `setu_food_notes` (with `hub_id` when they belong to a hub), never `setu_spots`. A hub shows the restaurants linked by `hub_id`, plus saved ones within 1.5 × `radius_m` or whose `area` contains the hub name.
 
-Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`, `local-grocery`, `cafe`, `group-visit` (costs ¥3,000+ per person: only with friends), `sit-long` (somewhere to sit for a while: benches, gardens, cafés that let you stay), `rain-ok` (covered; add it next to `sit-long`); also in use from other sessions: `asian-grocery`, `toilet`, `crowded`, `less-crowded`. Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
+Themes are short slugs shared by hubs, places to eat and spots: `sick-day`, `camera`, `local-grocery`, `cafe`, `group-visit` (costs ¥3,000+ per person: only with friends), `sit-long` (somewhere to sit for a while: benches, gardens, cafés that let you stay), `rain-ok` (covered; add it next to `sit-long`); also in use from other sessions: `asian-grocery`, `toilet`, `crowded`, `less-crowded`; for phase H: `jinja`, `gurdwara`, `iskcon`, `free-meal`. Reuse an existing slug before inventing one. Ordinary themes (`camera`) show as filter chips. `sick-day` is special: anything tagged with it is hidden everywhere in the app unless the user turns on Sick-day mode from the ☰ menu, so tag sick-only places with it and nothing else.
 
 Menus: one `setu_menu_items` row per dish. Never invent prices; set `price_seen` to the date the price was seen. Set `has_beef` when the name contains 牛 / ビーフ / beef / ハンバーグ / ミートソース.
 
@@ -103,6 +103,13 @@ The forecast shows in the editor, on planned days in My plan and on the Home str
 `akatsuki_setu_forecast_targets` = `coalesce(setu_day_trips.lat, akatsuki_places.lat)`; cache `forecast` / `day_trip:<id>`, every 6 h).
 When a day trip has a date and no pin, the browser looks up "<name>, <prefecture>" on OpenStreetMap and saves `lat/lng` on the trip.
 The trip page shows a Weather box (forecast, or "coming" / "from 15 days before"); the Home list adds the weather icon to the date.
+
+### Phases G–I data (filled with Claude.ai)
+
+`docs/fill-guide.md` is the guide to paste into Claude.ai. It covers the sit-long fields on `setu_food_notes` and `setu_spots`
+(`seating_type`, `min_order(_yen)`, `stay_limit_min`, `outlets`, `wifi`, `quiet` 1–3, `smoke_free`, `setting`, `feel`,
+`confidence` 'confirmed'|'reviews'|'unverified', `last_checked`), `setu_spots.details` jsonb for shrines, gurdwaras, ISKCON and
+free meals, and the `setu_festivals` table. Schema: `sql/setu_g_to_i_fields.sql`. The app doesn't show these yet (G2–G4, H7, I3–I5).
 
 ### Rules
 
