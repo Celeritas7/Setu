@@ -99,6 +99,10 @@ outing if there is none. "This weekend" is the coming Saturday, or today on a Su
 pinned `akatsuki_places` row). A planned day uses the nearest point within 40 km of its hub (or first pinned stop). Rain likely = ≥ 1 mm
 and ≥ 50 % chance (the hub's rain day is ≥ 1 mm); that switches the rain plan on in the day editor unless you toggled it yourself.
 The forecast shows in the editor, on planned days in My plan and on the Home strip. Setu never stores weather.
+**Day-trip weather (E1):** the hub forecasts dated `setu_day_trips` up to 15 days ahead that have coordinates (Akatsuki R042,
+`akatsuki_setu_forecast_targets` = `coalesce(setu_day_trips.lat, akatsuki_places.lat)`; cache `forecast` / `day_trip:<id>`, every 6 h).
+When a day trip has a date and no pin, the browser looks up "<name>, <prefecture>" on OpenStreetMap and saves `lat/lng` on the trip.
+The trip page shows a Weather box (forecast, or "coming" / "from 15 days before"); the Home list adds the weather icon to the date.
 
 ### Rules
 

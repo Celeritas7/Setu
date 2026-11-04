@@ -41,7 +41,7 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [x] D2 · "Search this area" button in a hub that queues a request for Claude
 
 ## Phase E — Day trips
-- [ ] E1 · Weather on day-trip pages (Akatsuki weather view)
+- [x] E1 · Weather on day-trip pages (hub forecast R042, up to 15 days ahead; trips get a pin from OpenStreetMap)
 - [ ] E2 · "Eat there" lists saved places nearby plus sourced suggestions
 - [ ] E3 · Fares, once there is a real source
 - [ ] E4 · "Getting back" card on every day trip (requested 2026-11-01, after a friend's train home from Otaki turned out
