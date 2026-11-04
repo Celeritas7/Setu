@@ -127,6 +127,9 @@ shares as `/maps/search/<lat>,<lng>`, `/maps/place/35°50'39.6"N 139°38'50.0"E`
 (`maps.app.goo.gl/…`) are followed by the Setu edge function **`setu-map-link`** (POST `{url}`, signed-in only, map hosts only,
 no API key) which returns `{status, name, lat, lng, precise, final_url}`. Pins from a link are saved with `geo_source 'link'` and the
 link in `source_url` (places to eat). When you have a Google Maps link for a place, prefer it over geocoding an address.
+**Deploying `setu-map-link`:** the source lives in `Celeritas7/Akatsuki` at `supabase/functions/setu-map-link/index.ts` (main);
+this repo has no copy. Always deploy with `supabase functions deploy setu-map-link --no-verify-jwt`: Supabase's gateway check only
+knows the old, revoked JWT secret, and the function's own `auth.getUser()` check keeps it signed-in only (v7, 2026-11-04).
 
 ### Save where I am
 
