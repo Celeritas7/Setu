@@ -92,6 +92,9 @@ to 5 places open that day (a day with `hours` `[]` is closed; unknown hours are 
 `sit-long` without `rain-ok`). Suggest also swaps out stops that are closed that day. The day shows walk times (80 m/min), total
 cost from `spend_yen`, warnings, and one Google Maps walking route. **Mark visited** sets the outing `done` and its spots `done`;
 places to eat stay `try` until reviewed. Phases and what's next: `ROADMAP.md`.
+**When?** Browse's Add button and a hub card's Accept / Want to go ask *Someday / This weekend / a date*. All three set `accepted = true,
+status 'try'`; a date also adds the place as a stop to that date's planned outing for its hub (`hub_id` may be null), creating the
+outing if there is none. "This weekend" is the coming Saturday, or today on a Sunday. Hub cards and My plan show "planned <day>".
 
 ### Rules
 

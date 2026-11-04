@@ -19,7 +19,7 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
       walk times, total cost, group-visit and closed-that-day warnings, rain plan swaps outdoor stops for covered ones,
       one "Route in Maps" link, Save, Mark visited, Delete
 - [x] A4 · Home strip: next planned day, or "My plan · N places to visit"
-- [ ] A5 · "When?" on Add to plan (Browse and cards): Someday / This weekend / pick a date
+- [x] A5 · "When?" on Add to plan (Browse and hub cards): Someday / This weekend / pick a date; a date puts it on that day's plan
 - [ ] A6 · Send a planned day to the Calendar app (Akatsuki route `setu → cal trip.segment`, proposed)
 - [ ] A7 · Real weather for the planned date (Akatsuki `akatsuki_weather`) to switch the rain plan on automatically
 
