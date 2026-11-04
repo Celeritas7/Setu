@@ -21,7 +21,7 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [x] A4 · Home strip: next planned day, or "My plan · N places to visit"
 - [x] A5 · "When?" on Add to plan (Browse and hub cards): Someday / This weekend / pick a date; a date puts it on that day's plan
 - [ ] A6 · Send a planned day to the Calendar app (Akatsuki route `setu → cal trip.segment`, proposed)
-- [ ] A7 · Real weather for the planned date (Akatsuki `akatsuki_weather`) to switch the rain plan on automatically
+- [x] A7 · Real weather for the planned date (Akatsuki `akatsuki_weather`) to switch the rain plan on automatically (7 days ahead)
 
 ## Phase B — Map: globe to street
 - [x] B1 · Zoom on the globe (pinch, scroll, + / −)

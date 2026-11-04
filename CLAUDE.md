@@ -95,6 +95,10 @@ places to eat stay `try` until reviewed. Phases and what's next: `ROADMAP.md`.
 **When?** Browse's Add button and a hub card's Accept / Want to go ask *Someday / This weekend / a date*. All three set `accepted = true,
 status 'try'`; a date also adds the place as a stop to that date's planned outing for its hub (`hub_id` may be null), creating the
 outing if there is none. "This weekend" is the coming Saturday, or today on a Sunday. Hub cards and My plan show "planned <day>".
+**Weather (A7):** Setu reads the hub's `akatsuki_weather` (Akatsuki R044, route `hub → setu weather.now`; Open-Meteo, 7 days, one point per
+pinned `akatsuki_places` row). A planned day uses the nearest point within 40 km of its hub (or first pinned stop). Rain likely = ≥ 1 mm
+and ≥ 50 % chance (the hub's rain day is ≥ 1 mm); that switches the rain plan on in the day editor unless you toggled it yourself.
+The forecast shows in the editor, on planned days in My plan and on the Home strip. Setu never stores weather.
 
 ### Rules
 
