@@ -168,3 +168,8 @@ by map link, or as Claude suggestions (`accepted = false`, sourced). Hub area li
 ## Editing the HTML bundles
 
 `index.html` and `Setu.dc.html` are bundler exports. The page lives in `<script type="__bundler/template">` as a JSON string (every `</` is written as `<` followed by the JSON escape backslash-u002F); scripts and fonts are gzip+base64 in `__bundler/manifest`. Decode, edit, re-encode with the same escaping, and check it round-trips before writing.
+
+`setu-hub.js` (inside both bundles) also starts Akatsuki's broadcast overlay: `akatsuki-broadcast.js` is loaded unversioned from
+`celeritas7.github.io/Akatsuki/js/` before it, and `startBroadcast()` calls `AkatsukiBroadcast(setu.sb, 'setu').start()` once on Setu's
+own client (it retries for ~30 s, since `Setu.dc.html`'s runtime loads the script late). It writes only `akatsuki_broadcast_done` /
+`akatsuki_broadcast_snooze`. Keep it when re-exporting.
