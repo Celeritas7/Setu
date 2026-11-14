@@ -12,7 +12,7 @@ const template = process.env.SETU_TEST_TEMPLATE
 const runtime = template.match(/<script type="text\/x-dc" data-dc-script="">([\s\S]*?)<\/script>/)?.[1];
 assert.ok(runtime, 'actual embedded Setu runtime is present');
 assert.ok(runtime.includes('NEARBY_MAP_HELPERS_START'), 'nearby-map implementation is present');
-const SCRIPT = new vm.Script(`${runtime}\n;globalThis.__setuTest = {mapHasPt,mapFreshPhone,mapAnchor,nearbyMapModel,mapPage,Component};`);
+const SCRIPT = new vm.Script(`${runtime}\n;globalThis.__setuTest = {mapHasPt,mapInBounds,mapFreshPhone,mapAnchor,nearbyMapModel,mapPage,Component};`);
 const T0 = Date.UTC(2026, 10, 14, 7, 0, 0);
 
 function harness({ permission = 'granted', noGeolocation = false } = {}) {
@@ -332,17 +332,185 @@ test('pending-name browsing still offers a way back when the final pin becomes a
   h.dispose();
 });
 
-test('source changes reset pagination and selection without silently changing the area or type', () => {
+test('DAY OFF source resets every inherited spatial scope and type, then fits every destination', () => {
+  for(const scope of ['near','area','center','viewport']) {
+    const h=harness(), picked=[{t:'spot',id:'saved-pick'}];
+    const destinations=Array.from({length:6},(_,i)=>place(`dayoff-${i}`,35+i,{by:`DAY OFF #${i+1}`,themes:[i%2?'jinja':'cafe'],accepted:false}));
+    const food=place('dayoff-food',42,{by:'DAY OFF #28',themes:['cafe'],accepted:false});
+    h.app.state={...h.app.state,...state({spots:[...destinations,place('ordinary',35.001)],foodSugg:[food],
+      hubs:[{id:'area',name:'Area',lat:35,lng:139,themes:[]}]}),screen:'map',cloud:true,
+      layers:{places:false,friends:true},
+      mv:{...h.app.state.mv,scope,source:'all',radiusKm:3,areaId:'area',center:{lat:35,lng:139},
+        bounds:{south:34.99,north:35.01,west:138.99,east:139.01},tag:'cafe',page:2,
+        pendingOpen:true,resultsOpen:false,sel:{key:'old'},picked,follow:true,panned:true}};
+    const originalSpots=h.app.state.spots, originalFood=h.app.state.foodSugg;
+    h.app.mvView={lat:1,lng:2,z:16}; h.app.mvFit=[[1,2]]; h.app.gJump={lat:1,lng:2,k:1};
+    const source=h.app.renderVals().mapSources.find(x=>x.label.includes('DAY OFF'));
+    assert.ok(source); source.go();
+    const mv=h.app.state.mv, model=h.nearbyMapModel(h.app.state), view=h.app.renderVals();
+    assert.equal(mv.source,'dayoff'); assert.equal(mv.scope,'all');
+    assert.equal(mv.areaId,null); assert.equal(mv.center,null); assert.equal(mv.bounds,null); assert.equal(mv.tag,'all');
+    assert.equal(mv.page,0); assert.equal(mv.pendingOpen,false); assert.equal(mv.sel,null);
+    assert.equal(mv.follow,false); assert.equal(mv.panned,false); assert.equal(mv.resultsOpen,true);
+    assert.equal(h.app.mvView,null); assert.equal(h.app.gJump,null); assert.equal(h.app.state.layers.places,true);
+    assert.equal(model.nearby.length,7,`${scope}: distant places and pending-acceptance food must remain discoverable`);
+    assert.ok(model.nearby.every(x=>x.distanceKm===null),'trip planning must not invent a nearby distance');
+    assert.deepEqual(Array.from(h.app.mvFit,p=>Array.from(p)).sort((a,b)=>a[0]-b[0]),[35,36,37,38,39,40,42].map(lat=>[lat,139]));
+    assert.equal(h.app.mapPoints().filter(x=>x.dayoff).length,7); assert.equal(view.mapRows.length,5);
+    assert.equal(view.mapRadiusVisible,false); assert.equal(view.mapFilterLabel,'Filters');
+    assert.match(view.mapMatchText,/7 pinned places.*no radius limit.*DAY OFF/);
+    assert.equal(view.mapResultTitle,'DAY OFF destinations'); assert.equal(view.mapHasLocationHelp,false);
+    assert.equal(mv.picked,picked); assert.equal(h.app.state.spots,originalSpots); assert.equal(h.app.state.foodSugg,originalFood);
+    assert.ok(h.app.state.spots.slice(0,6).every(x=>x.accepted===false));
+    assert.equal(h.counts.dbWrites,0); assert.equal(h.storage.size,0); assert.equal(h.watches.size,0);
+    h.dispose();
+  }
+});
+
+test('DAY OFF fits coordinates arriving after selection without refitting unchanged data', () => {
   const h=harness();
-  h.app.state={...h.app.state,cloud:true,spots:[place('dayoff',35.001,{by:'DAY OFF #28',themes:['cafe']})],
-    hubs:[{id:'area',name:'Area',lat:35,lng:139,themes:[]}],
-    mv:{...h.app.state.mv,scope:'area',areaId:'area',tag:'cafe',page:2,pendingOpen:true,sel:{key:'old'}}};
-  const source=h.app.renderVals().mapSources.find(x=>x.label.includes('DAY OFF'));
-  assert.ok(source); source.go();
-  assert.equal(h.app.state.mv.source,'dayoff'); assert.equal(h.app.state.mv.scope,'area');
-  assert.equal(h.app.state.mv.areaId,'area'); assert.equal(h.app.state.mv.tag,'cafe');
-  assert.equal(h.app.state.mv.page,0); assert.equal(h.app.state.mv.pendingOpen,false); assert.equal(h.app.state.mv.sel,null);
-  assert.equal(h.app.renderVals().mapRows.length,1);
+  h.app.state={...h.app.state,screen:'map',cloud:false};
+  h.app.selectMapSource('dayoff'); assert.equal(h.app.mvFit,null); assert.equal(h.app.dayOffAutoFit,true);
+  h.app.setState({cloud:true,spots:[place('near',35,{by:'DAY OFF #1'}),place('far',39,{by:'DAY OFF #2'})]});
+  assert.equal(h.app.mvFit.length,2);
+  h.app.mvFit=null; // a successful draw consumes this command
+  h.app.setState({mapTick:T0+1}); assert.equal(h.app.mvFit,null,'ordinary renders must not refit');
+  h.app.setState({spots:[...h.app.state.spots].reverse()});
+  assert.equal(h.app.mvFit,null,'a different row order is not a different destination set');
+  h.app.setState({foodSugg:[place('later-food',43,{by:'DAY OFF #3',accepted:false})]});
+  assert.equal(h.app.mvFit.length,3,'newly loaded coordinates join the initial trip overview');
+  h.app.renderVals().mapRows[0].go();
+  const selectedView=h.app.mvView;
+  assert.equal(h.app.dayOffAutoFit,false); assert.equal(h.app.mvFit,null);
+  h.app.setState({spots:[...h.app.state.spots,place('even-later',44,{by:'DAY OFF #4'})]});
+  assert.equal(h.app.mvFit,null,'late rows cannot override a deliberately opened destination');
+  assert.equal(h.app.mvView,selectedView); assert.equal(h.counts.dbWrites,0);
+  h.dispose();
+});
+
+test('a type filter cancels the old all-destinations fit while Leaflet is still loading', () => {
+  const h=harness();
+  h.app.state={...h.app.state,screen:'map',cloud:true,spots:[
+    place('cafe',35,{by:'DAY OFF #1',themes:['cafe']}),place('shrine',42,{by:'DAY OFF #2',themes:['jinja']})
+  ]};
+  h.app.selectMapSource('dayoff'); assert.equal(h.app.mvFit.length,2);
+  const cafe=h.app.renderVals().mapTags.find(x=>/^Caf/i.test(x.label));
+  assert.ok(cafe); cafe.go();
+  assert.equal(h.app.state.mv.tag,'cafe'); assert.equal(h.app.dayOffAutoFit,false);
+  assert.equal(h.app.mvFit,null,'a delayed draw must not consume the obsolete all-destinations command');
+  assert.deepEqual(ids(h.nearbyMapModel(h.app.state).nearby),['cafe']);
+  h.app.setState({spots:[...h.app.state.spots,place('later-shrine',43,{by:'DAY OFF #3',themes:['jinja']})]});
+  assert.equal(h.app.mvFit,null,'a later cloud update must respect the explicit type selection');
+  h.dispose();
+});
+
+test('DAY OFF stops the live watcher and late fixes or permission replies cannot hijack trip mode', async () => {
+  const h=harness(); await h.enter(); h.emit(0);
+  h.app.setState({spots:[place('far',39,{by:'DAY OFF #1'})]});
+  h.app.selectMapSource('dayoff');
+  assert.ok(h.cleared.includes(0)); assert.equal(h.app.mapWatch,null); assert.equal(h.timers.size,0);
+  const here=h.app.state.here, fit=h.app.mvFit, before=h.counts.changes;
+  h.advance(60000); h.emit(0,{lat:36,lng:140});
+  assert.equal(h.app.state.here,here); assert.equal(h.app.mvFit,fit); assert.equal(h.app.mvView,null);
+  assert.equal(h.counts.changes,before); assert.equal(h.app.state.mv.scope,'all');
+  await h.visibility(true); await h.visibility(false); await h.flush();
+  assert.equal(h.watches.size,1,'returning to a trip overview must not restart GPS');
+  h.app.setState({screen:'home'}); h.app.setState({screen:'map'}); await h.flush();
+  assert.equal(h.watches.size,1,'returning to Map retains the manual trip overview');
+  h.dispose();
+  const deferred=harness(); let resolve;
+  deferred.setPermissionReply(()=>new Promise(r=>{resolve=r;}));
+  deferred.app.setState({screen:'map'});
+  deferred.app.selectMapSource('dayoff');
+  resolve({state:'granted'}); await deferred.flush();
+  assert.equal(deferred.watches.size,0); assert.equal(deferred.app.state.mv.scope,'all');
+  assert.equal(deferred.app.mapStarting,false); deferred.dispose();
+});
+
+test('Near me explicitly narrows DAY OFF; All sources never implicitly restores the old GPS scope', async () => {
+  const h=harness({permission:'prompt'});
+  h.app.state={...h.app.state,screen:'map',cloud:true,
+    spots:[place('near',35.001,{by:'DAY OFF #1'}),place('far',40,{by:'DAY OFF #2'})]};
+  h.app.selectMapSource('dayoff'); await h.flush();
+  assert.equal(h.counts.permissionQueries,0); assert.equal(h.watches.size,0);
+  h.app.renderVals().mapSources.find(x=>x.label==='All sources').go(); await h.flush();
+  assert.equal(h.app.state.mv.source,'all'); assert.equal(h.app.state.mv.scope,'all');
+  assert.equal(h.app.state.mv.follow,false); assert.equal(h.watches.size,0); assert.equal(h.counts.permissionQueries,0);
+  h.app.selectMapSource('dayoff'); h.app.renderVals().mapNearMe(); await h.flush();
+  assert.equal(h.app.state.mv.source,'dayoff'); assert.equal(h.app.state.mv.scope,'near');
+  assert.equal(h.app.state.mv.follow,true); assert.equal(h.watches.size,1); assert.equal(h.app.dayOffAutoFit,false);
+  h.emit(0); assert.deepEqual(ids(h.nearbyMapModel(h.app.state).nearby),['near']);
+  assert.equal(h.app.renderVals().mapRadiusVisible,true);
+  h.app.renderVals().mapAllDayOff();
+  assert.equal(h.app.state.mv.scope,'all'); assert.equal(h.app.state.mv.source,'dayoff');
+  assert.equal(h.app.state.mv.tag,'all'); assert.equal(h.app.state.mv.follow,false);
+  assert.equal(h.nearbyMapModel(h.app.state).nearby.length,2); assert.ok(h.cleared.includes(0));
+  assert.equal(h.app.mvFit.length,2); assert.equal(h.app.renderVals().mapRadiusVisible,false);
+  h.dispose();
+});
+
+test('viewport containment supports dateline crossing and wrapped maps without invalid-coordinate leaks', () => {
+  const h=harness(), b={south:-10,north:10,west:170,east:-170};
+  for(const lng of [170,175,-175,-170]) assert.equal(h.mapInBounds({lat:0,lng},b),true);
+  for(const lng of [169,-169,0]) assert.equal(h.mapInBounds({lat:0,lng},b),false);
+  assert.equal(h.mapInBounds({lat:0,lng:175},{...b,west:530,east:550}),true);
+  assert.equal(h.mapInBounds({lat:0,lng:-175},{...b,west:530,east:550}),true);
+  assert.equal(h.mapInBounds({lat:0,lng:0},{...b,west:-180,east:180}),true);
+  assert.equal(h.mapInBounds({lat:11,lng:175},b),false);
+  for(const bad of [null,{}, {...b,south:11}, {...b,north:NaN}, {...b,west:Infinity}, {...b,east:'190'}])
+    assert.equal(h.mapInBounds({lat:0,lng:175},bad),false);
+  assert.equal(h.mapInBounds({lat:null,lng:175},b),false);
+  h.dispose();
+});
+
+test('Search this area uses the visible viewport for results, facets, pins, hubs and friends, not a 3 km circle', async () => {
+  const h=harness();
+  h.app.state={...h.app.state,...state({
+    spots:[place('visible-far',35.08,{by:'DAY OFF #1',themes:['jinja']}),place('near-but-offscreen',35,{lng:139.01,themes:['cafe']}),place('unplaced',null)],
+    foodSugg:[place('visible-food',35.07,{by:'DAY OFF #2',themes:['cafe'],accepted:false})],
+    hubs:[{id:'visible-hub',name:'Visible hub',lat:35.06,lng:139,themes:[]},{id:'offscreen-hub',name:'Offscreen hub',lat:35,lng:139.01,themes:[]}]
+  }),screen:'map',cloud:true,
+    friends:[{id:'visible-friend',name:'Visible friend',lat:35.05,lng:139},{id:'offscreen-friend',name:'Offscreen friend',lat:35,lng:139.01}],
+    mv:{...h.app.state.mv,scope:'near',radiusKm:3,mode:'street',panned:false,follow:true,page:4,pendingOpen:true,sel:{key:'old'}}};
+  const {map,element}=stubLeaflet(h); await h.app.drawStreet(element);
+  assert.equal(h.app.renderVals().mapPanned,true,'viewport search is available even after zoom-only or no drag');
+  map.bounds={south:34.99,north:35.10,west:138.999,east:139.001};
+  h.app.mvFit=[[1,2]]; h.app.mvView={lat:1,lng:2,z:16}; h.app.gJump={lat:1,lng:2,k:1};
+  h.app.renderVals().mapSearchHere(); await h.flush();
+  const mv=h.app.state.mv, model=h.nearbyMapModel(h.app.state), view=h.app.renderVals();
+  assert.equal(mv.scope,'viewport'); assert.equal(mv.center,null); assert.equal(mv.areaId,null);
+  assert.equal(mv.follow,false); assert.equal(mv.page,0); assert.equal(mv.pendingOpen,false); assert.equal(mv.sel,null);
+  assert.equal(h.app.mvFit,null); assert.equal(h.app.mvView,null); assert.equal(h.app.gJump,null);
+  assert.deepEqual(ids(model.nearby),['visible-far','visible-food']);
+  assert.ok(model.nearby.every(x=>x.distanceKm===null));
+  assert.equal(model.facets.jinja,1); assert.equal(model.facets.cafe,1);
+  assert.deepEqual(Array.from(h.app.mapPoints(),x=>x.key).filter(x=>x!=='you').sort(),
+    ['svisible-far','fvisible-food','hvisible-hub','cvisible-friend'].sort());
+  assert.equal(view.mapRows.length,2); assert.equal(view.mapResultTitle,'Options in this map area');
+  assert.match(view.mapMatchText,/2 pinned places in this map area/);
+  assert.equal(view.mapRadiusVisible,false); assert.equal(view.mapFilterLabel,'Filters');
+  assert.equal(view.mapAreaName,'This map area'); assert.doesNotMatch(view.mapEmptyText,/3 km/);
+  assert.equal(view.mapHasPending,true,'unknown coordinates stay honestly separate from viewport results');
+  assert.equal(h.watches.size,0); assert.equal(h.counts.dbWrites,0);
+  h.dispose();
+});
+
+test('DAY OFF viewport results can return to all destinations with the explicit all-destinations control', async () => {
+  const h=harness();
+  h.app.state={...h.app.state,screen:'map',cloud:true,spots:[
+    place('visible',35.08,{by:'DAY OFF #1'}),place('far',40,{by:'DAY OFF #2'}),place('ordinary',35.08)
+  ],mv:{...h.app.state.mv,scope:'all',source:'dayoff',mode:'street',follow:false}};
+  const {map,element}=stubLeaflet(h); await h.app.drawStreet(element);
+  map.bounds={south:35,north:35.1,west:138.9,east:139.1};
+  h.app.searchMapCenter(); await h.flush();
+  assert.equal(h.app.state.mv.source,'dayoff'); assert.deepEqual(ids(h.nearbyMapModel(h.app.state).nearby),['visible']);
+  const view=h.app.renderVals();
+  assert.equal(view.mapIsDayOff,true); assert.match(view.mapDayOffHint,/No radius limit/);
+  assert.equal(view.mapRadiusVisible,false); assert.doesNotMatch(view.mapFilterLabel+' '+view.mapMatchText,/3 km/);
+  view.mapAllDayOff(); await h.flush();
+  assert.equal(h.app.state.mv.scope,'all'); assert.equal(h.app.state.mv.bounds,null);
+  assert.deepEqual(ids(h.nearbyMapModel(h.app.state).nearby),['far','visible']);
+  assert.equal(map.fits.at(-1).coords.length,2); assert.equal(h.watches.size,0);
   h.dispose();
 });
 
@@ -446,14 +614,16 @@ function stubLeaflet(h) {
   const handlers=new Map(), element={clientWidth:360,clientHeight:480}, markerCalls=[];
   const map={
     removed:false,zoom:11,center:{lat:35.85,lng:139.65},fits:[],
+    bounds:{south:35.7,north:36,west:139.4,east:139.9},
     on(name,fn) { const list=handlers.get(name)||[]; list.push(fn); handlers.set(name,list); return this; },
     once(name,fn) { const once=(...args)=>{this.off(name,once);fn(...args);}; return this.on(name,once); },
     off(name,fn) { handlers.set(name,(handlers.get(name)||[]).filter(x=>x!==fn)); return this; },
     emit(name) { for(const fn of [...(handlers.get(name)||[])]) fn(); },
     setView(coords,zoom) { this.center={lat:coords[0],lng:coords[1]}; this.zoom=zoom; return this; },
-    flyTo(coords,zoom) { this.setView(coords,zoom); this.emit('zoomend'); this.emit('moveend'); return this; },
-    fitBounds(coords,options) { this.fits.push({coords,options}); this.zoom=4; this.emit('zoomend'); this.emit('moveend'); return this; },
+    flyTo(coords,zoom) { this.emit('zoomstart'); this.setView(coords,zoom); this.emit('zoomend'); this.emit('moveend'); return this; },
+    fitBounds(coords,options) { this.fits.push({coords,options}); this.emit('zoomstart'); this.zoom=4; this.emit('zoomend'); this.emit('moveend'); return this; },
     getZoom() { return this.zoom; }, getCenter() { return this.center; },
+    getBounds() { return {getSouth:()=>this.bounds.south,getNorth:()=>this.bounds.north,getWest:()=>this.bounds.west,getEast:()=>this.bounds.east}; },
     invalidateSize() { assert.equal(this.removed,false,'cannot invalidate a map destroyed by its own fitBounds event'); return this; },
     remove() { this.removed=true; return this; }
   };
@@ -485,4 +655,35 @@ test('wide fit-to-matches cannot trigger a destructive street-to-globe transitio
   assert.equal(h.app.state.mv.mode,'globe','later deliberate wide zoom still supports the globe transition');
   assert.equal(map.removed,true);
   h.dispose();
+});
+
+test('late DAY OFF coordinates refit only until the user deliberately pans or zooms', async () => {
+  for(const interaction of ['dragstart','zoomstart']) {
+    const h=harness();
+    h.app.state={...h.app.state,screen:'map',cloud:false};
+    const {map}=stubLeaflet(h);
+    h.app.selectMapSource('dayoff'); await h.flush();
+    assert.equal(map.fits.length,0);
+    h.app.setState({cloud:true,spots:[place('first',35,{by:'DAY OFF #1'})]}); await h.flush();
+    assert.equal(map.fits.length,1); assert.equal(h.app.dayOffAutoFit,true,'programmatic fit zoom must not cancel pending-data handling');
+    h.app.setState({spots:[...h.app.state.spots,place('later',39,{by:'DAY OFF #2'})]}); await h.flush();
+    assert.equal(map.fits.length,2); assert.equal(map.fits[1].coords.length,2);
+    map.emit(interaction);
+    assert.equal(h.app.dayOffAutoFit,false,`${interaction} owns the viewport from now on`);
+    h.app.setState({spots:[...h.app.state.spots,place('last',42,{by:'DAY OFF #3'})]}); await h.flush();
+    assert.equal(map.fits.length,2,'data refresh must preserve the intentionally chosen viewport');
+    assert.equal(h.app.renderVals().mapPanned,true,'Search this area remains available after either interaction');
+    assert.equal(h.watches.size,0); h.dispose();
+  }
+});
+
+test('viewport search ignores malformed bounds without replacing the existing scope', async () => {
+  const h=harness();
+  h.app.state={...h.app.state,screen:'map',mv:{...h.app.state.mv,scope:'all',mode:'street',follow:false}};
+  const {map,element}=stubLeaflet(h); await h.app.drawStreet(element);
+  for(const bounds of [{south:36,north:35,west:139,east:140},{south:35,north:36,west:NaN,east:140}]) {
+    map.bounds=bounds; h.app.searchMapCenter();
+    assert.equal(h.app.state.mv.scope,'all');
+  }
+  assert.equal(h.watches.size,0); h.dispose();
 });
