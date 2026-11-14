@@ -19,3 +19,11 @@ Both are self-contained; no build step.
 
 ## Update
 Replace both HTML files with a new export and commit. Pages redeploys in about a minute.
+
+## Nearby map
+Open **☰ → Map → Near me** and allow location. Nearby saved places and suggestions are sorted by distance, five at a time.
+**Filters** adjusts distance and type; **DAY OFF** keeps only that source. The area picker supports manual browsing without GPS.
+Locations missing coordinates are listed separately under **Browse names**, rather than shown as nearby.
+Map location updates stop when you leave or hide the map; they do not create location-history records.
+
+Run the bundled-runtime regression checks with `node --test tests/*.test.mjs` (Node 18+; no extra dependencies).

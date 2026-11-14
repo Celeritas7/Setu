@@ -169,11 +169,24 @@ within ~100 m), and the **Right now** fallback when the phone won't share locati
 ### Map (☰ → Map)
 
 A d3 globe that zooms (wheel, two fingers, + / −) and, past `GLOBE_MAX` (60×), switches to a Leaflet street map at the same
-centre; zooming the street map out to level 5 returns to the globe. Jump chips: 📍 Where am I (phone location or last stay),
-World / Japan (globe), Kanto / Saitama / Tokyo (street), friends' cities abroad (globe), every hub (street, zoom 15). **Show** chips
-filter by theme. Pins: hubs white, places to eat red, shops and sights yellow, `sit-long` green, suggestions faint and dashed,
-friends teal, you blue; on the globe places appear from 8× zoom. Tap a pin for details; accepted to-visit places can be
-**picked**, then **Plan a day with these** opens the day editor with them as stops.
+centre; zooming the street map out to level 5 returns to the globe. The main Map is nearby-first: compact area picker,
+**Near me**, **Filters**, then the map and five options at a time. Near me uses only a fresh phone fix (not the last stay),
+defaults to 3 km, and sorts known coordinates by straight-line distance. Filters offer 1 / 3 / 5 / 10 / 25 km, locally relevant
+theme counts, and Places / Friends layers. Source is separately selectable: All sources / **DAY OFF** (purple sun pins,
+episode metadata and links retained). Source, theme and radius are intersected by one shared model for pins and result rows.
+The area picker searches saved hubs and offers World / Japan / Kanto / Saitama / Tokyo. Selecting an area stops GPS following;
+dragging the street map stops recentering and offers **Search this area**. **Show matches** fits only matching place pins,
+not the user dot. Unplaced rows are separate under **Browse names**, never assigned a fabricated distance.
+
+Phone watching starts automatically only if browser permission is already granted, otherwise **Near me** requests it.
+It runs only while this map is visible (also pauses for Browse suggestions), validates accuracy/timestamps, throttles updates,
+and stops on navigation, manual area selection, tab hiding or unmount. It does not persist or send new GPS history; only the
+five most recent manually selected hub IDs are stored locally. Authentication, Supabase schema and existing geocoding are unchanged.
+
+Pins: hubs white, places to eat red, shops and sights yellow, `sit-long` green, suggestions faint and dashed, friends teal,
+you blue; on the globe ordinary places appear from 8× zoom, DAY OFF pins also appear farther out. Tap a pin for details;
+accepted to-visit places can be **picked**, then **Plan a day with these** opens the day editor with them as stops.
+Regression checks: `node --test tests/*.test.mjs` tests the actual template embedded in `index.html`.
 
 ### Discover around a hub
 

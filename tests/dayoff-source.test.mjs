@@ -22,10 +22,10 @@ assert.equal(classify.isDayOff({ themes:['sit-long'], by:'User' }), false);
 assert.equal(classify.dayOffEpisode({ by:'DAY OFF · TRAIN TV #28' }), '28');
 assert.equal(classify.dayOffEpisode({ url:'https://ttv.jeki.co.jp/dayoff/backnumber/7/' }), '7');
 
-for (const name of ['mapSources','mapDayoffRows','mapDayoffHasNext','msHasSource','msSourceUrl']) {
+for (const name of ['mapSources','mapRows','mapHasNext','mapHasPending','mapPendingToggle','msHasSource','msSourceUrl']) {
   assert.ok(template.includes(`{{ ${name} }}`), `${name} renders in the template`);
 }
-assert.ok(code[1].includes('source === \'all\' || isDayOff(x)'), 'source filter applies to places');
+assert.ok(code[1].includes("(mv.source || 'all') === 'all' || isDayOff(x)"), 'source filter applies to places');
 assert.ok(code[1].includes("icon = L.divIcon"), 'special DAY OFF pin is rendered in street map');
 assert.ok(code[1].includes("p.dayoff ? '#7755C8'"), 'special DAY OFF pin is rendered on globe');
 console.log('PASS DAY OFF source, episodes, UI, bundled JS, and pin styling');
