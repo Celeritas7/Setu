@@ -22,7 +22,8 @@ Replace both HTML files with a new export and commit. Pages redeploys in about a
 
 ## Nearby map
 Open **☰ → Map → Near me** and allow location. Nearby saved places and suggestions are sorted by distance, five at a time.
-**Filters** adjusts distance and type; **DAY OFF** keeps only that source. The area picker supports manual browsing without GPS.
+**Filters** adjusts distance and type. **DAY OFF** opens trip-planning mode: all saved DAY OFF destinations, all regions, no radius limit. It clears inherited nearby/type filters, stops GPS following and fits the destination pins. **All DAY OFF destinations** restores this view after narrowing your search.
+Choose **Near me** explicitly to apply a radius to DAY OFF. **Search this area** uses the visible map bounds, not a hidden 3 km circle; it is available after either panning or zooming. The area picker also supports manual browsing without GPS.
 Locations missing coordinates are listed separately under **Browse names**, rather than shown as nearby.
 Map location updates stop when you leave or hide the map; they do not create location-history records.
 
