@@ -29,6 +29,24 @@ Map location updates stop when you leave or hide the map; they do not create loc
 
 Run the bundled-runtime regression checks with `node --test tests/*.test.mjs` (Node 18+; no extra dependencies).
 
+## Prefecture navigation and seating finder
+
+Home now starts with **Prefectures → Area hubs → Places**, including when a theme is selected. Choose a prefecture to reveal its hubs, search within it, and browse five hubs per page. The hub page has a prefecture breadcrumb and an **Area hubs** return button.
+
+**My plan → Plan a day** uses dependent prefecture and hub selectors instead of a wall of area buttons. Changing the area keeps the date, existing stops and unsaved settings. **Want to visit** also requires a prefecture and hub selection and shows five places per page, rather than rendering every saved place at once.
+
+The grouping is view-only: existing IDs, hub links, reviews and tags are not rewritten. Explicit geographic fields are used first, followed by consistent linked-place address evidence. A small documented exact public-location lookup handles station/campus queries that omit the prefecture; ambiguous or contradictory geography stays **Unassigned**. Places with missing hub links remain reachable in a null-ID grouping and never acquire a fabricated database hub ID.
+
+**Find a place to sit** is available directly on Home and in the menu. It opens without creating a day. Select a prefecture, hub, date and Japan-local start time, then optionally filter recorded price amounts. Results remain limited to five cards per page.
+
+- **Minimum order** comes only from a recorded minimum-order amount.
+- **Estimated visit budget** comes from the saved spend estimate; it is not a confirmed seating fee, minimum order or guaranteed total.
+- Missing prices remain unknown. Recorded-price filters exclude them and say how many were left out. Zero remains distinct from unknown.
+- Expand **Price, seating & sources** for price dates/staleness, seating policy, opening hours, facilities and source details. A 90-minute check does not reserve a seat or confirm holiday exceptions.
+- **Plan with this place** creates a draft for the checked date/time only after an explicit click. If a draft already exists, the app opens it without replacing its stops. **Save day** remains required.
+
+No database migration or record updates are required for this interface change. The DAY OFF map's all-area/no-radius behavior and the separate `Setu.dc.html` long-trip app are unchanged.
+
 ## Sit long with food — Phase G1–G3
 
 Open an area hub and select **Sit long with food · 90 min** for a stay starting now. In **My plan → Plan a day**, choose an area and date, open the same chooser, and set a check time in **Japan time**. This time checks the venue's recorded weekly opening hours; it does not assign an arrival time to the itinerary or verify holiday exceptions.
