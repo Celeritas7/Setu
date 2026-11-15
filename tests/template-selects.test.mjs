@@ -18,12 +18,18 @@ test('dynamic option loops survive the bundle parser by using the renderer raw-s
   // native select would disappear despite renderVals-only tests passing.
   assert.match(bundle,/new DOMParser\(\)\.parseFromString\(template, 'text\/html'\)/);
   const selectors=Array.from(template.matchAll(/<sc-raw-select\b([^>]*)>([\s\S]*?)<\/sc-raw-select>/g));
-  assert.equal(selectors.length,6);
+  assert.equal(selectors.length,8);
   for(const name of ['seatPrefecture','seatHubId','odPrefecture','odHubId','wvPrefecture','wvHubKey']){
     const control=selectors.find(m=>m[1].includes(`value="{{ ${name} }}"`));
     assert.ok(control,name+' uses a parser-safe wrapper');
     assert.match(control[1],/sc-camel-on-change="\{\{ \w+ \}\}"/);
     assert.match(control[2],/<sc-for\b[^>]*>[\s\S]*<option\b[^>]*>[\s\S]*<\/option>[\s\S]*<\/sc-for>/);
+  }
+  for(const [name,values] of [['wvBudgetLimit',['all','0','500','1000','1500','2000','3000']],['wvBudgetSort',['original','price']]]){
+    const control=selectors.find(m=>m[1].includes(`value="{{ ${name} }}"`));
+    assert.ok(control,name+' uses the same controlled-select wrapper');
+    assert.match(control[1],/sc-camel-on-change="\{\{ \w+ \}\}"/);
+    assert.deepEqual(Array.from(control[2].matchAll(/<option value="([^"]+)"/g),m=>m[1]),values);
   }
   for(const control of template.matchAll(/<select\b[^>]*>([\s\S]*?)<\/select>/g))
     assert.doesNotMatch(control[1],/<sc-(?:for|if)\b/,'custom control flow cannot be placed inside a native select before bundle parsing');
