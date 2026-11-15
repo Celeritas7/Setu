@@ -28,3 +28,17 @@ Locations missing coordinates are listed separately under **Browse names**, rath
 Map location updates stop when you leave or hide the map; they do not create location-history records.
 
 Run the bundled-runtime regression checks with `node --test tests/*.test.mjs` (Node 18+; no extra dependencies).
+
+## Sit long with food — Phase G1–G3
+
+Open an area hub and select **Sit long with food · 90 min** for a stay starting now. In **My plan → Plan a day**, choose an area and date, open the same chooser, and set a check time in **Japan time**. This time checks the venue's recorded weekly opening hours; it does not assign an arrival time to the itinerary or verify holiday exceptions.
+
+- Only saved/accepted, non-skipped sit-long places appear. Suggestions still need review in Browse. Sick-day items keep their existing visibility rules, and visibly beef-focused venues are excluded; this is not a menu-level dietary guarantee.
+- Known closed venues, opening periods with less than 90 continuous minutes, and recorded stay limits below 90 minutes are excluded. Unknown hours/limits remain clearly marked; unknown hours sort last. Lunch breaks are not bridged, overnight opening is evaluated in Japan time, and 24-hour schedules have no invented closing time.
+- Results show recorded minimum order/cost, seating policy, stay limit, facilities, quietness, source/check-date status and nearest explicitly saved toilet when usable coordinates exist. Unknown does not mean free, no limit, Wi-Fi available, or outside food allowed. Distances are straight-line, and toilet access is not confirmed.
+- Five cards per page keep the chooser compact. Add to day changes the draft only; **Save day** is still required. Opening Plan from a hub preserves any existing draft, and a new draft first asks for the intended date/time rather than automatically adding a venue checked only for now.
+- The DAY OFF map keeps its all-area, no-radius-limit trip-planning behavior. No subjective Igloo/Cocoon/Hideout tags are introduced.
+
+The additive migration `supabase/migrations/20261115045758_setu_sit_long_fields.sql` adds the optional seating fields to both existing place tables. It was applied on 2026-11-15 without changing stored row values, ownership policies or grants. Existing null facts remain unknown. The full older G–I SQL file is a prepared plan, not evidence that later-phase tables or fields are live.
+
+**Still pending: G4**, a visited-place policy-confirmation form. No seating-policy editing or automatic confirmation is part of G1–G3. This release changes `index.html`; the separate `Setu.dc.html` long-trip app is unchanged.
