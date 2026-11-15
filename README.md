@@ -59,4 +59,12 @@ Open an area hub and select **Sit long with food · 90 min** for a stay starting
 
 The additive migration `supabase/migrations/20261115045758_setu_sit_long_fields.sql` adds the optional seating fields to both existing place tables. It was applied on 2026-11-15 without changing stored row values, ownership policies or grants. Existing null facts remain unknown. The full older G–I SQL file is a prepared plan, not evidence that later-phase tables or fields are live.
 
-**Still pending: G4**, a visited-place policy-confirmation form. No seating-policy editing or automatic confirmation is part of G1–G3. This release changes `index.html`; the separate `Setu.dc.html` long-trip app is unchanged.
+**G4 in review:** the next phase adds **Visited / Confirm seating details** on saved food-place details, hub sit-long cards,
+the standalone seating finder, planned-day seating results and sit-long spots in a hub. Previously saved facts are
+prefilled but not automatically confirmed. Each personally checked field receives its own actual observation date;
+unknown, ¥0, unlimited stay, visit budgets and menu examples remain distinct. These confirmations never mark a day
+visited or create personal Cocoon/Igloo/Hideout tags. See [`docs/visited-seating.md`](docs/visited-seating.md).
+
+Signed-in G4 writes remain **disabled until the separately prepared `seating_checks` migration is explicitly approved
+and deployed**; local browser-only food confirmations work without it. No G4 migration is applied automatically by
+opening a PR. The long-trip `Setu.dc.html` app and integration bootstrap are unchanged.

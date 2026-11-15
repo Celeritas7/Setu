@@ -4,7 +4,7 @@ Day trips, places to eat and long trips. Two self-contained HTML bundles, no bui
 
 ## Adding places for the user (Supabase)
 
-Data lives in the hub Supabase project **General_apps** (`wylxvmkcrexwfpjpbhyy`). Owner user id: `e91a5f37-e63a-4fd0-8488-4d7a51d56822`.
+Data lives in the configured **General_apps** Supabase project. Obtain its project reference and the current signed-in user identity from your own authorized environment; do not put live identifiers in public documentation.
 The Home page (`index.html`) reads these tables when the user is signed in, so a row inserted here shows in the app on reload.
 
 ```
@@ -109,7 +109,9 @@ The trip page shows a Weather box (forecast, or "coming" / "from 15 days before"
 `docs/fill-guide.md` is the guide to paste into Claude.ai. It covers the sit-long fields on `setu_food_notes` and `setu_spots`
 (`seating_type`, `min_order(_yen)`, `stay_limit_min`, `outlets`, `wifi`, `quiet` 1–3, `smoke_free`, `setting`, `feel`,
 `confidence` 'confirmed'|'reviews'|'unverified', `last_checked`), `setu_spots.details` jsonb for shrines, gurdwaras, ISKCON and
-free meals, and the `setu_festivals` table. Schema: `sql/setu_g_to_i_fields.sql`. The app doesn't show these yet (G2–G4, H7, I3–I5).
+free meals, and the `setu_festivals` table. Schema: `sql/setu_g_to_i_fields.sql`. G1–G3 are displayed in Setu.
+G4's individual personal-confirmation dates require a separately reviewed `seating_checks` migration (not yet deployed).
+H7 and I3–I5 remain later work.
 
 ### Rules
 
@@ -129,7 +131,7 @@ free meals, and the `setu_festivals` table. Schema: `sql/setu_g_to_i_fields.sql`
 - `setu_*` tables have a trigger (`setu_touch`) that sets `user_id := auth.uid()` on insert and requires `rev = old.rev + 1` on update. When inserting with the service connection, run in one transaction:
   ```sql
   begin;
-  select set_config('request.jwt.claims', '{"sub":"e91a5f37-e63a-4fd0-8488-4d7a51d56822","role":"authenticated"}', true);
+  select set_config('request.jwt.claims', '{"sub":"YOUR_TEST_USER_UUID","role":"authenticated"}', true);
   insert into setu_food_notes (...) values (...);
   commit;
   ```

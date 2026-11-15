@@ -56,17 +56,19 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [ ] F2 · Setu ↔ Contlas read each other through Akatsuki views, not tables
 - [ ] F3 · Akatsuki acknowledges R048 (prompt given to the user)
 
-## Phase G — Sit long with food (requested 2026-11-01, not started)
-- [ ] G1 · Fields on `setu_food_notes` (and `setu_spots` for sit-long spots), themes keep `sit-long`:
+## Phase G — Sit long with food (G1–G3 merged in PR #26)
+- [x] G1 · Optional seating fields on `setu_food_notes` and `setu_spots`, with `sit-long` themes:
       `seating_type` (`free_seating` | `buy_to_sit` | `own_food_ok` | `unknown`), `min_order` (text) + `min_order_yen`,
-      `stay_limit_min` (null = unknown, 0 = no limit), `outlets`, `wifi`, `quiet` 1–3, `smoke_free` (yes / no / partly),
-      `indoor` (indoor / outdoor / both), `policy_source` (`confirmed` | `from reviews` | `unverified`) + `policy_seen`
-- [ ] G2 · "Sit long with food" filter on the hub page and in Plan a day: open now and for 90+ more minutes
+      `stay_limit_min` (null = unknown, 0 = explicitly no limit), `outlets`, `wifi`, `quiet` 1–3, `smoke_free` (yes / no / partly),
+      `setting` (indoor / outdoor / both), `feel`, `confidence` (confirmed / reviews / unverified) + `last_checked` (#26)
+- [x] G2 · "Sit long with food" filter on the hub page and in Plan a day: open now and for 90+ more minutes
       (unknown hours shown last, marked), sorted by cost to sit, then quiet, then distance; smoke-free first;
-      beef-focused places hidden while no-beef is on
-- [ ] G3 · Result card: cost to sit, one-line feel, seating type, closing time, nearest toilet (`toilet` theme spot),
-      "Policy unverified" badge when it comes from reviews only
-- [ ] G4 · "Visited" button that corrects seating type, stay limit and cost (sets `policy_source 'confirmed'`, `policy_seen` today)
+      beef-focused places hidden while no-beef is on (#26)
+- [x] G3 · Result card: cost to sit, one-line feel, seating type, closing time, nearest toilet (`toilet` theme spot),
+      source confidence and actual checked date (#26)
+- [ ] G4 · "Visited / Confirm seating details": date individual personally verified policy, order requirement,
+      minimum order amount and stay limit without confirming untouched facts. Requires a separately approved additive
+      `seating_checks` migration; does not change outing status, visit budget, reviews or personal experience tags.
 
 ## Phase H — Pre-saved religious and community places (requested 2026-11-01, not started)
 - [ ] H1 · Spot fields: `last_checked`, `confidence` (`confirmed` | `from reviews` | `unverified`), `details` jsonb per type;
@@ -93,8 +95,10 @@ Data rules and the schema live in `CLAUDE.md`; this file is only the plan.
 - [ ] J3 · A refresh never deletes or overwrites a spot the user marked visited (`status 'done'`); it only adds a note
       or flags it stale
 
-**Data first (2026-11-04):** the fields and `setu_festivals` table for G1, H1–H6 and I1 are in `sql/setu_g_to_i_fields.sql`;
-the user fills them with Claude.ai using `docs/fill-guide.md`. The screens (G2–G4, H7, I3–I5, J) come after.
+**Database status:** the G-only optional fields migration `supabase/migrations/20261115045758_setu_sit_long_fields.sql`
+was verified present in `General_apps` and powers G1–G3. The older `sql/setu_g_to_i_fields.sql` is a preparation,
+not evidence that H or I fields/tables were deployed. G4's field-specific check-date migration is prepared for
+separate approval and has **not** been applied. H7, I3–I5 and J remain future work.
 
 ### Open questions for G–J
 - Reminders (H7, I4): Setu has no push. Options: a Home strip when the app opens, or send to the Calendar app via A6.
