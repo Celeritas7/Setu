@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "saint-marc-musashi-urawa-mare",
+      "names": [
+        "Saint Marc Café 武蔵浦和マーレ",
+        "サンマルクカフェ 武蔵浦和マーレ店",
+        "Saint Marc Café Musashi-Urawa Mare"
+      ],
+      "hubNames": ["Musashi-Urawa", "武蔵浦和"],
+      "checkedOn": "2026-11-15",
+      "taxIncluded": true,
+      "notes": "Published menu examples; the food-and-drink total adds individual items, not a named set. Prices may vary by store or time. These prices do not confirm a minimum-order policy or permission for a 90-minute stay.",
+      "sources": [
+        {
+          "label": "Official branch drink menu",
+          "url": "https://www.saint-marc-hd.com/saintmarccafe/shop/688/menu/category/drink/"
+        },
+        {
+          "label": "Official branch bakery and sandwich menu",
+          "url": "https://www.saint-marc-hd.com/saintmarccafe/shop/688/menu/category/bakery_okayama/"
+        }
+      ],
+      "examples": [
+        {
+          "id": "small-blend-coffee",
+          "kind": "drink",
+          "label": "Small blend coffee",
+          "items": [{ "name": "Small blend coffee", "yen": 350 }]
+        },
+        {
+          "id": "coffee-and-egg-sandwich",
+          "kind": "light_food_drink",
+          "label": "Small coffee + egg sandwich (individual items)",
+          "items": [
+            { "name": "Small blend coffee", "yen": 350 },
+            { "name": "Egg sandwich", "yen": 420 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s-press-cafe-musashi-urawa",
+      "names": [
+        "S PRESS CAFE",
+        "S PRESS CAFE エス プレス カフェ",
+        "S PRESS CAFE（エスプレスカフェ）"
+      ],
+      "hubNames": ["Musashi-Urawa", "武蔵浦和"],
+      "checkedOn": "2026-11-15",
+      "taxIncluded": true,
+      "notes": "Published coffee price only. Official meal menus disagree, so no food-and-drink total is supplied. Menu prices are not a minimum-order policy and do not confirm permission for a 90-minute stay.",
+      "sources": [
+        {
+          "label": "Official drinks menu",
+          "url": "https://spresscafe.owst.jp/drinks"
+        },
+        {
+          "label": "Official restaurant menu (meal prices differ)",
+          "url": "https://spresscafe.jp/menu/"
+        },
+        {
+          "label": "Official lunch menu (meal prices differ)",
+          "url": "https://spresscafe.owst.jp/lunches"
+        }
+      ],
+      "examples": [
+        {
+          "id": "coffee",
+          "kind": "drink",
+          "label": "Hot or iced coffee",
+          "items": [{ "name": "Hot or iced coffee", "yen": 550 }]
+        }
+      ]
+    }
+  ]
+}
