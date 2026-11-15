@@ -61,7 +61,8 @@ stop cannot act on the wrong saved reference. Such placeholders are omitted
 from Maps routes with a warning; **Suggest stops** asks the user to review them
 instead of silently removing them. This does not migrate or repair saved data.
 
-The separate unpublished map-radius/planning-mode work is not included.
+The subsequent map-radius/planning-mode phase is documented separately in
+[`planning-map.md`](planning-map.md); it preserves this budget-card behaviour.
 
 ## Updating public menu examples
 

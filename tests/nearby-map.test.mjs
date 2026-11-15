@@ -71,7 +71,9 @@ function harness({ permission = 'granted', noGeolocation = false } = {}) {
     now:() => clock,
     advance:ms => { clock += ms; },
     setPermissionReply:fn => { permissionReply = fn; },
-    async enter() { app.setState({screen:'map'}); await this.flush(); },
+    // These regressions exercise an already-selected travel mode. Planning-map
+    // tests separately verify that ordinary Map entry is all-areas and GPS-free.
+    async enter() { app.setState({screen:'map',mv:{...app.state.mv,scope:'near',follow:true}}); await this.flush(); },
     async flush() { for (let i=0; i<6; i++) await Promise.resolve(); },
     emit(id, {lat=35,lng=139,accuracy=10,at=clock} = {}) {
       watches.get(id).success({ coords:{latitude:lat,longitude:lng,accuracy},timestamp:at });
@@ -192,7 +194,7 @@ test('five-row pagination clamps stale, fractional, and invalid page inputs', ()
   h.dispose();
 });
 
-test('watch starts only on Map, at most once across renders, including watch ID zero', async () => {
+test('an explicitly selected nearby mode watches only on Map, at most once across renders, including watch ID zero', async () => {
   const h=harness();
   h.app.componentDidUpdate(); await h.flush(); assert.equal(h.watches.size,0);
   await h.enter(); assert.equal(h.watches.size,1); assert.equal(h.app.mapWatch,0);
@@ -227,7 +229,7 @@ test('permission prompt/denial does not loop on renders; explicit Near me may re
 test('async permission result cannot start watch after manual mode or unmount', async () => {
   const h=harness(); let resolve;
   h.setPermissionReply(()=>new Promise(r=>{resolve=r;}));
-  h.app.setState({screen:'map'});
+  h.app.setState({screen:'map',mv:{...h.app.state.mv,scope:'near',follow:true}});
   h.app.selectMapArea({id:'manual',name:'Manual area',lat:36,lng:140});
   resolve({state:'granted'}); await h.flush();
   assert.equal(h.watches.size,0); assert.equal(h.app.state.mv.scope,'area');
@@ -235,7 +237,7 @@ test('async permission result cannot start watch after manual mode or unmount', 
   h.dispose();
   const closed=harness(); let resolveAfterUnmount;
   closed.setPermissionReply(()=>new Promise(r=>{resolveAfterUnmount=r;}));
-  closed.app.setState({screen:'map'}); closed.dispose();
+  closed.app.setState({screen:'map',mv:{...closed.app.state.mv,scope:'near',follow:true}}); closed.dispose();
   resolveAfterUnmount({state:'granted'}); await closed.flush();
   assert.equal(closed.watches.size,0); assert.equal(closed.timers.size,0);
 });
@@ -357,7 +359,7 @@ test('DAY OFF source resets every inherited spatial scope and type, then fits ev
     assert.ok(model.nearby.every(x=>x.distanceKm===null),'trip planning must not invent a nearby distance');
     assert.deepEqual(Array.from(h.app.mvFit,p=>Array.from(p)).sort((a,b)=>a[0]-b[0]),[35,36,37,38,39,40,42].map(lat=>[lat,139]));
     assert.equal(h.app.mapPoints().filter(x=>x.dayoff).length,7); assert.equal(view.mapRows.length,5);
-    assert.equal(view.mapRadiusVisible,false); assert.equal(view.mapFilterLabel,'Filters');
+    assert.equal(view.mapRadiusVisible,false); assert.equal(view.mapFilterLabel,'Filters · No limit');
     assert.match(view.mapMatchText,/7 pinned places.*no radius limit.*DAY OFF/);
     assert.equal(view.mapResultTitle,'DAY OFF destinations'); assert.equal(view.mapHasLocationHelp,false);
     assert.equal(mv.picked,picked); assert.equal(h.app.state.spots,originalSpots); assert.equal(h.app.state.foodSugg,originalFood);
@@ -420,7 +422,7 @@ test('DAY OFF stops the live watcher and late fixes or permission replies cannot
   h.dispose();
   const deferred=harness(); let resolve;
   deferred.setPermissionReply(()=>new Promise(r=>{resolve=r;}));
-  deferred.app.setState({screen:'map'});
+  deferred.app.setState({screen:'map',mv:{...deferred.app.state.mv,scope:'near',follow:true}});
   deferred.app.selectMapSource('dayoff');
   resolve({state:'granted'}); await deferred.flush();
   assert.equal(deferred.watches.size,0); assert.equal(deferred.app.state.mv.scope,'all');
@@ -488,7 +490,7 @@ test('Search this area uses the visible viewport for results, facets, pins, hubs
     ['svisible-far','fvisible-food','hvisible-hub','cvisible-friend'].sort());
   assert.equal(view.mapRows.length,2); assert.equal(view.mapResultTitle,'Options in this map area');
   assert.match(view.mapMatchText,/2 pinned places in this map area/);
-  assert.equal(view.mapRadiusVisible,false); assert.equal(view.mapFilterLabel,'Filters');
+  assert.equal(view.mapRadiusVisible,false); assert.equal(view.mapFilterLabel,'Filters · Map area');
   assert.equal(view.mapAreaName,'This map area'); assert.doesNotMatch(view.mapEmptyText,/3 km/);
   assert.equal(view.mapHasPending,true,'unknown coordinates stay honestly separate from viewport results');
   assert.equal(h.watches.size,0); assert.equal(h.counts.dbWrites,0);
@@ -652,24 +654,27 @@ test('wide fit-to-matches cannot trigger a destructive street-to-globe transitio
   assert.equal(h.app.lmap,map); assert.equal(map.removed,false); assert.equal(markerCalls.length,2);
   assert.ok(!h.app.mapFitting,'fit suppression must be cleared after the fit');
   map.emit('zoomend');
-  assert.equal(h.app.state.mv.mode,'globe','later deliberate wide zoom still supports the globe transition');
+  assert.equal(h.app.state.mv.mode,'street','a repeated programmatic zoom finish must not enter the globe');
+  map.zoom=6; map.emit('zoomstart'); map.zoom=5; map.emit('zoomend');
+  assert.equal(h.app.state.mv.mode,'globe','a later deliberate zoom-out crossing still supports the globe transition');
   assert.equal(map.removed,true);
   h.dispose();
 });
 
-test('late DAY OFF coordinates refit only until the user deliberately pans or zooms', async () => {
-  for(const interaction of ['dragstart','zoomstart']) {
+test('late all-source and DAY OFF coordinates refit only until the user deliberately pans or zooms', async () => {
+  for(const source of ['all','dayoff']) for(const interaction of ['dragstart','zoomstart']) {
     const h=harness();
     h.app.state={...h.app.state,screen:'map',cloud:false};
     const {map}=stubLeaflet(h);
-    h.app.selectMapSource('dayoff'); await h.flush();
+    h.app.selectMapSource(source); await h.flush();
     assert.equal(map.fits.length,0);
     h.app.setState({cloud:true,spots:[place('first',35,{by:'DAY OFF #1'})]}); await h.flush();
-    assert.equal(map.fits.length,1); assert.equal(h.app.dayOffAutoFit,true,'programmatic fit zoom must not cancel pending-data handling');
+    const fitFlag=source === 'dayoff' ? 'dayOffAutoFit' : 'planningAutoFit';
+    assert.equal(map.fits.length,1); assert.equal(h.app[fitFlag],true,'programmatic fit zoom must not cancel pending-data handling');
     h.app.setState({spots:[...h.app.state.spots,place('later',39,{by:'DAY OFF #2'})]}); await h.flush();
     assert.equal(map.fits.length,2); assert.equal(map.fits[1].coords.length,2);
     map.emit(interaction);
-    assert.equal(h.app.dayOffAutoFit,false,`${interaction} owns the viewport from now on`);
+    assert.equal(h.app[fitFlag],false,`${source}: ${interaction} owns the viewport from now on`);
     h.app.setState({spots:[...h.app.state.spots,place('last',42,{by:'DAY OFF #3'})]}); await h.flush();
     assert.equal(map.fits.length,2,'data refresh must preserve the intentionally chosen viewport');
     assert.equal(h.app.renderVals().mapPanned,true,'Search this area remains available after either interaction');
