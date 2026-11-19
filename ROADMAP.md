@@ -100,6 +100,12 @@ was verified present in `General_apps` and powers G1–G3. The older `sql/setu_g
 not evidence that H or I fields/tables were deployed. G4's field-specific check-date migration is prepared for
 separate approval and has **not** been applied. H7, I3–I5 and J remain future work.
 
+## Phase K — Reusable Travel Prompt Library
+- [ ] K1 · Four reusable planning templates in a single versioned source file: destination discovery, transport/return backups, flexible itineraries, live trip reviews. Code prepared for PR review.
+- [ ] K2 · Home/menu launch, editable destination/origin/date/style, prompt preview/copy, direct link to new ChatGPT chat. Code prepared for PR review.
+- [ ] K3 · Personal browser-only wording overrides, reset to updated shared templates, offline fallback, regression checks. Code prepared for PR review.
+- [ ] K4 · Optional future cross-device template sync and importing sourced research as Setu drafts; requires a separate access-control design and approval before any new database work.
+
 ### Open questions for G–J
 - Reminders (H7, I4): Setu has no push. Options: a Home strip when the app opens, or send to the Calendar app via A6.
 - Pre-fetch (J1): the browser can't run Claude. A hub add can queue the request; a scheduled task (or the next session)

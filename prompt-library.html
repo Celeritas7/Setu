@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1c1b18">
+  <title>Prompt Library · Setu</title>
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/prompt-library.css">
+  <script defer src="js/prompt-library.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="back-link" href="index.html">← Setu</a>
+      <strong class="brand">PROMPT LIBRARY</strong>
+      <span class="top-tag">Travel planning</span>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">SETU / PLAN A PLACE</p>
+      <h1 id="page-title">One place.<br><em>Four smart prompts.</em></h1>
+      <p>Enter a destination once. Use the same research, transport, itinerary and trip-review prompts for every journey. You can adjust their wording without editing the app.</p>
+      <div class="source-line" id="catalog-status" role="status" aria-live="polite">Loading the latest saved templates…</div>
+    </section>
+
+    <section class="setup-card" aria-labelledby="setup-title">
+      <div class="section-heading"><h2 id="setup-title">Your journey</h2><span>STEP 0 / DESTINATION</span></div>
+      <div class="setup-grid">
+        <label>Destination
+          <input id="destination" type="text" maxlength="180" autocomplete="off" placeholder="e.g. Ogose (越生)" value="Ogose (越生)">
+        </label>
+        <label>Starting station
+          <input id="origin" type="text" maxlength="160" autocomplete="off" value="Ageo Station">
+        </label>
+        <label>Travel date <small>(optional)</small>
+          <input id="travel-date" type="date">
+        </label>
+        <label>Preferred style
+          <select id="travel-style">
+            <option value="Balanced: nature, culture, quiet stops and spontaneous detours">Balanced exploration</option>
+            <option value="Nature: waterfalls, trails, hills and viewpoints">Nature focused</option>
+            <option value="Quiet and inexpensive: free seating, libraries and affordable food">Quiet &amp; inexpensive</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <div class="work-grid">
+      <section class="steps-card" aria-labelledby="templates-title">
+        <div class="section-heading"><h2 id="templates-title">Saved prompts</h2><span>CHOOSE A STEP</span></div>
+        <div id="template-list" class="template-list" role="group" aria-label="Planning steps"></div>
+        <p class="aside-note">Use prompts 1–4 in sequence in your Travel project. Your destination and preferences carry into each one.</p>
+      </section>
+
+      <section class="prompt-card" aria-labelledby="prompt-title">
+        <div class="prompt-header">
+          <div>
+            <p class="eyebrow" id="prompt-step">SELECT A PROMPT</p>
+            <h2 id="prompt-title">Planning prompt</h2>
+            <p id="prompt-description" class="muted"></p>
+          </div>
+          <span class="version" id="prompt-version"></span>
+        </div>
+        <div class="prompt-actions">
+          <button id="copy-prompt" class="primary" type="button" disabled>Copy prompt</button>
+          <a class="secondary" id="open-chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">Open new ChatGPT chat ↗</a>
+        </div>
+        <p class="helper">Copy, then paste and send it in a new chat inside your <strong>Travel</strong> ChatGPT project. Setu cannot automatically submit a personal ChatGPT message.</p>
+        <label class="preview-label" for="prompt-preview">Generated prompt · ready to paste</label>
+        <textarea id="prompt-preview" readonly spellcheck="false" aria-label="Generated planning prompt"></textarea>
+
+        <div class="editor-divider"></div>
+        <div class="editor-top">
+          <div>
+            <h3>Template wording</h3>
+            <p class="muted">The latest default comes from Setu's versioned catalog. Your own edits stay in this browser.</p>
+          </div>
+          <button id="toggle-editor" class="text-button" type="button" disabled>Edit template</button>
+        </div>
+        <div id="editor" class="editor" hidden>
+          <p class="hint">Keep <code>{{destination}}</code>, <code>{{origin}}</code>, <code>{{travel_date}}</code> and <code>{{travel_style}}</code> wherever you want their values inserted.</p>
+          <label for="template-editor">Personal template text</label>
+          <textarea id="template-editor" spellcheck="false"></textarea>
+          <div class="editor-buttons">
+            <button id="save-template" type="button" class="primary">Save my version</button>
+            <button id="reset-template" type="button" class="secondary">Restore latest Setu version</button>
+            <button id="cancel-editor" type="button" class="text-button">Close</button>
+          </div>
+        </div>
+        <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+
+    <footer>
+      <strong>How updates work</strong> · Change the prompt catalog in the Setu repository and release it; the library requests the latest version when opened. A personal edit is saved locally and labelled separately, so it never silently replaces the shared template. No trip data or Supabase tables are changed here.
+    </footer>
+  </main>
+</body>
+</html>
