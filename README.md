@@ -7,6 +7,7 @@ Day trips, places to eat and long trips. Prototype.
 ## Files
 - `index.html`: home page (search, day trips, places to eat, long trips).
 - `Setu.dc.html`: the long-trip planner (fare year, carriers, route lab, last mile, climate, rules). Opened from Home → Long trips.
+- `prompt-library.html`: reusable destination-research prompts, reachable from Home and ☰. The editable source text is `data/travel-prompt-templates.js`.
 
 Both are self-contained; no build step.
 
@@ -28,6 +29,12 @@ Locations missing coordinates are listed separately under **Browse names**, rath
 Map location updates stop when you leave or hide the map; they do not create location-history records.
 
 Run the bundled-runtime regression checks with `node --test tests/*.test.mjs` (Node 18+; no extra dependencies).
+
+## Prompt Library — trip-planning templates
+
+Open **Home → Plan a place with ChatGPT** or **☰ → Prompt Library**. Enter a destination, starting station, date (optional) and travel style, then select one of four steps: discover places, verify transport, construct a flexible itinerary, or collect live reviews. **Copy prompt** produces text with those fields filled in; **Open new ChatGPT chat** opens ChatGPT, where you paste and send the copied text, ideally inside your Travel project. Setu does **not** auto-submit to your personal ChatGPT account.
+
+Shared templates are maintained in one file: `data/travel-prompt-templates.js`. Update its text and revision in a reviewed code change; on subsequent visits the library requests the current catalog (with a cache-busting URL). It retains the most recent successful catalog in local browser storage to use if offline. **Edit template** saves an optional *personal browser-only override* and labels it separately; **Restore latest Setu version** removes that override. Browser edits are not synchronized across devices or to Supabase, and the catalog never rewrites saved trips, reviews, or personal experience tags. See [`docs/prompt-library.md`](docs/prompt-library.md).
 
 ## Prefecture navigation and seating finder
 

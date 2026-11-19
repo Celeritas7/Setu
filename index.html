@@ -70,6 +70,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     const manifest = JSON.parse(manifestEl.textContent);
     let template = JSON.parse(templateEl.textContent);
 
+    // Prompt Library lives in a separate, editable page so prompt updates do
+    // not require rebuilding this large exported application bundle. Add only
+    // two lightweight navigation links to the unpacked Home/menu template.
+    // Preserve the original template byte-for-byte if an export changes its
+    // structure; do not risk replacing an unrelated part of the application.
+    const promptMenuSlot = '        <sc-for list="{{ menuLinks }}"';
+    const promptMenuLink = '<a href="prompt-library.html" style="display:block;text-align:left;padding:11px 0;border-bottom:1px solid #4A463F;font-family:Barlow,sans-serif;font-weight:750;letter-spacing:0.09em;text-transform:uppercase;font-size:16px;color:#E8A000;text-decoration:none">✦ Prompt Library · Plan a place</a>\n';
+    if (template.includes(promptMenuSlot)) {
+      template = template.replace(promptMenuSlot, promptMenuLink + promptMenuSlot);
+    }
+    const promptHomeSlot = '        <!-- search results -->';
+    const promptHomeLink = '<a href="prompt-library.html" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border:2px solid #111111;background:#FFF4D8;color:#111111;text-decoration:none;font-family:Barlow,sans-serif;font-size:14px;font-weight:750"><span>✦ Plan a place with ChatGPT</span><span style="font-size:12px;font-weight:600">Saved prompts →</span></a>\n';
+    if (template.includes(promptHomeSlot)) {
+      template = template.replace(promptHomeSlot, promptHomeLink + promptHomeSlot);
+    }
+
     // Nested page bundles (iframe targets). Each ships ONCE, in the ROOT
     // document's manifest; frame srcs carry an about:blank#<uuid> marker
     // instead of a substitutable uuid. Every document mints the blobs for
