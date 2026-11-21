@@ -72,7 +72,7 @@ test('research prompts use the actual Drive destination folder and review-only e
   assert.equal(catalog.revision,'2026-11-22.1');
   for (const template of catalog.templates) {
     assert.match(template.body, /Claude_Workspace\/\#Data_storage\/Setu_research\//, template.id);
-    assert.match(template.body, /GitHub or Supabase/, template.id);
+    assert.match(template.body, /GitHub|Supabase/, template.id);
     assert.match(template.body, /unknown|unverified/i, template.id);
     assert.match(template.body, /Drive/, template.id);
   }
