@@ -180,6 +180,10 @@
     return reasons;
   }
 
+  function identityOverlap(reasons) {
+    return reasons.some(reason => reason !== 'Source URL (may describe several places)');
+  }
+
   function comparisonTargets(snapshot) {
     const rows = snapshot?.tables || {};
     const shops = rows.akatsuki_shops || [];
@@ -252,12 +256,14 @@
         // payload while explicitly retaining the total number of review leads.
         const matches = leads.slice(0, 20).map(({table, row, reasons}) => ({table, id: row.id, name: row.name || row.label,
           reasons, differences: fieldDifferences(place, row)}));
-        const withinFile = data.places.filter((other, j) => j !== i && matchReasons(place, {
-          ...other, address: other.location.address_ja
-        }).length).map(other => other.research_id);
+        const fileLeads = data.places.filter((other, j) => j !== i).map(other => ({id:other.research_id,
+          reasons:matchReasons(place, {...other, address:other.location.address_ja})}));
+        const withinFile = fileLeads.filter(lead => identityOverlap(lead.reasons)).map(lead => lead.id);
         return {research_id: place.research_id, hub_id: place.hub_id, name: place.name_ja,
           state: matches.length ? 'possible_existing' : snapshot ? 'no_match_in_snapshot' : 'comparison_unavailable',
           matches, match_count: leads.length, possible_file_duplicates: withinFile, price: priceSummary(place.research_fields.cost),
+          shared_source_references: fileLeads.filter(lead => lead.reasons.length && !identityOverlap(lead.reasons)).map(lead => lead.id),
+          needs_distinct_review: leads.some(lead => identityOverlap(lead.reasons)) || withinFile.length > 0,
           sources: place.source_links.map(source => ({...source, warning: sourceState(source, today)})),
           proposed_state: {accepted: false, status: 'try', lat: null, lng: null, personal_confirmed_experiences: []},
           decision: 'pending'};
@@ -327,7 +333,7 @@
     if (action === 'accept_suggestion') {
       if (!['food','shop','see','other'].includes(options.record_kind)) return {ok: false, error: 'Choose Food place, Shop, Sight or Other for the suggestion.'};
       if (!resolvedHub(review, candidate.hub_id)) return {ok: false, error: 'Choose a hub resolution above before accepting this suggestion.'};
-      if ((candidate.match_count || candidate.possible_file_duplicates.length) && options.distinct_acknowledged !== true) {
+      if (candidate.needs_distinct_review && options.distinct_acknowledged !== true) {
         return {ok: false, error: 'Review the possible matches and confirm this is a separate place, or merge/skip it.'};
       }
       let linkedLocation = null;

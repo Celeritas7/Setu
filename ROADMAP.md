@@ -136,7 +136,7 @@ Separate from the four research prompts. Detailed contract, audit and acceptance
 [`docs/research-import.md`](docs/research-import.md). This is the research preparation track for K4/L5, with E4/L3 retaining return-safety ownership.
 
 - [x] **R1 · Validator and local dry-run preview:** merged in PR #35 (`ee9c7a0`). User verified basic upload/preview/export; original research preservation checked.
-- [ ] **R2 · Deduplication and decisions:** hub reuse/shared draft choices, linked-place matching, Accept as suggestion / Skip / selective fact merges, conflict/dependency guards and review export. Prepared for PR review; in-memory decisions, no saved-place writes.
+- [x] **R2 · Deduplication and decisions:** merged in PR #36 (`1f3876b`). In-memory accept/skip/selective merges and review export. A separate correction improves shared-source overlap warnings and decision-form navigation; remaining manual checks are tracked in `docs/research-import.md`.
 - [ ] **R3 · Local drafts and backup:** persist approved browser-local suggestions, destination-scoped identities, idempotent re-import, interrupted-operation recovery, export/restore.
 - [ ] **R4 · Approved cloud persistence:** reviewed additive schema/RLS, user isolation, revisions, concurrent retries and sync. Separate approval before SQL or production writes.
 

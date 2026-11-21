@@ -78,10 +78,13 @@
     input.addEventListener('change', () => change(input.checked));
     wrapper.append(input, node('span', label)); return wrapper;
   }
-  function message(text, error = false) {
+  function message(text, error = false, feedback = null) {
     byId('decision-status').textContent = text;
     byId('decision-status').className = error ? 'warning' : 'decision-message';
-    if (error) byId('decision-status').focus();
+    if (error) {
+      if (feedback) {feedback.textContent = text;feedback.focus();}
+      else byId('decision-status').focus();
+    }
   }
   function renderHubs() {
     byId('hub-counts').replaceChildren(...result.hubs.map(hub => {
@@ -108,22 +111,23 @@
       if (hub.matches.length) details.append(node('p', 'Possible saved hubs: ' + hub.matches.map(match => match.name).join(', '), 'warning'));
       details.append(checkbox('If proposing a separate hub, I checked the similar hub names.', distinct, value => {distinct = value;}));
       const apply = node('button', 'Use hub choice'); apply.type = 'button';
+      const feedback = node('p', '', 'warning'); feedback.role = 'alert'; feedback.tabIndex = -1;
       apply.addEventListener('click', () => {
         const outcome = model.resolveHub(result, hub.id, !select.value ? null : select.value === 'new' ? {kind: 'new'} : choices.get(select.value), distinct);
-        if (!outcome.ok) {message(outcome.error, true);return;}
+        if (!outcome.ok) {message(outcome.error, true, feedback);return;}
         outcome.value.candidates.forEach((candidate, i) => {
           if (candidate.decision === 'pending' && result.candidates[i].decision !== 'pending') forms.delete(candidate.research_id);
         });
         result = outcome.value; renderHubs(); render();
         message('Hub choice updated.' + (outcome.reset_count ? ' ' + outcome.reset_count + ' affected decisions reset to pending.' : ''));
       });
-      details.append(apply); box.append(details); return box;
+      details.append(feedback, apply); box.append(details); return box;
     }));
   }
 
-  function applyDecision(candidate, action, options) {
+  function applyDecision(candidate, action, options, feedback) {
     const outcome = model.setDecision(result, candidate.research_id, action, options);
-    if (!outcome.ok) {message(outcome.error, true); return;}
+    if (!outcome.ok) {message(outcome.error, true, feedback); return;}
     outcome.value.candidates.forEach((item, i) => {
       if (item.decision === 'pending' && result.candidates[i].decision !== 'pending') forms.delete(item.research_id);
     });
@@ -151,16 +155,18 @@
       linked: prior?.linked_location ? model.reference(prior.linked_location.table, prior.linked_location.id) : '', target: '', fields: new Set(), same: false});
     const draft = forms.get(candidate.research_id);
     const panel = node('div', undefined, 'review-actions');
+    panel.tabIndex = -1;
+    const feedback = node('p', '', 'warning'); feedback.role = 'alert'; feedback.tabIndex = -1;
     panel.append(node('h4', 'Your review decision'), node('p', {
       pending:'Pending',accept_suggestion:'Accepted as suggestion · staged for a later save',skip:'Skipped · original evidence retained',merge_selected:'Selected research facts staged for merge'
-    }[candidate.decision], 'decision-message'));
+    }[candidate.decision], 'decision-message'), feedback);
     const resolved = model.resolvedHub(result, candidate.hub_id);
     panel.append(node('p', resolved ? 'New suggestion hub: ' + resolved.name : 'Choose a hub above before accepting a new suggestion.', 'muted'));
     const kindLabel = node('label', 'Suggestion category'), kindSelect = node('select');
     [['Choose a category',''],['Food place','food'],['Shop','shop'],['Sight','see'],['Other','other']].forEach(([label,value]) => option(kindSelect,label,value));
     kindSelect.value = draft.kind; kindSelect.addEventListener('change', () => {draft.kind = kindSelect.value;invalidateEditedDecision(candidate,'accept_suggestion');});
     kindLabel.append(kindSelect); panel.append(kindLabel);
-    if (candidate.match_count || candidate.possible_file_duplicates.length) panel.append(checkbox(
+    if (candidate.needs_distinct_review) panel.append(checkbox(
       'I reviewed the overlaps. This needs a separate Setu suggestion rather than merging into a saved or staged Setu place.', draft.distinct, value => {draft.distinct = value;invalidateEditedDecision(candidate,'accept_suggestion');}));
     const links = result.review_targets.filter(target => ['akatsuki_places','akatsuki_shops'].includes(target.table));
     if (links.length) {
@@ -173,7 +179,7 @@
     const actions = node('div', undefined, 'actions');
     [['Accept as suggestion','accept_suggestion'],['Skip','skip'],['Reset decision','pending']].forEach(([label, action]) => {
       const button = node('button', label); button.type = 'button'; button.className = action === 'accept_suggestion' ? '' : 'secondary';
-      button.addEventListener('click', () => applyDecision(candidate, action, {record_kind: draft.kind, distinct_acknowledged: draft.distinct, linked_location: draft.linked || null}));
+      button.addEventListener('click', () => applyDecision(candidate, action, {record_kind: draft.kind, distinct_acknowledged: draft.distinct, linked_location: draft.linked || null}, feedback));
       actions.append(button);
     });
     panel.append(actions);
@@ -229,9 +235,10 @@
     const sameInput = same.children[0]; merge.append(same);
     const stage = node('button', 'Stage selected fact merge'); stage.type = 'button';
     stage.addEventListener('click', () => applyDecision(candidate, 'merge_selected', {
-      target: targets.find(target => target.key === draft.target)?.target, fields:[...draft.fields], same_place_acknowledged:draft.same}));
+      target: targets.find(target => target.key === draft.target)?.target, fields:[...draft.fields], same_place_acknowledged:draft.same}, feedback));
     merge.append(stage, node('p', 'Sources, checked dates and restrictions accompany every selected merge. Personal reviews, pins and confirmations stay protected.', 'muted'));
     panel.append(merge); card.append(panel);
+    return panel;
   }
 
   function render() {
@@ -251,9 +258,12 @@
       const card = node('article');
       card.append(node('small', candidate.research_id + ' · ' + result.hubs.find(item => item.id === candidate.hub_id).name), node('h3', candidate.name));
       card.append(node('span', candidate.matches.length ? 'Possible existing place' : comparison ? 'No match in loaded snapshot' : 'Existing-place check unavailable', 'chip'));
-      card.append(node('span', 'Suggested · unvisited · not accepted', 'chip'));
+      card.append(node('span', {pending:'Review pending',accept_suggestion:'Accepted as suggestion · staged',skip:'Skipped in review',merge_selected:'Selected facts staged'}[candidate.decision], 'chip'));
+      card.append(node('span', 'Research source · unvisited', 'chip'));
+      const jump = node('button', 'Review decision ↓', 'secondary'); jump.type = 'button';card.append(jump);
       card.append(node('p', place.location.address_ja + ' · Unverified location text', 'muted'));
       if (candidate.possible_file_duplicates.length) card.append(node('p', 'Possible overlap within this file: ' + candidate.possible_file_duplicates.join(', '), 'warning'));
+      if (candidate.shared_source_references.length) card.append(node('p', 'Shared research pages with ' + candidate.shared_source_references.join(', ') + '. Several places can appear on the same page.', 'muted'));
       card.append(node('h4', 'Prices & estimates'), node('p', candidate.price.admission), node('p', candidate.price.estimate));
       candidate.price.samples.forEach(price => card.append(node('p', price.classification + ' · ¥' + price.yen + ' · ' + price.scope + ' · ' + price.evidence)));
       card.append(node('p', place.research_fields.cost.raw_text));
@@ -292,7 +302,8 @@
         table.append(body); wrapper.append(table); details.append(wrapper); card.append(details);
       });
       evidence(card, 'Complete candidate evidence (preserved)', place);
-      reviewControls(card, candidate, place);
+      const panel = reviewControls(card, candidate, place);
+      jump.addEventListener('click', () => {panel.scrollIntoView({behavior:'smooth',block:'start'});panel.focus({preventScroll:true});});
       fragment.append(card);
     });
     byId('candidates').replaceChildren(fragment);

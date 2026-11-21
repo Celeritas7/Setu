@@ -12,7 +12,7 @@
 - **Next Live Trip phase:** L1 — five safety-ranked next-place suggestions.
 - **Research baseline refreshed:** `50af3b7` (merged PR #34) before R1 publication; existing prompt updates preserved.
 - **R1:** merged in PR #35 (`ee9c7a0`); user upload/preview/export verified with exact research preservation.
-- **Current user-authorized supporting track:** R2 — Accept, Skip and selective merge decisions, prepared for separate PR review. See `docs/research-import.md`. R3/R4 remain pending; L1–L5 are not marked complete by this work.
+- **R2:** merged in PR #36 (`1f3876b`); user verified individual accept/skip controls. A separate usability correction addresses shared-source overlap warnings, inline errors and decision-form navigation. See `docs/research-import.md` for pending manual checks. R3/R4 remain pending; L1–L5 are not marked complete by this work.
 
 ## Baseline found on main, 2026-11-21
 
