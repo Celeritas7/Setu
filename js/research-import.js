@@ -6,6 +6,20 @@
   const MAX_BYTES = 5 * 1024 * 1024;
   const SNAPSHOT_KEY = 'setu.research-comparison.v1';
   const TABLES = ['setu_hubs', 'setu_spots', 'setu_food_notes', 'akatsuki_places', 'akatsuki_shops'];
+  const SNAPSHOT_FIELDS = ['id','name','label','aliases','address','source_url','url','place_ref','hours','spend_yen','spend','spend_seen','spendSeen','themes','rev','hub_id','shop_id','place_id'];
+  const MERGE_FIELDS = [
+    ['name_ja', 'Japanese name', ['name_ja']], ['name_en', 'English browsing name', ['name_en']],
+    ['address_text', 'Unverified address text', ['location','address_ja']],
+    ['maps_url', 'Unverified Maps URL', ['location','maps_url']],
+    ['cost', 'Prices, scopes and estimates', ['research_fields','cost']],
+    ['hours', 'Opening-hours evidence', ['research_fields','hours']],
+    ['access', 'Access evidence', ['research_fields','access']],
+    ['practical_tags', 'Practical tag candidates', ['tags','practical_candidates']],
+    ['potential_experiences', 'Potential experience tags', ['tags','experiential_candidates']],
+    ['discovery_sources', 'Discovery-source tags', ['tags','discovery_source_tags']],
+    ['facility_facts', 'Facility facts and unknowns', ['facility_facts']],
+    ['safety_flags', 'Access restrictions and safety flags', ['safety_flags']],
+  ];
   const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -166,6 +180,18 @@
     return reasons;
   }
 
+  function comparisonTargets(snapshot) {
+    const rows = snapshot?.tables || {};
+    const shops = rows.akatsuki_shops || [];
+    return TABLES.flatMap(table => (rows[table] || []).filter(row => row.id != null).map(row => {
+      const facts = {};
+      SNAPSHOT_FIELDS.forEach(key => { if (own(row, key) && row[key] !== undefined) facts[key] = clone(row[key]); });
+      if (table === 'setu_food_notes' && !facts.name) facts.name = shops.find(shop => String(shop.id) === String(row.shop_id))?.name || 'Unnamed food place';
+      return {table, id: row.id, name: facts.name || facts.label || String(row.id), facts,
+        merge_allowed: ['setu_food_notes','setu_spots'].includes(table)};
+    }));
+  }
+
   function fieldDifferences(place, row) {
     // No automatic mapping from admission to spend_yen, research tags to
     // confirmed themes, or research coordinates to the saved pin.
@@ -200,24 +226,33 @@
 
   function preview(data, snapshot = null, today = new Date().toISOString().slice(0, 10)) {
     const rows = snapshot?.tables || {};
-    const records = TABLES.filter(table => table !== 'setu_hubs').flatMap(table =>
-      (rows[table] || []).map(row => ({table, row})));
+    const targets = comparisonTargets(snapshot);
+    const records = targets.filter(target => target.table !== 'setu_hubs').map(target => ({table: target.table, row: target.facts}));
     return {
       format: 'setu_research_preview', schema_version: '1.0.0', generated_on: today,
       mode: 'dry_run', comparison: snapshot ? {scope: snapshot.scope, captured_at: snapshot.captured_at, complete: snapshot.complete === true} : null,
+      review_version: '2.0.0', review_targets: targets,
       // The complete original document is the lossless evidence boundary.
       research: clone(data),
       hubs: data.hubs.map(hub => ({id: hub.id, name: hub.name_ja,
         count: data.places.filter(place => place.hub_id === hub.id).length,
+        resolution: null,
         matches: (rows.setu_hubs || []).filter(row => matchReasons(hub, row).length).map(row => ({id: row.id, name: row.name}))})),
       candidates: data.places.map((place, i) => {
-        const leads = records.map(({table, row}) => ({table, row, reasons: matchReasons(place, row)}))
+        const leads = records.map(({table, row}) => {
+          const reasons = matchReasons(place, row);
+          if (table === 'setu_food_notes' && row.shop_id != null) {
+            const linkedShop = (rows.akatsuki_shops || []).find(shop => String(shop.id) === String(row.shop_id));
+            if (linkedShop && matchReasons(place, linkedShop).length) reasons.push('Linked shop');
+          }
+          return {table, row, reasons};
+        })
           .filter(match => match.reasons.length);
         // Broad directory URLs can match many rows. Bound the expanded diff
         // payload while explicitly retaining the total number of review leads.
         const matches = leads.slice(0, 20).map(({table, row, reasons}) => ({table, id: row.id, name: row.name || row.label,
           reasons, differences: fieldDifferences(place, row)}));
-        const withinFile = data.places.slice(0, i).filter(other => matchReasons(place, {
+        const withinFile = data.places.filter((other, j) => j !== i && matchReasons(place, {
           ...other, address: other.location.address_ja
         }).length).map(other => other.research_id);
         return {research_id: place.research_id, hub_id: place.hub_id, name: place.name_ja,
@@ -230,7 +265,138 @@
     };
   }
 
-  const api = {MAX_BYTES, SNAPSHOT_KEY, TABLES, validateText, preview, priceSummary, safeUrl, matchReasons, validDate};
+  function reference(table, id) { return table + ':' + String(id); }
+
+  function resolvedHub(review, id, visited = new Set()) {
+    if (visited.has(id)) return null;
+    visited.add(id);
+    const hub = review.hubs.find(item => item.id === id), choice = hub?.resolution;
+    if (!choice) return null;
+    if (choice.kind === 'research_hub') return resolvedHub(review, choice.id, visited);
+    return choice;
+  }
+
+  function resolveHub(review, id, choice, acknowledgeDistinct = false) {
+    acknowledgeDistinct = acknowledgeDistinct === true;
+    const hub = review.hubs.find(item => item.id === id);
+    if (!hub) return {ok: false, error: 'Choose a research hub.'};
+    let resolution = null;
+    if (choice?.kind === 'existing') {
+      const target = review.review_targets.find(item => item.table === 'setu_hubs' && String(item.id) === String(choice.id));
+      if (!target) return {ok: false, error: 'The saved hub is unavailable in this comparison.'};
+      resolution = {kind: 'existing', id: target.id, name: target.name, rev: target.facts.rev ?? null};
+    } else if (choice?.kind === 'new') {
+      const overlaps = hub.matches.length || review.hubs.some(other => other.id !== id && normalized(other.name) === normalized(hub.name));
+      if (overlaps && !acknowledgeDistinct) return {ok: false, error: 'A hub with this name may already exist. Choose it, share another research hub, or confirm this is a separate hub.'};
+      resolution = {kind: 'new', research_hub_id: id, name: hub.name, distinct_acknowledged: acknowledgeDistinct};
+    } else if (choice?.kind === 'research_hub') {
+      if (choice.id === id || !review.hubs.some(other => other.id === choice.id)) return {ok: false, error: 'Choose another research hub.'};
+      resolution = {kind: 'research_hub', id: choice.id};
+    } else if (choice !== null) return {ok: false, error: 'Unknown hub choice.'};
+    const next = {...review, hubs: review.hubs.map(item => item.id === id ? {...item, resolution} : item)};
+    if (resolution?.kind === 'research_hub' && !resolvedHub(next, id)) return {ok: false, error: 'Resolve the other hub first. Hub choices must not form a cycle.'};
+    // Hub changes invalidate already-approved creation decisions, including
+    // candidates that share this research hub through another hub choice.
+    const resetIds = new Set(review.candidates.filter(candidate => candidate.decision === 'accept_suggestion' &&
+      JSON.stringify(resolvedHub(review, candidate.hub_id)) !== JSON.stringify(resolvedHub(next, candidate.hub_id))).map(candidate => candidate.research_id));
+    next.candidates = review.candidates.map(candidate => resetIds.has(candidate.research_id) ||
+      (candidate.decision === 'merge_selected' && candidate.decision_details?.target.kind === 'research_candidate' && resetIds.has(candidate.decision_details.target.id))
+      ? {...candidate, decision: 'pending', decision_details: null} : candidate);
+    return {ok: true, value: next, reset_count: next.candidates.filter((candidate, i) => candidate.decision !== review.candidates[i].decision).length};
+  }
+
+  function mergeFields(place) {
+    return MERGE_FIELDS.map(([key, label, path]) => {
+      const value = path.reduce((current, part) => current?.[part], place);
+      return {key, label, path: path.join('.'), value};
+    }).filter(field => field.value !== undefined);
+  }
+
+  function suggestedKind(place) {
+    const type = place.place_type;
+    if (['restaurant_cafe','restaurant','cafe','bakery','food_stall'].includes(type)) return 'food';
+    if (['market','supermarket','convenience_store','shop'].includes(type)) return 'shop';
+    if (['park','waterfall','temple','shrine_temple','museum','mountain_viewpoint','river_walk'].includes(type)) return 'see';
+    return '';
+  }
+
+  function setDecision(review, id, action, options = {}) {
+    const candidate = review.candidates.find(item => item.research_id === id);
+    if (!candidate) return {ok: false, error: 'Choose a research candidate.'};
+    let details = null;
+    if (action === 'accept_suggestion') {
+      if (!['food','shop','see','other'].includes(options.record_kind)) return {ok: false, error: 'Choose Food place, Shop, Sight or Other for the suggestion.'};
+      if (!resolvedHub(review, candidate.hub_id)) return {ok: false, error: 'Choose a hub resolution above before accepting this suggestion.'};
+      if ((candidate.match_count || candidate.possible_file_duplicates.length) && options.distinct_acknowledged !== true) {
+        return {ok: false, error: 'Review the possible matches and confirm this is a separate place, or merge/skip it.'};
+      }
+      let linkedLocation = null;
+      if (options.linked_location) {
+        const target = review.review_targets.find(item => reference(item.table,item.id) === options.linked_location && ['akatsuki_places','akatsuki_shops'].includes(item.table));
+        if (!target) return {ok: false, error: 'Choose an available linked location.'};
+        if (review.candidates.some(other => other.research_id !== id && other.decision === 'accept_suggestion' &&
+            other.decision_details?.linked_location && reference(other.decision_details.linked_location.table,other.decision_details.linked_location.id) === options.linked_location)) {
+          return {ok: false, error: 'This linked location already has a staged suggestion. Merge into that research candidate or skip the duplicate.'};
+        }
+        linkedLocation = {table: target.table, id: target.id};
+      }
+      details = {record_kind: options.record_kind, distinct_acknowledged: options.distinct_acknowledged === true, linked_location: linkedLocation};
+    } else if (action === 'merge_selected') {
+      if (options.same_place_acknowledged !== true) return {ok: false, error: 'Confirm the selected target is the same place.'};
+      let target;
+      if (options.target?.kind === 'research_candidate') {
+        const other = review.candidates.find(item => item.research_id === options.target.id && item.research_id !== id && item.decision === 'accept_suggestion');
+        if (!other) return {ok: false, error: 'Choose another accepted research suggestion as the merge target.'};
+        target = {kind: 'research_candidate', id: other.research_id};
+      } else {
+        const saved = review.review_targets.find(item => item.merge_allowed && options.target?.table === item.table && String(options.target.id) === String(item.id));
+        if (!saved) return {ok: false, error: 'Choose a saved Setu food place or spot. Linked location registries are read-only; link them when accepting a suggestion.'};
+        target = {kind: 'existing', table: saved.table, id: saved.id, rev: saved.facts.rev ?? null};
+      }
+      const place = review.research.places.find(item => item.research_id === id);
+      if (!Array.isArray(options.fields)) return {ok: false, error: 'Select the research facts to merge.'};
+      const fields = [...new Set(options.fields)];
+      const allowed = mergeFields(place);
+      if (!fields.length || fields.some(key => !allowed.some(field => field.key === key))) return {ok: false, error: 'Select at least one available research fact. Personal fields and coordinates cannot be merged.'};
+      const conflict = review.candidates.find(other => other.research_id !== id && other.decision === 'merge_selected' &&
+        JSON.stringify(other.decision_details.target) === JSON.stringify(target) && other.decision_details.fields.some(key => fields.includes(key)));
+      if (conflict) return {ok: false, error: 'Overlapping facts are already staged for this target by ' + conflict.research_id + '. Reset that decision or select different facts.'};
+      details = {target, fields: allowed.filter(field => fields.includes(field.key)).map(field => field.key), same_place_acknowledged: true};
+    } else if (!['pending','skip'].includes(action)) return {ok: false, error: 'Unknown review decision.'};
+    const next = {...review, candidates: review.candidates.map(item => item.research_id === id ? {...item, decision: action, decision_details: details} : item)};
+    // Removing/replacing a base suggestion also clears dependent merge choices.
+    if (candidate.decision === 'accept_suggestion' && (action !== 'accept_suggestion' || JSON.stringify(details) !== JSON.stringify(candidate.decision_details))) next.candidates = next.candidates.map(item =>
+      item.decision === 'merge_selected' && item.decision_details.target.kind === 'research_candidate' && item.decision_details.target.id === id
+        ? {...item, decision: 'pending', decision_details: null} : item);
+    return {ok: true, value: next};
+  }
+
+  function reviewSummary(review) {
+    return Object.fromEntries(['pending','accept_suggestion','skip','merge_selected'].map(action => [action, review.candidates.filter(candidate => candidate.decision === action).length]));
+  }
+
+  function reviewExport(review) {
+    const proposals = review.candidates.filter(candidate => ['accept_suggestion','merge_selected'].includes(candidate.decision)).map(candidate => {
+      const place = review.research.places.find(item => item.research_id === candidate.research_id);
+      const evidence = {source_links: clone(place.source_links), provenance: clone(review.research.provenance),
+        source_quality: clone(place.source_quality || {}), safety_flags: clone(place.safety_flags || []),
+        dietary_evidence: {destination_no_beef: review.research.destination.does_not_eat_beef ?? null,
+          place: clone(place.dietary || place.dietary_flags || {})},
+        original_research_id: candidate.research_id};
+      if (candidate.decision === 'accept_suggestion') return {research_id: candidate.research_id, action: 'accept_suggestion',
+        hub: resolvedHub(review, candidate.hub_id), linked_location: candidate.decision_details.linked_location,
+        destination_record: {table: candidate.decision_details.record_kind === 'food' ? 'setu_food_notes' : 'setu_spots',
+          kind: candidate.decision_details.record_kind === 'food' ? null : candidate.decision_details.record_kind},
+        suggestion_defaults: clone(candidate.proposed_state), evidence};
+      const fields = mergeFields(place).filter(field => candidate.decision_details.fields.includes(field.key));
+      return {research_id: candidate.research_id, action: 'merge_selected', target: clone(candidate.decision_details.target),
+        selected_research_facts: fields.map(field => ({key: field.key, path: field.path, value: clone(field.value)})), evidence};
+    });
+    return {...review, review_summary: reviewSummary(review), proposed_changes: proposals};
+  }
+
+  const api = {MAX_BYTES, SNAPSHOT_KEY, TABLES, validateText, preview, priceSummary, safeUrl, matchReasons, validDate,
+    reference, resolvedHub, resolveHub, mergeFields, suggestedKind, setDecision, reviewSummary, reviewExport};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SetuResearchImport = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

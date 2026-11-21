@@ -135,8 +135,8 @@ separate approval and has **not** been applied. H7, I3–I5 and J remain future 
 Separate from the four research prompts. Detailed contract, audit and acceptance status are in
 [`docs/research-import.md`](docs/research-import.md). This is the research preparation track for K4/L5, with E4/L3 retaining return-safety ownership.
 
-- [ ] **R1 · Validator and local dry-run preview:** v1 schema upload/paste, field errors, hub/candidate counts, advisory existing-place matches and differences, full evidence and pending review export. Prepared for review; no persistence.
-- [ ] **R2 · Deduplication and decisions:** resolve hubs and linked places; Accept as suggestion / Skip / Merge selected research facts; preserve personal fields and reviewed pins.
+- [x] **R1 · Validator and local dry-run preview:** merged in PR #35 (`ee9c7a0`). User verified basic upload/preview/export; original research preservation checked.
+- [ ] **R2 · Deduplication and decisions:** hub reuse/shared draft choices, linked-place matching, Accept as suggestion / Skip / selective fact merges, conflict/dependency guards and review export. Prepared for PR review; in-memory decisions, no saved-place writes.
 - [ ] **R3 · Local drafts and backup:** persist approved browser-local suggestions, destination-scoped identities, idempotent re-import, interrupted-operation recovery, export/restore.
 - [ ] **R4 · Approved cloud persistence:** reviewed additive schema/RLS, user isolation, revisions, concurrent retries and sync. Separate approval before SQL or production writes.
 

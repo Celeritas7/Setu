@@ -199,3 +199,132 @@ test('changed account and signed-out state cannot reuse previous cloud compariso
   assert.equal(transferred.tables.setu_spots.length, 0);
   assert.match(transferred.scope, /browser-local/);
 });
+
+function decision(outcome) {assert.equal(outcome.ok, true, outcome.error);return outcome.value;}
+function readyReview(data = fixture(), saved = null) {
+  let review = model.preview(data, saved, '2026-11-22');
+  for (const hub of review.hubs) review = decision(model.resolveHub(review, hub.id, {kind:'new'}, true));
+  return review;
+}
+function addCandidate(data, id, name) {
+  const next = copy(data.places[0]); next.research_id = id; next.name_ja = name;
+  next.name_en = name; next.location.address_ja += id;
+  next.source_links[0].url = 'https://example.org/' + id; data.places.push(next);
+}
+
+test('R2 accepts only with explicit hub/category and exports unaccepted unvisited defaults', () => {
+  const data = fixture(), untouched = copy(data);
+  let review = model.preview(data, null, '2026-11-22');
+  assert.match(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'food'}).error, /hub resolution/);
+  review = decision(model.resolveHub(review,'example-hub',{kind:'new'}));
+  assert.match(model.setDecision(review,'EXAMPLE-1','accept_suggestion').error, /Choose Food/);
+  review = decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'food'}));
+  const exported = model.reviewExport(review), proposal = exported.proposed_changes[0];
+  assert.equal(proposal.destination_record.table,'setu_food_notes');
+  assert.deepEqual(proposal.suggestion_defaults,{accepted:false,status:'try',lat:null,lng:null,personal_confirmed_experiences:[]});
+  assert.equal(proposal.hub.research_hub_id,'example-hub');
+  assert.deepEqual(exported.research, untouched); assert.deepEqual(data, untouched);
+  assert.deepEqual(exported.review_summary,{pending:0,accept_suggestion:1,skip:0,merge_selected:0});
+  assert.equal(model.suggestedKind({place_type:'bakery'}),'food');
+  assert.equal(model.suggestedKind({place_type:'unknown_future_type'}),'');
+});
+
+test('R2 duplicate hubs can use a saved hub or share one draft; cycles and unreviewed duplicates fail', () => {
+  const data = fixture();data.hubs.push({id:'duplicate-hub',name_ja:data.hubs[0].name_ja});
+  let review = model.preview(data,snapshot({setu_hubs:[{id:'existing-hub',name:data.hubs[0].name_ja,rev:4}]}),'2026-11-22');
+  assert.equal(model.resolveHub(review,'example-hub',{kind:'new'}).ok,false);
+  review = decision(model.resolveHub(review,'example-hub',{kind:'existing',id:'existing-hub'}));
+  review = decision(model.resolveHub(review,'duplicate-hub',{kind:'research_hub',id:'example-hub'}));
+  assert.equal(model.resolvedHub(review,'duplicate-hub').id,'existing-hub');
+  assert.equal(model.resolveHub(review,'example-hub',{kind:'research_hub',id:'duplicate-hub'}).ok,false);
+  assert.equal(model.resolveHub(review,'example-hub',{kind:'existing',id:'invented'}).ok,false);
+  assert.equal(review.hubs[0].resolution.id,'existing-hub');
+});
+
+test('R2 possible matches require a separate-suggestion acknowledgment and linked shops resolve food targets', () => {
+  const data = fixture();
+  const saved = snapshot({akatsuki_shops:[{id:9,name:data.places[0].name_ja}],setu_food_notes:[{id:'food-db',shop_id:9,name:null,rev:2}]});
+  let review = readyReview(data,saved);
+  assert.ok(review.candidates[0].matches.some(match => match.table==='setu_food_notes' && match.reasons.includes('Linked shop')));
+  assert.equal(review.review_targets.find(target=>target.id==='food-db').name,data.places[0].name_ja);
+  assert.equal(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'food'}).ok,false);
+  review = decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'food',distinct_acknowledged:true,linked_location:'akatsuki_shops:9'}));
+  assert.deepEqual(model.reviewExport(review).proposed_changes[0].linked_location,{table:'akatsuki_shops',id:9});
+});
+
+test('R2 selective merge preserves source evidence, unknown prices and every personal field', () => {
+  const data = fixture(); data.places[0].safety_flags = [{kind:'entry_prohibited'}];
+  const saved = snapshot({setu_spots:[{id:'existing',name:'Saved place',rev:7,status:'done',accepted:true,
+    review:'Private review to protect',rating:5,lat:35,lng:139,seating_checks:{wifi:'2026-01-01'},themes:['Cocoon']}]});
+  const before = copy(saved);
+  let review = readyReview(data,saved);
+  const target={kind:'existing',table:'setu_spots',id:'existing'};
+  assert.equal(model.setDecision(review,'EXAMPLE-1','merge_selected',{target,fields:['cost']}).ok,false);
+  assert.equal(model.setDecision(review,'EXAMPLE-1','merge_selected',{target,fields:[],same_place_acknowledged:true}).ok,false);
+  for (const field of ['review','rating','status','accepted','lat','lng','seating_checks','personal_confirmed_experiences']) {
+    assert.equal(model.setDecision(review,'EXAMPLE-1','merge_selected',{target,fields:[field],same_place_acknowledged:true}).ok,false,field);
+  }
+  review = decision(model.setDecision(review,'EXAMPLE-1','merge_selected',{target,fields:['cost'],same_place_acknowledged:true}));
+  const exported = model.reviewExport(review), merge = exported.proposed_changes[0];
+  assert.equal(merge.target.rev,7);
+  assert.deepEqual(merge.selected_research_facts,[{key:'cost',path:'research_fields.cost',value:data.places[0].research_fields.cost}]);
+  assert.equal(merge.selected_research_facts[0].value.admission_yen,null);
+  assert.deepEqual(merge.evidence.source_links,data.places[0].source_links);
+  assert.deepEqual(merge.evidence.safety_flags,data.places[0].safety_flags);
+  assert.equal(merge.suggestion_defaults,undefined);
+  assert.equal(text(exported).includes('Private review to protect'),false);
+  assert.deepEqual(saved,before);
+});
+
+test('R2 registry rows cannot be merge targets and invented targets are rejected', () => {
+  const review = readyReview(fixture(),snapshot({akatsuki_places:[{id:'registry',label:'Linked location'}]}));
+  for (const target of [{table:'akatsuki_places',id:'registry'},{table:'setu_spots',id:'invented'}]) {
+    assert.equal(model.setDecision(review,'EXAMPLE-1','merge_selected',{target,fields:['hours'],same_place_acknowledged:true}).ok,false);
+  }
+});
+
+test('R2 duplicate research candidates can merge into one accepted suggestion and reset safely', () => {
+  const data = fixture();addCandidate(data,'EXAMPLE-2','Second research source');
+  let review = readyReview(data);
+  review = decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'see',distinct_acknowledged:true}));
+  review = decision(model.setDecision(review,'EXAMPLE-2','merge_selected',{target:{kind:'research_candidate',id:'EXAMPLE-1'},fields:['hours'],same_place_acknowledged:true}));
+  assert.equal(model.reviewSummary(review).merge_selected,1);
+  review = decision(model.setDecision(review,'EXAMPLE-1','skip'));
+  assert.equal(review.candidates[1].decision,'pending');
+  assert.equal(model.reviewExport(review).proposed_changes.length,0);
+  assert.equal(review.research.places.length,2);
+});
+
+test('R2 hub changes invalidate affected accepts and their dependent merges', () => {
+  const data = fixture();addCandidate(data,'EXAMPLE-2','Second source');
+  data.hubs.push({id:'shared-hub',name_ja:'Same destination subhub'});data.places[0].hub_id='shared-hub';
+  let review = readyReview(data);
+  review = decision(model.resolveHub(review,'shared-hub',{kind:'research_hub',id:'example-hub'}));
+  review = decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'other',distinct_acknowledged:true}));
+  review = decision(model.setDecision(review,'EXAMPLE-2','merge_selected',{target:{kind:'research_candidate',id:'EXAMPLE-1'},fields:['hours'],same_place_acknowledged:true}));
+  const outcome = model.resolveHub(review,'example-hub',null);
+  assert.equal(outcome.reset_count,2);
+  assert.equal(model.reviewSummary(outcome.value).pending,2);
+  assert.equal(model.reviewExport(outcome.value).proposed_changes.length,0);
+});
+
+test('R2 overlapping staged facts are rejected while distinct fact groups can share a target', () => {
+  const data = fixture();addCandidate(data,'EXAMPLE-2','Second source');
+  let review = readyReview(data,snapshot({setu_spots:[{id:'existing',name:'Saved',rev:3}]}));
+  const options={target:{table:'setu_spots',id:'existing'},fields:['cost'],same_place_acknowledged:true};
+  review = decision(model.setDecision(review,'EXAMPLE-1','merge_selected',options));
+  assert.match(model.setDecision(review,'EXAMPLE-2','merge_selected',options).error,/Overlapping facts/);
+  review = decision(model.setDecision(review,'EXAMPLE-2','merge_selected',{...options,fields:['hours']}));
+  assert.equal(model.reviewExport(review).proposed_changes.length,2);
+  review = decision(model.setDecision(review,'EXAMPLE-1','skip'));
+  assert.equal(model.reviewExport(review).proposed_changes.length,1);
+});
+
+test('R2 one linked location cannot create two staged suggestions and decisions are repeatable', () => {
+  const data = fixture();addCandidate(data,'EXAMPLE-2','Second source');
+  let review = readyReview(data,snapshot({akatsuki_places:[{id:'location',label:'Existing location'}]}));
+  const opts={record_kind:'other',distinct_acknowledged:true,linked_location:'akatsuki_places:location'};
+  review = decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',opts));
+  assert.deepEqual(decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',opts)),review);
+  assert.equal(model.setDecision(review,'EXAMPLE-2','accept_suggestion',opts).ok,false);
+});

@@ -11,7 +11,8 @@
 - **L0 PR:** [#32 — Phase L0 specification and fixture](https://github.com/Celeritas7/Setu/pull/32) (merged).
 - **Next Live Trip phase:** L1 — five safety-ranked next-place suggestions.
 - **Research baseline refreshed:** `50af3b7` (merged PR #34) before R1 publication; existing prompt updates preserved.
-- **Current user-authorized supporting track:** R1 — reusable Research Import validator and preview, prepared for separate PR review. See `docs/research-import.md`. R2–R4 remain pending; L1–L5 are not marked complete by this work.
+- **R1:** merged in PR #35 (`ee9c7a0`); user upload/preview/export verified with exact research preservation.
+- **Current user-authorized supporting track:** R2 — Accept, Skip and selective merge decisions, prepared for separate PR review. See `docs/research-import.md`. R3/R4 remain pending; L1–L5 are not marked complete by this work.
 
 ## Baseline found on main, 2026-11-21
 

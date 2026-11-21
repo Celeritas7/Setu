@@ -109,3 +109,61 @@ test('standalone importer forbids network requests and has no auth or write clie
   assert.doesNotMatch(html, /supabase|setu-hub|akatsuki-broadcast/);
   assert.doesNotMatch(ui, /innerHTML|\.insert\(|\.upsert\(|\.update\(|fetch\(|localStorage/);
 });
+
+const button = (root, text) => walk(root).find(item => item.tagName === 'BUTTON' && item.textContent === text);
+const selectFor = (root, label) => walk(root).find(item => item.tagName === 'LABEL' && item.textContent === label)?.children.find(item => item.tagName === 'SELECT');
+const checkFor = (root, label) => walk(root).find(item => item.tagName === 'LABEL' && item.children.some(child => child.textContent === label))?.children.find(item => item.tagName === 'INPUT');
+
+test('R2 UI accepts only after a hub/category choice and exports decisions with unvisited defaults', async () => {
+  const h = harness(), e = h.elements; await paste(h,data());
+  let kind = selectFor(e.candidates,'Suggestion category');kind.value='see';await kind.fire('change');
+  await button(e.candidates,'Accept as suggestion').fire('click');
+  assert.match(e['decision-status'].textContent,/hub resolution/);
+  const hub = selectFor(e['hub-counts'],'Hub destination');hub.value='new';
+  await button(e['hub-counts'],'Use hub choice').fire('click');
+  await button(e.candidates,'Accept as suggestion').fire('click');
+  assert.match(e.summary.textContent,/1 accepted suggestions/);
+  await e.export.fire('click');
+  const exported=JSON.parse(await h.blobs[0].text());
+  assert.equal(exported.proposed_changes[0].suggestion_defaults.accepted,false);
+  assert.equal(exported.proposed_changes[0].destination_record.kind,'see');
+  assert.equal(exported.candidates[0].decision,'accept_suggestion');
+  await button(e.candidates,'Skip').fire('click');assert.match(e.summary.textContent,/1 skipped/);
+  await button(e.candidates,'Reset decision').fire('click');assert.match(e.summary.textContent,/1 pending/);
+});
+
+test('R2 UI selective merge requires same-place confirmation and at least one chosen fact', async () => {
+  const tables=Object.fromEntries(model.TABLES.map(table=>[table,[]]));
+  tables.setu_spots=[{id:'saved',name:'Saved park',rev:5,review:'Private review',rating:4,lat:35,lng:139}];
+  const h=harness({format:'setu_research_comparison',captured_at:new Date().toISOString(),scope:'loaded test rows',tables});
+  const e=h.elements;await paste(h,data());
+  const target=selectFor(e.candidates,'Same-place target');target.value='setu_spots:saved';await target.fire('change');
+  await button(e.candidates,'Stage selected fact merge').fire('click');
+  assert.match(e['decision-status'].textContent,/Confirm the selected target/);
+  const same=checkFor(e.candidates,'I checked that the selected target and this research candidate are the same place.');
+  same.checked=true;await same.fire('change');
+  await button(e.candidates,'Stage selected fact merge').fire('click');
+  assert.match(e['decision-status'].textContent,/Select at least one/);
+  const cost=checkFor(e.candidates,'Prices, scopes and estimates');cost.checked=true;await cost.fire('change');
+  await button(e.candidates,'Stage selected fact merge').fire('click');
+  assert.match(e.summary.textContent,/1 selected merges/);
+  await e.export.fire('click');const exported=JSON.parse(await h.blobs[0].text());
+  assert.deepEqual(exported.proposed_changes[0].selected_research_facts.map(field=>field.key),['cost']);
+  assert.equal(exported.proposed_changes[0].target.rev,5);
+  assert.equal(JSON.stringify(exported).includes('Private review'),false);
+  const editCost=checkFor(e.candidates,'Prices, scopes and estimates');editCost.checked=false;await editCost.fire('change');
+  assert.match(e.summary.textContent,/1 pending/);
+  await e.export.fire('click');assert.equal(JSON.parse(await h.blobs[1].text()).proposed_changes.length,0);
+  await button(e.candidates,'Skip').fire('click');await e.export.fire('click');
+  assert.equal(JSON.parse(await h.blobs[2].text()).proposed_changes.length,0);
+});
+
+test('R2 UI filters by decision and retains choices while filtering/paging', async () => {
+  const h=harness(),e=h.elements;await paste(h,data());
+  await button(e.candidates,'Skip').fire('click');
+  e['decision-filter'].value='pending';await e['decision-filter'].fire('input');
+  assert.match(e['page-status'].textContent,/No matching/);
+  e['decision-filter'].value='skip';await e['decision-filter'].fire('input');
+  assert.match(allText(e.candidates),/Skipped · original evidence retained/);
+  await e.export.fire('click');assert.equal(JSON.parse(await h.blobs[0].text()).review_summary.skip,1);
+});

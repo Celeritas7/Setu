@@ -13,12 +13,12 @@
   <script defer src="js/research-import-ui.js"></script>
 </head>
 <body>
-  <header><a href="index.html">← Setu</a><strong>RESEARCH IMPORT</strong><span>Phase R1 · Preview</span></header>
+  <header><a href="index.html">← Setu</a><strong>RESEARCH IMPORT</strong><span>Phase R2 · Decisions</span></header>
   <main>
     <p class="eyebrow">SETU / RESEARCH HANDOFF</p>
     <h1>Review the research.<br><em>Keep the evidence.</em></h1>
     <p>Upload a destination research JSON to check its contents and compare places. Every candidate starts as an unvisited suggestion.</p>
-    <div class="notice">Local dry run. Approval and saving become available in later phases. Keep your original JSON as a backup.</div>
+    <div class="notice">Review decisions stay in this page until you download the review JSON. Reloading clears them. Saving suggestions into Setu becomes available in the next phase.</div>
     <p id="comparison-status" role="status"></p>
     <section aria-labelledby="upload-heading">
       <h2 id="upload-heading">1. Choose your research</h2>
@@ -36,11 +36,15 @@
     <section id="preview" hidden aria-labelledby="preview-heading">
       <div class="actions"><h2 id="preview-heading">2. Dry-run preview</h2><button id="export" type="button">Download review JSON</button></div>
       <p id="summary" role="status" aria-live="polite"></p>
+      <p id="decision-status" role="status" aria-live="polite" tabindex="-1"></p>
       <p class="muted">Matches are review leads. Shared addresses and source pages may cover several places. A missing match cannot establish that a place is new.</p>
+      <h3>Choose hubs for new suggestions</h3>
+      <p class="muted">Use a saved hub, propose a new draft hub, or share another research hub's choice. Hub changes reset affected approved suggestions for review.</p>
       <div id="hub-counts" class="hub-grid"></div>
       <details><summary>Destination, provenance &amp; historical evidence</summary><pre id="document-evidence"></pre></details>
       <div class="filters"><label>Hub<select id="hub-filter"><option value="">All hubs</option></select></label>
-        <label>Find a candidate<input id="candidate-search" type="search" placeholder="Name or research ID"></label></div>
+        <label>Find a candidate<input id="candidate-search" type="search" placeholder="Name or research ID"></label>
+        <label>Decision<select id="decision-filter"><option value="">All decisions</option><option value="pending">Pending</option><option value="accept_suggestion">Accepted as suggestion</option><option value="skip">Skipped</option><option value="merge_selected">Selected merge</option></select></label></div>
       <p class="muted">Personal reviews, visit status, accepted state and confirmed experience tags require their own review flow. Research coordinates and addresses remain unverified.</p>
       <div id="candidates"></div>
       <nav class="actions" aria-label="Candidate pages"><button id="previous" type="button" class="secondary">← Previous</button><span id="page-status"></span><button id="next" type="button" class="secondary">Next →</button></nav>
