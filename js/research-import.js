@@ -6,6 +6,7 @@
   const MAX_BYTES = 5 * 1024 * 1024;
   const SNAPSHOT_KEY = 'setu.research-comparison.v1';
   const TABLES = ['setu_hubs', 'setu_spots', 'setu_food_notes', 'akatsuki_places', 'akatsuki_shops'];
+  const LOCAL_PLACES = 'setu_research_local_drafts', LOCAL_HUBS = 'setu_research_local_hubs';
   const SNAPSHOT_FIELDS = ['id','name','label','aliases','address','source_url','url','place_ref','hours','spend_yen','spend','spend_seen','spendSeen','themes','rev','hub_id','shop_id','place_id'];
   const MERGE_FIELDS = [
     ['name_ja', 'Japanese name', ['name_ja']], ['name_en', 'English browsing name', ['name_en']],
@@ -187,12 +188,12 @@
   function comparisonTargets(snapshot) {
     const rows = snapshot?.tables || {};
     const shops = rows.akatsuki_shops || [];
-    return TABLES.flatMap(table => (rows[table] || []).filter(row => row.id != null).map(row => {
+    return [...TABLES, LOCAL_PLACES, LOCAL_HUBS].flatMap(table => (rows[table] || []).filter(row => row.id != null).map(row => {
       const facts = {};
       SNAPSHOT_FIELDS.forEach(key => { if (own(row, key) && row[key] !== undefined) facts[key] = clone(row[key]); });
       if (table === 'setu_food_notes' && !facts.name) facts.name = shops.find(shop => String(shop.id) === String(row.shop_id))?.name || 'Unnamed food place';
       return {table, id: row.id, name: facts.name || facts.label || String(row.id), facts,
-        merge_allowed: ['setu_food_notes','setu_spots'].includes(table)};
+        merge_allowed: ['setu_food_notes','setu_spots', LOCAL_PLACES].includes(table)};
     }));
   }
 
@@ -231,7 +232,7 @@
   function preview(data, snapshot = null, today = new Date().toISOString().slice(0, 10)) {
     const rows = snapshot?.tables || {};
     const targets = comparisonTargets(snapshot);
-    const records = targets.filter(target => target.table !== 'setu_hubs').map(target => ({table: target.table, row: target.facts}));
+    const records = targets.filter(target => !['setu_hubs', LOCAL_HUBS].includes(target.table)).map(target => ({table: target.table, row: target.facts}));
     return {
       format: 'setu_research_preview', schema_version: '1.0.0', generated_on: today,
       mode: 'dry_run', comparison: snapshot ? {scope: snapshot.scope, captured_at: snapshot.captured_at, complete: snapshot.complete === true} : null,
@@ -241,7 +242,7 @@
       hubs: data.hubs.map(hub => ({id: hub.id, name: hub.name_ja,
         count: data.places.filter(place => place.hub_id === hub.id).length,
         resolution: null,
-        matches: (rows.setu_hubs || []).filter(row => matchReasons(hub, row).length).map(row => ({id: row.id, name: row.name}))})),
+        matches: [...(rows.setu_hubs || []), ...(rows[LOCAL_HUBS] || [])].filter(row => matchReasons(hub, row).length).map(row => ({id: row.id, name: row.name}))})),
       candidates: data.places.map((place, i) => {
         const leads = records.map(({table, row}) => {
           const reasons = matchReasons(place, row);
@@ -288,9 +289,11 @@
     if (!hub) return {ok: false, error: 'Choose a research hub.'};
     let resolution = null;
     if (choice?.kind === 'existing') {
-      const target = review.review_targets.find(item => item.table === 'setu_hubs' && String(item.id) === String(choice.id));
+      const table = choice.table || 'setu_hubs';
+      const target = review.review_targets.find(item => ['setu_hubs',LOCAL_HUBS].includes(table) && item.table === table && String(item.id) === String(choice.id));
       if (!target) return {ok: false, error: 'The saved hub is unavailable in this comparison.'};
       resolution = {kind: 'existing', id: target.id, name: target.name, rev: target.facts.rev ?? null};
+      if (table === LOCAL_HUBS) resolution.table = LOCAL_HUBS;
     } else if (choice?.kind === 'new') {
       const overlaps = hub.matches.length || review.hubs.some(other => other.id !== id && normalized(other.name) === normalized(hub.name));
       if (overlaps && !acknowledgeDistinct) return {ok: false, error: 'A hub with this name may already exist. Choose it, share another research hub, or confirm this is a separate hub.'};
@@ -402,7 +405,7 @@
   }
 
   const api = {MAX_BYTES, SNAPSHOT_KEY, TABLES, validateText, preview, priceSummary, safeUrl, matchReasons, validDate,
-    reference, resolvedHub, resolveHub, mergeFields, suggestedKind, setDecision, reviewSummary, reviewExport};
+    reference, resolvedHub, resolveHub, mergeFields, suggestedKind, setDecision, reviewSummary, reviewExport, LOCAL_PLACES, LOCAL_HUBS};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SetuResearchImport = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

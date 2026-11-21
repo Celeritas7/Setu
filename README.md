@@ -76,7 +76,7 @@ Signed-in G4 writes remain **disabled until the separately prepared `seating_che
 and deployed**; local browser-only food confirmations work without it. No G4 migration is applied automatically by
 opening a PR. The long-trip `Setu.dc.html` app and integration bootstrap are unchanged.
 
-## Research Import — R1 merged, R2 review candidate
+## Research Import — R1/R2 merged, R3 review candidate
 
 **Home → Research Import** (also in ☰) opens the local research validator and dry-run preview. Upload or paste a
 `setu_research_handoff` v1.0.0 JSON for any destination. See field errors, hub counts, five candidate cards at a time,
@@ -92,3 +92,16 @@ On the R2 branch, choose a hub destination before accepting a new suggestion. Fo
 Setu place or another research suggestion already accepted in this review, choose fact groups and confirm the target.
 **Download review JSON** keeps the original research and your decisions. Resetting a base suggestion clears its dependent
 merges. See the R2 section of `docs/research-import.md` for device checks and conflict rules.
+
+
+On the R3 branch, confirmed decisions autosave to IndexedDB. **Saved reviews & local suggestions → Resume saved review**
+reopens them after reload. **Save approved local drafts** creates destination-scoped research suggestions in this importer,
+with repeated saves avoiding duplicates. They retain original evidence and remain unvisited/unpinned. Saved Setu/Supabase
+place merges are deferred proposals for the separately approved cloud phase.
+
+**Download local backup** includes all research versions and local suggestions for the current destination. Upload a backup
+or an earlier R1/R2 review export, inspect it, then select **Restore review locally**. **Recover previous checkpoint** offers
+the previous complete saved version. Autosave conflicts/quota errors keep existing data and allow a backup of current work.
+Once **Research Import ready offline** appears, the importer shell and stored reviews can reopen offline on supported HTTPS
+browsers. This offline shell is scoped to Research Import. Full instructions and pending device checks are in
+[`docs/research-import.md`](docs/research-import.md).
