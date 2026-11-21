@@ -1,9 +1,14 @@
 (function () {
   'use strict';
   const model = window.SetuResearchImport;
+  const local = window.SetuResearchLocal;
   const byId = id => document.getElementById(id);
   let result = null, page = 0, uploadSequence = 0, comparison = null;
   const forms = new Map();
+  let context = null, saveQueue = Promise.resolve(), restoring = false, draftPage = 0;
+  const storageReady = window.SetuResearchStorage.open().catch(error => {
+    byId('storage-status').textContent = error.message;return null;
+  });
   const today = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
   const pretty = value => JSON.stringify(value, null, 2);
 
@@ -35,6 +40,7 @@
 
   function resetPreview() {
     result = null; page = 0; forms.clear();
+    context = null; restoring = false; updateSaveButtons();
     byId('preview').hidden = true;
     byId('candidates').replaceChildren();
     byId('errors').replaceChildren();
@@ -48,16 +54,42 @@
     byId('errors').focus();
     byId('upload-status').textContent = 'Correct the listed fields and validate again. Up to 100 errors are shown.';
   }
-  function validate(text) {
-    const validated = model.validateText(text);
-    if (!validated.ok) { fail(validated.errors); return; }
-    result = model.preview(validated.data, comparison, today());
+  async function validate(text, sequence = uploadSequence) {
+    try {
+      await saveQueue;
+      const input = await local.inspectInput(text), storage = await storageReady;
+      const record = storage ? await storage.read(input.scope) : null;
+      let payload, corrupt = false;
+      try {payload = record ? await local.validateWorkspace(record.payload) : null;}
+      catch (error) {if (input.kind !== 'backup') throw error;corrupt = true;}
+      if (!payload) payload = {id:input.scope,active:input.report,reviews:{},catalog:local.emptyCatalog()};
+      let next, warnings = [];
+      if (input.kind === 'backup') {
+        payload = await local.mergeWorkspace(record && !corrupt ? payload : null,input.workspace);
+        next = payload.reviews[input.report];warnings = payload.restore_warnings || [];
+      } else if (input.kind === 'review' || payload.reviews[input.report]) {
+        const restored = local.restoredReview(input.kind === 'review' ? input.exported : payload.reviews[input.report],payload.catalog,today(),input.scope);
+        next = restored.review;warnings = restored.warnings;
+      }
+      else next = local.prepare(input.research,comparison,payload.catalog,today(),input.scope);
+      if (sequence !== uploadSequence) return;
+      context = {record,payload,report:input.report,blocked:false};
+      result = next;restoring = input.kind !== 'research';
+      showReview();
+      if (warnings.length) message(warnings.join(' '));
+      if (restoring) byId('storage-status').textContent = (corrupt ? 'Current stored data could not be validated. ' : '') + 'Backup/review validated. Inspect it, then choose Restore review locally. Current saved data is preserved until then.';
+      else persist();
+    } catch (error) {if (sequence === uploadSequence) fail([{path:'/',message:error.message}]);}
+  }
+
+  function showReview() {
     page = 0; forms.clear();
     byId('errors').replaceChildren();
     byId('preview').hidden = false;
     byId('decision-filter').value = '';
     byId('decision-status').textContent = '';
-    byId('upload-status').textContent = 'Valid v1.0.0 research. Ready for local review. Download your decisions before reloading.';
+    byId('upload-status').textContent = 'Research ready. Confirmed decisions autosave locally; unfinished form selections need to be staged first.';
+    byId('comparison-status').textContent = result.comparison ? 'Comparing with ' + result.comparison.scope + ' · snapshot ' + result.comparison.captured_at + '. Coverage remains incomplete.' : 'Existing-place comparison unavailable.';
     renderHubs();
     const select = byId('hub-filter');
     select.replaceChildren(node('option', 'All hubs'));
@@ -67,6 +99,123 @@
     const {places, ...documentEvidence} = result.research;
     byId('document-evidence').textContent = pretty(documentEvidence);
     render();
+    updateSaveButtons();
+  }
+
+  function updateSaveButtons() {
+    byId('restore-confirm').hidden = !restoring;
+    byId('save-drafts').disabled = !result || restoring;
+    byId('save-review').disabled = !result || restoring;
+    byId('backup').disabled = !result;
+    byId('export').disabled = !result;
+  }
+
+  function currentWorkspace() {
+    if (!context || !result) return null;
+    return {...context.payload,active:context.report,reviews:{...context.payload.reviews,[context.report]:model.reviewExport(result)}};
+  }
+
+  function persist(approved = false) {
+    if (!context || !result || restoring) return Promise.resolve(false);
+    const owner = context, report = owner.report, reviewObject = result, review = model.reviewExport(result);
+    byId('storage-status').textContent = 'Saving confirmed review decisions…';
+    saveQueue = saveQueue.then(async () => {
+      if (owner.blocked) throw new Error('A newer saved version exists. Download a backup of this review and resume the saved version.');
+      const storage = await storageReady;
+      if (!storage) throw new Error('Local storage is unavailable. Download a backup and keep this page open.');
+      const payload = {...owner.payload,active:report,reviews:{...owner.payload.reviews,[report]:review}};
+      if (Object.keys(payload.reviews).length > 200) throw new Error('This destination has 200 research versions. Download a backup before importing another version.');
+      const saved = approved ? await local.materialize(review,payload.catalog,payload.id) : null;
+      if (saved) payload.catalog = saved.catalog;
+      if (new TextEncoder().encode(JSON.stringify(local.backup(payload))).length > local.MAX_BACKUP_BYTES) throw new Error('This destination exceeds the 25 MiB local workspace limit. Download a backup before importing more research.');
+      try {owner.record = await storage.write(payload.id,owner.record?.rev || 0,payload);}
+      catch (error) {if (error.code === 'CONFLICT') owner.blocked = true;throw error;}
+      owner.payload = payload;
+      if (saved && context === owner && result === reviewObject) {
+        result = local.restoredReview(review,payload.catalog,today(),payload.id).review;
+        renderHubs();render();
+      }
+      if (context === owner) byId('storage-status').textContent = saved ? saved.added + ' local suggestions added · ' + saved.merged + ' research merges applied · ' + saved.updated + ' classifications updated · ' + saved.deferred + ' saved-place merges deferred. ' + payload.catalog.places.length + ' local suggestions saved.' : 'Confirmed decisions saved in this browser · ' + owner.record.saved_at;
+      await refreshSaved();return true;
+    }).catch(error => {
+      if (context === owner) byId('storage-status').textContent = 'Not saved: ' + error.message;
+      return false;
+    });
+    return saveQueue;
+  }
+
+  async function refreshSaved() {
+    const storage = await storageReady;if (!storage) return false;
+    const records = await storage.list(), reviewNodes = [], savedDrafts = [];
+    for (const record of records) {
+      const savedReviews = record.payload?.reviews && typeof record.payload.reviews === 'object' ? record.payload.reviews : {};
+      for (const [report, review] of Object.entries(savedReviews)) {
+        const data = review && typeof review === 'object' ? review : {};
+        const name = data.research?.destination?.name_ja || data.research?.destination?.name_en || data.research?.hubs?.[0]?.name_ja || 'Saved destination';
+        const row = node('div',undefined,'saved-review');
+        row.append(node('span',name + ' · ' + (data.research?.places?.length || 0) + ' candidates · ' + record.saved_at));
+        const resume = node('button','Resume saved review');resume.type='button';
+        resume.addEventListener('click',() => resumeRecord(record.id,report,false));row.append(resume);reviewNodes.push(row);
+      }
+      if (record.previous) {
+        const recovery = node('button','Recover previous checkpoint','secondary');recovery.type='button';
+        recovery.addEventListener('click',() => resumeRecord(record.id,null,true));reviewNodes.push(recovery);
+      }
+      for (const draft of Array.isArray(record.payload?.catalog?.places) ? record.payload.catalog.places : []) {
+        savedDrafts.push(draft);
+      }
+    }
+    byId('saved-reviews').replaceChildren(...reviewNodes);
+    if (!reviewNodes.length) byId('saved-reviews').append(node('p','No saved research reviews yet.'));
+    draftPage = Math.max(0,Math.min(draftPage,Math.ceil(savedDrafts.length / 5) - 1));
+    const draftNodes = savedDrafts.slice(draftPage * 5,draftPage * 5 + 5).map(draft => {
+      try {
+        const source = local.effectiveSource(draft), prices = model.priceSummary(source.research_fields.cost);
+        const row = node('details');row.append(node('summary',source.name_ja + ' · ' + draft.record_kind + ' · unvisited'));
+        row.append(node('p',source.location.address_ja + ' · unverified location text'),node('p',prices.admission),node('p',prices.estimate));
+        prices.samples.forEach(price => row.append(node('p',price.classification + ' · ¥' + price.yen + ' · ' + price.scope)));
+        const sources = [draft.source,...draft.supplements.map(item => item.source)].flatMap(item => item.source_links);
+        for (const source of sources) {
+          const href = model.safeUrl(source.url);if (!href) continue;
+          const link = node('a',(source.label || source.url) + ' · checked ' + source.checked_at);
+          link.href=href;link.target='_blank';link.rel='noopener noreferrer';
+          const paragraph = node('p');paragraph.append(link);row.append(paragraph);
+        }
+        evidence(row,'Original research and selected supplements',draft);return row;
+      } catch (_) {return node('p','Resume this destination to validate its saved local suggestions.');}
+    });
+    byId('local-drafts').replaceChildren(...draftNodes);
+    if (!savedDrafts.length) byId('local-drafts').append(node('p','No approved local suggestions saved yet.'));
+    else {
+      const controls = node('div',undefined,'actions'), previous = node('button','← Previous local suggestions','secondary'), next = node('button','Next local suggestions →','secondary');
+      previous.type=next.type='button';previous.disabled=draftPage===0;next.disabled=(draftPage+1)*5>=savedDrafts.length;
+      previous.addEventListener('click',() => {draftPage--;return refreshSaved();});next.addEventListener('click',() => {draftPage++;return refreshSaved();});
+      controls.append(previous,node('span',(draftPage*5+1) + '–' + Math.min(draftPage*5+5,savedDrafts.length) + ' of ' + savedDrafts.length),next);byId('local-drafts').append(controls);
+    }
+    return true;
+  }
+
+  async function resumeRecord(id,report,recoverPrevious) {
+    const sequence = ++uploadSequence;
+    try {
+      await saveQueue;
+      const storage = await storageReady, record = await storage.read(id);
+      if (!record) throw new Error('Saved review is unavailable.');
+      const payload = await local.validateWorkspace(recoverPrevious ? record.previous : record.payload);
+      const selected = report || payload.active;
+      if (!payload.reviews[selected]) throw new Error('Saved research version is unavailable.');
+      if (sequence !== uploadSequence) return;
+      context = {record,payload,report:selected,blocked:false};result = payload.reviews[selected];restoring = recoverPrevious;
+      showReview();
+      if (payload.restore_warnings?.length) message(payload.restore_warnings.join(' '));
+      byId('storage-status').textContent = recoverPrevious ? 'Previous checkpoint preview. Choose Restore review locally to confirm recovery.' : 'Resumed saved review. Comparison evidence is historical and must be rechecked before future cloud sync.';
+    } catch (error) {byId('storage-status').textContent = 'Could not resume: ' + error.message + ' Try Recover previous checkpoint or a downloaded backup.';}
+  }
+
+  function download(value,filename) {
+    const url = URL.createObjectURL(new Blob([pretty(value)], {type:'application/json'}));
+    const link = node('a');link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();
+    setTimeout(() => URL.revokeObjectURL(url),1000);
   }
 
   function option(select, label, value) {
@@ -96,8 +245,8 @@
       const label = node('label', 'Hub destination'), select = node('select');
       option(select, 'Pending', ''); option(select, 'Propose a new draft hub', 'new');
       const choices = new Map();
-      result.review_targets.filter(target => target.table === 'setu_hubs').forEach(target => {
-        const key = model.reference(target.table, target.id); choices.set(key, {kind: 'existing', id: target.id});
+      result.review_targets.filter(target => ['setu_hubs',model.LOCAL_HUBS].includes(target.table)).forEach(target => {
+        const key = model.reference(target.table, target.id); choices.set(key, {kind: 'existing', table:target.table, id: target.id});
         option(select, 'Saved: ' + target.name + (hub.matches.some(match => String(match.id) === String(target.id)) ? ' · name match' : ''), key);
       });
       result.hubs.filter(other => other.id !== hub.id).forEach(other => {
@@ -105,7 +254,7 @@
         option(select, 'Share research hub: ' + other.name, key);
       });
       select.value = !hub.resolution ? '' : hub.resolution.kind === 'new' ? 'new' :
-        hub.resolution.kind === 'existing' ? model.reference('setu_hubs', hub.resolution.id) : 'research:' + hub.resolution.id;
+        hub.resolution.kind === 'existing' ? model.reference(hub.resolution.table || 'setu_hubs', hub.resolution.id) : 'research:' + hub.resolution.id;
       label.append(select); details.append(label);
       let distinct = hub.resolution?.distinct_acknowledged || false;
       if (hub.matches.length) details.append(node('p', 'Possible saved hubs: ' + hub.matches.map(match => match.name).join(', '), 'warning'));
@@ -119,7 +268,9 @@
           if (candidate.decision === 'pending' && result.candidates[i].decision !== 'pending') forms.delete(candidate.research_id);
         });
         result = outcome.value; renderHubs(); render();
+        const saved = persist();
         message('Hub choice updated.' + (outcome.reset_count ? ' ' + outcome.reset_count + ' affected decisions reset to pending.' : ''));
+        return saved;
       });
       details.append(feedback, apply); box.append(details); return box;
     }));
@@ -134,7 +285,9 @@
     if (['skip','pending'].includes(action)) forms.delete(candidate.research_id);
     result = outcome.value;
     render();
+    const saved = persist();
     message(candidate.name + ' · ' + ({pending:'reset to pending',accept_suggestion:'accepted as a suggestion in this review',skip:'skipped in this review',merge_selected:'selected fact merge staged'}[action]) + '. Download review JSON to keep your choices.');
+    return saved;
   }
 
   function invalidateEditedDecision(candidate, action) {
@@ -144,7 +297,7 @@
     outcome.value.candidates.forEach((item, i) => {
       if (item.research_id !== candidate.research_id && item.decision === 'pending' && result.candidates[i].decision !== 'pending') forms.delete(item.research_id);
     });
-    result = outcome.value; render();
+    result = outcome.value; render();persist();
     message('Choices changed for ' + candidate.name + '. Review and stage this decision again.');
   }
 
@@ -318,25 +471,39 @@
     const sequence = ++uploadSequence;
     resetPreview();
     byId('research-text').value = '';
-    if (file.size > model.MAX_BYTES) { fail([{path: '/', message: 'Choose a JSON file up to 5 MiB'}]); return; }
+    if (file.size > local.MAX_BACKUP_BYTES) { fail([{path: '/', message: 'Choose JSON up to 25 MiB'}]); return; }
     byId('upload-status').textContent = 'Reading ' + file.name + '…';
-    try { const text = await file.text(); if (sequence === uploadSequence) validate(text); }
+    try { const text = await file.text(); if (sequence === uploadSequence) await validate(text,sequence); }
     catch (_) { if (sequence === uploadSequence) fail([{path: '/', message: 'File could not be read. Choose it again.'}]); }
     finally { if (sequence === uploadSequence) event.target.value = ''; }
   });
-  byId('validate').addEventListener('click', () => { uploadSequence++; validate(byId('research-text').value); });
+  byId('validate').addEventListener('click', () => { uploadSequence++;return validate(byId('research-text').value); });
   byId('research-text').addEventListener('input', () => { uploadSequence++; resetPreview(); byId('upload-status').textContent = 'Pasted JSON changed. Validate to refresh the preview.'; });
   byId('clear').addEventListener('click', () => {
     uploadSequence++; resetPreview(); byId('research-file').value = ''; byId('research-text').value = '';
-    byId('upload-status').textContent = 'Preview cleared. Choose another research JSON.';
+    byId('upload-status').textContent = 'Review closed. Saved reviews and local suggestions remain available above.';
   });
   ['hub-filter', 'candidate-search', 'decision-filter'].forEach(id => byId(id).addEventListener('input', () => { page = 0; render(); }));
   byId('previous').addEventListener('click', () => { page--; render(); });
   byId('next').addEventListener('click', () => { page++; render(); });
   byId('export').addEventListener('click', () => {
     if (!result) return;
-    const url = URL.createObjectURL(new Blob([pretty(model.reviewExport(result))], {type: 'application/json'}));
-    const link = node('a'); link.href = url; link.download = 'setu-research-preview-' + today() + '.json';
-    document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    download(model.reviewExport(result),'setu-research-preview-' + today() + '.json');
   });
+  byId('backup').addEventListener('click', () => {const workspace=currentWorkspace();if (workspace) download(local.backup(workspace),'setu-research-backup-' + today() + '.json');});
+  byId('save-drafts').addEventListener('click', () => persist(true));
+  byId('save-review').addEventListener('click', () => persist());
+  byId('restore-confirm').addEventListener('click', async () => {restoring=false;updateSaveButtons();if (!await persist()) {restoring=true;updateSaveButtons();}});
+  refreshSaved().then(ready => {if (ready && !result) byId('storage-status').textContent='Local storage ready. Resume a saved review or import research.';})
+    .catch(error => {byId('storage-status').textContent='Local storage could not be read: ' + error.message;});
+  if (typeof navigator !== 'undefined' && navigator.serviceWorker && window.isSecureContext) {
+    navigator.serviceWorker.register('research-import-sw.js',{scope:'./research-import.html'}).then(registration => {
+      const update = () => {
+        if (registration.active?.state === 'activated') byId('offline-status').textContent='Research Import ready offline. Saved reviews stay in this browser.';
+      };
+      update();
+      const worker = registration.installing || registration.waiting || registration.active;
+      if (worker) worker.addEventListener('statechange',update);
+    }).catch(() => {byId('offline-status').textContent='Offline reopening is unavailable. Local saving and downloaded backups are still available.';});
+  } else byId('offline-status').textContent='Offline reopening needs a supported browser on HTTPS. Local backups remain available.';
 })();

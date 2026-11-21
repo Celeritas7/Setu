@@ -6,6 +6,7 @@ import {createRequire} from 'node:module';
 
 const require = createRequire(import.meta.url);
 const model = require('../js/research-import.js');
+const local = require('../js/research-local.js');
 const ui = fs.readFileSync(new URL('../js/research-import-ui.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('../research-import.html', import.meta.url), 'utf8');
 
@@ -23,19 +24,32 @@ class Element {
   click() {this.clicked = true;}
   remove() {this.removed = true;}
 }
-function harness(snapshot = null) {
+class MemoryStorage {
+  records = new Map();
+  fail = false;
+  async read(id) {return structuredClone(this.records.get(id) || null);}
+  async list() {return structuredClone([...this.records.values()]);}
+  async write(id,rev,payload) {
+    if (this.fail) throw new Error('Quota exceeded');
+    const current=this.records.get(id);
+    if ((current?.rev || 0)!==rev) {const error=new Error('Another tab changed this destination');error.code='CONFLICT';throw error;}
+    const record={id,rev:rev+1,payload:structuredClone(payload),previous:current?.payload || null,saved_at:new Date().toISOString()};
+    this.records.set(id,record);return structuredClone(record);
+  }
+}
+function harness(snapshot = null, backend = new MemoryStorage()) {
   const elements = Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(match => [match[1], new Element()]));
   elements.preview.hidden = true;
   const storage = new Map(snapshot ? [[model.SNAPSHOT_KEY, JSON.stringify(snapshot)]] : []), blobs = [];
   const context = vm.createContext({
-    window:{SetuResearchImport:model}, Date, Intl, Blob,
+    window:{SetuResearchImport:model,SetuResearchLocal:local,SetuResearchStorage:{async open(){return backend;}}}, Date, Intl, Blob, TextEncoder,
     URL:{createObjectURL(blob){blobs.push(blob);return 'blob:test';},revokeObjectURL(){}},setTimeout(){},
     sessionStorage:{getItem(key){return storage.get(key);},removeItem(key){storage.delete(key);}},
     document:{body:new Element('body'),getElementById(id){assert.ok(elements[id],id);return elements[id];},
       createElement(tag){return new Element(tag);},createDocumentFragment(){return new Element('fragment');}},
   });
   vm.runInContext(ui, context);
-  return {elements,storage,blobs};
+  return {elements,storage,blobs,backend};
 }
 const walk = element => [element, ...element.children.flatMap(walk)];
 const allText = element => walk(element).map(node => node.textContent).join('\n');
@@ -89,7 +103,7 @@ test('a canceled picker preserves preview; a late old read cannot replace a newe
   const newer = data(); newer.places[0].name_ja = 'Newer file';
   e['research-file'].files = [{name:'new.json',size:10,async text(){return JSON.stringify(newer);}}];
   await e['research-file'].fire('change'); resolveOld(JSON.stringify(data())); await old;
-  assert.match(allText(e.candidates), /Newer file/);
+  assert.match(allText(e.candidates), /Newer file/, allText(e.errors));
   await e.clear.fire('click'); assert.equal(e.preview.hidden, true);
   await e.export.fire('click'); assert.equal(h.blobs.length, 0);
 });
@@ -178,4 +192,76 @@ test('candidate decision shortcut scrolls to and focuses the decision panel', as
   await button(h.elements.candidates,'Review decision ↓').fire('click');
   const panel=walk(h.elements.candidates).find(item=>item.className==='review-actions');
   assert.equal(panel.scrolled,true);assert.equal(panel.focused,true);
+});
+
+test('R3 autosaved accept/skip decisions resume after reopening and local saves are idempotent', async()=>{
+  const backend=new MemoryStorage(),h=harness(null,backend),e=h.elements;
+  await paste(h,data());
+  const hub=selectFor(e['hub-counts'],'Hub destination');hub.value='new';await button(e['hub-counts'],'Use hub choice').fire('click');
+  const kind=selectFor(e.candidates,'Suggestion category');kind.value='see';await kind.fire('change');
+  await button(e.candidates,'Accept as suggestion').fire('click');
+  assert.match(e['storage-status'].textContent,/Confirmed decisions saved/);
+  await e['save-drafts'].fire('click');await e['save-drafts'].fire('click');
+  assert.equal([...backend.records.values()][0].payload.catalog.places.length,1);
+  assert.match(allText(e['local-drafts']),/Admission price unknown/);
+  assert.match(allText(e['local-drafts']),/checked/);
+  assert.ok(walk(e['local-drafts']).some(item => item.tagName === 'A' && item.href));
+  const reopened=harness(null,backend);await new Promise(resolve=>setImmediate(resolve));
+  await button(reopened.elements['saved-reviews'],'Resume saved review').fire('click');
+  assert.match(reopened.elements.summary.textContent,/1 accepted suggestions/);
+  await button(reopened.elements.candidates,'Skip').fire('click');
+  const onceMore=harness(null,backend);await new Promise(resolve=>setImmediate(resolve));
+  await button(onceMore.elements['saved-reviews'],'Resume saved review').fire('click');
+  assert.match(onceMore.elements.summary.textContent,/1 skipped/);
+  assert.equal([...backend.records.values()][0].payload.catalog.places.length,1);
+});
+
+test('R3 backup restore is previewed before confirmation and works in an empty browser',async()=>{
+  const h=harness(),e=h.elements;await paste(h,data());
+  await button(e.candidates,'Skip').fire('click');await e.backup.fire('click');
+  const backup=JSON.parse(await h.blobs[0].text()),fresh=harness();
+  await paste(fresh,backup);assert.equal(fresh.backend.records.size,0);assert.equal(fresh.elements['restore-confirm'].hidden,false);
+  assert.match(fresh.elements.summary.textContent,/1 skipped/);
+  await fresh.elements['restore-confirm'].fire('click');assert.equal(fresh.backend.records.size,1);
+  assert.equal(fresh.elements['restore-confirm'].hidden,true);
+});
+
+test('R3 write failure retains review/export and a stale tab cannot overwrite newer decisions',async()=>{
+  const backend=new MemoryStorage(),a=harness(null,backend);await paste(a,data());
+  await a.elements['save-review'].fire('click');
+  const b=harness(null,backend);await new Promise(resolve=>setImmediate(resolve));
+  await button(b.elements['saved-reviews'],'Resume saved review').fire('click');
+  await button(a.elements.candidates,'Skip').fire('click');
+  await b.elements['save-review'].fire('click');
+  assert.match(b.elements['storage-status'].textContent,/Another tab/);
+  assert.equal([...backend.records.values()][0].payload.reviews[Object.keys([...backend.records.values()][0].payload.reviews)[0]].candidates[0].decision,'skip');
+  backend.fail=true;
+  await button(a.elements.candidates,'Reset decision').fire('click');
+  assert.match(a.elements['storage-status'].textContent,/Not saved.*Quota/);
+  assert.match(a.elements.summary.textContent,/1 pending/);
+  await a.elements.backup.fire('click');assert.equal(a.blobs.length,1);
+  backend.fail=false;await a.elements['save-review'].fire('click');assert.match(a.elements['storage-status'].textContent,/Confirmed decisions saved/);
+});
+
+test('R3 corrupted latest data offers a validated previous checkpoint without automatic replacement',async()=>{
+  const backend=new MemoryStorage(),a=harness(null,backend);await paste(a,data());
+  await button(a.elements.candidates,'Skip').fire('click');
+  const record=[...backend.records.values()][0],beforeRev=record.rev;record.payload.reviews={broken:null};record.payload.catalog.places=[null];
+  const b=harness(null,backend);await new Promise(resolve=>setImmediate(resolve));
+  await button(b.elements['saved-reviews'],'Recover previous checkpoint').fire('click');
+  assert.equal(b.elements['restore-confirm'].hidden,false);assert.equal(record.rev,beforeRev);
+  await b.elements['restore-confirm'].fire('click');
+  assert.equal([...backend.records.values()][0].rev,beforeRev+1);
+  assert.ok(Object.keys([...backend.records.values()][0].payload.reviews).length);
+});
+
+test('R3 a valid full backup can recover a corrupt current workspace after confirmation',async()=>{
+  const backend=new MemoryStorage(),a=harness(null,backend);await paste(a,data());
+  await button(a.elements.candidates,'Skip').fire('click');await a.elements.backup.fire('click');
+  const backup=JSON.parse(await a.blobs[0].text()),record=[...backend.records.values()][0];record.payload.reviews={broken:null};
+  const b=harness(null,backend);await paste(b,backup);
+  assert.match(b.elements['storage-status'].textContent,/Current stored data could not be validated/);
+  assert.equal([...backend.records.values()][0].payload.reviews.broken,null);
+  await b.elements['restore-confirm'].fire('click');
+  assert.equal([...backend.records.values()][0].payload.reviews[backup.workspace.active].candidates[0].decision,'skip');
 });

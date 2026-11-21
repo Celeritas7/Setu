@@ -12,7 +12,8 @@
 - **Next Live Trip phase:** L1 — five safety-ranked next-place suggestions.
 - **Research baseline refreshed:** `50af3b7` (merged PR #34) before R1 publication; existing prompt updates preserved.
 - **R1:** merged in PR #35 (`ee9c7a0`); user upload/preview/export verified with exact research preservation.
-- **R2:** merged in PR #36 (`1f3876b`); user verified individual accept/skip controls. A separate usability correction addresses shared-source overlap warnings, inline errors and decision-form navigation. See `docs/research-import.md` for pending manual checks. R3/R4 remain pending; L1–L5 are not marked complete by this work.
+- **R2:** merged in PR #36, with usability correction #37 (`1a73704`). Individual accept/skip controls were user-verified.
+- **Current supporting track:** R3 local drafts and recovery, prepared for separate PR review. 282 tests pass, including simulations of both user-uploaded review exports. Native IndexedDB/service-worker and desktop/Android/iPad checks remain pending. R4 requires separate approval. See `docs/research-import.md`. L1–L5 remain separate work.
 
 ## Baseline found on main, 2026-11-21
 

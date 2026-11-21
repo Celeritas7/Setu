@@ -39,6 +39,9 @@ pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-heig
 .fact-choice pre { margin: 0; }
 .hub-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .decision-message { font-weight: 650; color: #23523b; }
+.local-toolbar { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 10px; padding: 12px; background: #fff1cf; border: 1px solid #bcb6aa; margin-top: 20px; z-index: 2; }
+.saved-review { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border-top: 1px solid #ddd6c7; padding: 12px 0; }
+.saved-review span { flex: 1; min-width: 160px; }
 fieldset { min-width: 0; border: 1px solid #d4d0c7; margin: 16px 0; padding: 12px; }
 .source { border-bottom: 1px solid #e5e1d8; padding: 8px 0; overflow-wrap: anywhere; }
 a { color: #23556b; }
