@@ -8,7 +8,7 @@
 - **L1–L5:** not started as the six new live-trip phases. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
 - **Production:** no live-trip feature, database migration, Github Pages deployment or import has been performed by L0.
 - **Branch:** `docs/live-trip-companion-phase0-20261121`.
-- **L0 PR:** to be linked after opening.
+- **L0 PR:** [#32 — Phase L0 specification and fixture](https://github.com/Celeritas7/Setu/pull/32) (draft, open, not merged).
 - **Next executable phase:** L1 — five safety-ranked next-place suggestions, **only after L0 review/merge**.
 
 ## Baseline found on main, 2026-11-21
@@ -36,7 +36,7 @@
 
 | Phase | PR / merge commit | State | Next verification |
 | --- | --- | --- | --- |
-| L0 | Review PR to be linked | In review | Source files, fixture checks and scope |
+| L0 | [#32](https://github.com/Celeritas7/Setu/pull/32) — open draft, not merged | In review | Source files, fixture checks and scope |
 | L1 | — | Not started | Ranked next-five rules, source/unknown handling |
 | L2 | — | Not started | Practical + personal tag separation |
 | L3 | — | Not started | Explicit sessions, detours and verified return |
