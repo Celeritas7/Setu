@@ -13,13 +13,13 @@
 
   root.SetuTravelPromptCatalog = {
     schema: 1,
-    revision: '2026-11-19.1',
+    revision: '2026-11-22.1',
     templates: [
       {
         id: 'discover',
         step: 1,
         title: 'Discover the destination',
-        description: 'Collect places, free seating, local food and experience tags before designing a route.',
+        description: 'Research sourced places and save a structured draft for Setu.',
         body: `I am researching a one-day trip to {{destination}} in Japan for my Setu travel planner.
 
 Starting point: {{origin}}.
@@ -35,21 +35,23 @@ Discover:
 4. Libraries, study seats, free sheltered seating, station waiting rooms, benches, toilets and long-stay alternatives to expensive cafés. Never assume a library allows independent study, laptops or Wi-Fi; verify each facility and any library-card restrictions.
 5. JR East DAY OFF destinations when relevant; distinguish this discovery source with its own tag.
 
-Group places into geographically meaningful hubs and sub-hubs, not one enormous list. For each candidate include the Japanese name, Maps link, source, approximate walking/transit access, cost, hours, suggested visit duration, indoor/outdoor and rain suitability. Include quiet/crowded expectations only with evidence or as clearly labelled estimates.
+Group places into real geographic hubs and sub-hubs. Show a concise hub overview and key selections in the readable response; retain every useful candidate in structured research data rather than pasting an enormous repeated list. For every candidate record Japanese name, address, Maps link, evidence source and checked date, approximate access, cost type and amount (unknown is not ¥0), hours, visit-duration estimate, indoor/outdoor, rain suitability and limitations. Label quiet/crowded expectations as verified, reported or estimated, never as a personal review.
 
 Setu supports multiple practical tags (Quiet, Indoor, Free, Long-stay, Wi-Fi, Study-friendly, Rain shelter) and separate experiential tags (Igloo, Cocoon, Hideout). A place may be a Potential Cocoon before my visit, but personal Confirmed Cocoon must wait for my on-site review. Keep unvisited recommendations separate from personally visited locations.
 
-Show my five best initial choices with clear costs and reasons, while preserving the wider candidate list for exploration. End by identifying which locations require transport verification. Do not finalize a timed itinerary yet.`,
+Show the five strongest initial choices with explicit prices and reasons, keep the wider candidate inventory in the JSON, and identify stops needing transport verification. If the date is not chosen, ask before checking schedules or weather; no timed itinerary.
+
+RESEARCH HANDOFF — Use the connected Google Drive folder Claude_Workspace/#Data_storage/Setu_research/<destination>/, following the real folder names (for example Setu_research/Ogose). Find the existing setu_research_handoff_v1.schema.json, and create or increment the versioned research JSON conforming to it (format setu_research_handoff, schema_version 1.0.0). Include all hubs, source URLs, checked dates and per-field uncertainty. All new places start suggested, unvisited, accepted=false, with no personally confirmed experience tags. Never invent coordinates, verified prices, study permissions or visit history. Save as a NEW version; don't overwrite previous research or user notes. Verify the Drive upload and exact parent folder before claiming success. If Drive or schema access is unavailable, provide downloadable JSON and disclose that no Drive upload occurred. Do not write to GitHub or Supabase.`,
       },
       {
         id: 'transport',
         step: 2,
         title: 'Transport and return backups',
-        description: 'Verify rail, bus, bicycle options, last services and emergency alternatives.',
+        description: 'Check date-specific services and save transport evidence separately.',
         body: `Continue planning my trip to {{destination}} from {{origin}} on {{travel_date}}.
 My desired trip style is {{travel_style}}.
 
-I currently have an Ageo–Warabi commuter pass. Calculate eligible rail fare savings accurately; do not assume that pass covers other railway operators or all transfers. Confirm the departure station and date if still undecided.
+I have an Ageo–Warabi commuter pass. Use the latest explicitly confirmed starting station, not an older example. Confirm the pass's registered route and validity on the travel date before calculating eligible JR fare savings; do not assume Tobu or local bus coverage. If the date is undecided, ask first: do not present date-specific train/bus timetables, last departures, sunset or weather as verified.
 
 Investigate:
 1. Practical rail routes, transfer stations, fare (including any commuter-pass coverage), travel time, and weekend frequency.
@@ -61,13 +63,15 @@ Prepare a reliable return plan from the most remote proposed destination. Check 
 
 Create separate backups for (A) a missed local bus, (B) an interrupted or missed train connection and (C) bad weather, unavailable bicycle sharing, flat battery or no internet. Research viable taxis, accommodation and any genuinely permitted late-night waiting locations. A 24-hour convenience store is not automatically a suitable overnight shelter.
 
-Use official operator sources for actual service times and provide a source URL and checked date. If a route or fallback cannot be verified, say so explicitly. Show a transport comparison and your safest budget-conscious recommendation. Do not invent times, services, prices or availability.`,
+Use official operator sources for actual service times and provide a source URL, checked date and applicable service date. If a route or fallback cannot be verified, say so explicitly. Show a transport comparison and safest budget-conscious recommendation; do not invent times, services, prices or availability.
+
+TRANSPORT HANDOFF — Reuse the destination's current research JSON in Google Drive (Claude_Workspace/#Data_storage/Setu_research/<destination>/) instead of rediscovering all places. Save dated operator evidence as a SEPARATE versioned transport JSON file with source URL, operator, stops, service calendar, checked date, applicability and uncertainty. Do not merge stale services into timeless place facts. If the selected date is null, record transport_verification_pending instead of a fictitious safe leave-by time. Never overwrite existing research JSON, personally reviewed facts or prior timetable snapshots; verify upload and parent folder, otherwise provide a downloadable file. Do not write to GitHub or Supabase.`,
       },
       {
         id: 'itinerary',
         step: 3,
         title: 'Build flexible itineraries',
-        description: 'Compare relaxed, nature-focused and budget-conscious days with five next-place choices.',
+        description: 'Plan flexible alternatives and export the versioned Setu research JSON.',
         body: `Using the verified place research and transport findings for {{destination}}, prepare my one-day plan.
 
 Starting point: {{origin}}. Date: {{travel_date}}. Preferred mood: {{travel_style}}.
@@ -83,13 +87,15 @@ For each, provide a realistic sequence grouped by hub, a Google Maps route, veri
 
 At major stops, list five changing next-place options ranked by time until closing, realistic distance, weather, crowd expectations, my mood, budget and the remaining safe return window. Let me take detours without losing the return journey.
 
-Finish with a comparison of the three plans, your recommendation, a compact mobile checklist, total known cost plus unknowns, and a hard warning for any itinerary depending on unverified last buses or difficult walking in darkness. Do not require me to visit every place.`,
+Finish with a comparison of three plans, your recommendation, a compact mobile checklist, known spending versus unknowns, and a hard warning about unverified last buses or darkness. Do not require every stop. If the date remains undecided, produce UNTIMED provisional alternatives; do not claim verified schedules, sunset or weather.
+
+RESEARCH EXPORT — Do not repeat the entire earlier place inventory in chat. Update the existing destination research JSON using setu_research_handoff_v1.schema.json, preserving all candidates, source metadata, unresolved facts, and past versions. Save a NEW versioned JSON plus a short readable itinerary/report and change log in Claude_Workspace/#Data_storage/Setu_research/<destination>/ after verifying the exact folder and upload. Keep date-specific transport evidence in its separate file. Mark every researched place suggested/unvisited/accepted=false; Potential Igloo/Cocoon/Hideout never becomes Personally Confirmed without my actual review. If Drive is inaccessible, return downloadable files and state that they were not uploaded. This prepares Setu IMPORT DRAFTS, not direct updates to Setu/GitHub/Supabase.`,
       },
       {
         id: 'live-review',
         step: 4,
         title: 'Live trip and Setu reviews',
-        description: 'Use on-the-day updates, collect personal impressions and propose Setu drafts.',
+        description: 'Record only actual experiences and prepare review changes for Setu.',
         body: `Act as my live travel companion for {{destination}}. The original plan starts at {{origin}}, with travel date {{travel_date}} and preferred style {{travel_style}}.
 
 As I send my current spot, photographs, the time, the weather, personal impressions or unexpected detours, offer five next destinations with a reason, known price, opening/closing risk, realistic travel time, and whether I can still safely return. Include a quieter or sheltered alternative when practical. Re-evaluate any last bus/train risk whenever I move to a remote area.
@@ -98,7 +104,9 @@ Record a review for each location only from what I actually tell you. Distinguis
 
 Use Setu's practical tags and separate Igloo / Cocoon / Hideout experience tags. Do not turn a Potential Cocoon into a Confirmed Cocoon until my own review supports it. Do not assume a room was used merely because I visited the building.
 
-At the end, report planned versus actual stops, good detours, missed locations, known spending, transport issues, best quiet/free resting places and lessons for future trips. Prepare Setu place/review suggestions as drafts with sources and confidence, but do not write to GitHub or Supabase without my separate approval.`,
+At the end, report planned versus actual stops, good detours, missed locations, known spending (unknown remains unknown), transport issues, best quiet/free resting places and lessons for future trips. Prepare Setu place/review drafts with sources and confidence, but do not write to GitHub or Supabase without my separate approval.
+
+REVIEW HANDOFF — Use the existing research IDs and the latest research JSON in Claude_Workspace/#Data_storage/Setu_research/<destination>/. Prepare a SEPARATE versioned review-change file containing only observations I actually described, including date, place/room scope, entered versus passed nearby, quiet/crowd, seating, cost, duration, study/Wi-Fi/food rules and whether I would return. Leave unasked or unobserved fields unknown. Preserve the original research and previous personal reviews. No automatic confirmation of Igloo, Cocoon or Hideout from GPS, an outside photo or a suggested tag. Save the review draft and trip summary to the exact Drive destination folder only if connected and authorized, verify the upload, otherwise provide downloadable files and say no upload occurred. The Setu app must preview and request approval before importing anything.`,
       },
     ],
   };

@@ -65,3 +65,34 @@ test('invalid catalog revisions and duplicate ids are rejected', () => {
   assert.equal(validCatalog({ ...catalog, revision: null }), false);
   assert.equal(validCatalog({ ...catalog, templates: [...catalog.templates, catalog.templates[0]] }), false);
 });
+
+
+test('research prompts use the actual Drive destination folder and review-only export safeguards', () => {
+  const catalog=catalogFromSource();
+  assert.equal(catalog.revision,'2026-11-22.1');
+  for (const template of catalog.templates) {
+    assert.match(template.body, /Claude_Workspace\/\#Data_storage\/Setu_research\//, template.id);
+    assert.match(template.body, /GitHub|Supabase/, template.id);
+    assert.match(template.body, /unknown|unverified/i, template.id);
+    assert.match(template.body, /Drive/, template.id);
+  }
+  assert.match(catalog.templates[0].body, /setu_research_handoff_v1.schema.json/);
+  assert.match(catalog.templates[0].body, /accepted=false/);
+  assert.match(catalog.templates[1].body, /SEPARATE versioned transport JSON/);
+  assert.match(catalog.templates[1].body, /registered route and validity/);
+  assert.match(catalog.templates[2].body, /NEW versioned JSON/);
+  assert.match(catalog.templates[3].body, /SEPARATE versioned review-change file/);
+});
+
+test('a missing travel date must not trigger current schedules or weather verification', () => {
+  const templates=catalogFromSource().templates;
+  for (const i of [0,1,2]) {
+    assert.match(templates[i].body, /date (is not chosen|is undecided|remains undecided)/i);
+  }
+  const out=renderPrompt(templates[1].body,{
+    destination:'越生',origin:'南浦和駅',travel_date:'Not chosen yet',travel_style:'Balanced'
+  });
+  assert.match(out,/南浦和駅/);
+  assert.match(out,/Not chosen yet/);
+  assert.match(out,/no.*date-specific|do not present date-specific/i);
+});
