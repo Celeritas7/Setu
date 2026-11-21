@@ -5,7 +5,7 @@
 | Phase | Scope | State |
 | --- | --- | --- |
 | R1 | Bundled v1 validator, local dry-run preview, advisory matches and differences, review export | Merged in PR #35, `ee9c7a0`; basic user upload/preview/export verified |
-| R2 | Resolve duplicate hubs and linked places, explicit Accept as suggestion / Skip / Merge selected research facts, field-group decisions | Prepared for review |
+| R2 | Resolve duplicate hubs and linked places, explicit Accept as suggestion / Skip / Merge selected research facts, field-group decisions | Merged in PR #36 (`1f3876b`); usability correction prepared separately |
 | R3 | Browser-local accepted drafts, backup/restore, stable destination-scoped identities, repeat-import idempotency and recovery | Pending |
 | R4 | Separately approved additive schema/RLS, authenticated persistence, isolation, revisions, retry/concurrency and multi-device sync | Pending, requires separate approval |
 
@@ -86,3 +86,14 @@ R2 starts from verified merged R1, `ee9c7a0`. It records choices and proposed re
 The actual 37-location/seven-hub handoff was exercised with simulated accept, skip and merge decisions against a synthetic existing target. The export preserved the research exactly, kept temple admission unknown, retained the no-beef preference and excluded a protected synthetic review. No private research file was committed.
 
 The user verified R1 upload, field errors, candidate preview and download, and the uploaded review JSON was checked for exact original evidence preservation. Those checks do not establish R2 browser acceptance. A fresh system Chromium launch was attempted for R2 but still failed with `socket() failed: Operation not permitted`. R2 responsive visual, actual browser, Android/iPad, source link and download checks remain pending. No merge, deployment or production mutation was performed for R2.
+
+
+### R2 usability correction
+
+User testing exposed two sources of confusion. A route/directory source page shared by different places triggered the same acknowledgment gate as an identity match. Also, candidate validation errors focused the global status at the top of the page, moving the user away from the decision form.
+
+Shared source URLs alone are now informational references. Matching names/aliases, address text, external place IDs or linked-shop identity still require explicit overlap review. The supplied park `OGOSE-A01` now lists its three shared-source references without a duplicate-identity acknowledgment requirement. No identity match is silently merged.
+
+Candidate and hub errors are displayed/focused beside their controls. Cards show their current pending/accepted/skipped/merge decision at the top, and **Review decision ↓** moves directly to the form. The unvisited source state stays separate from approval for a later save.
+
+All 262 tests pass, including source-only versus identity overlap checks, inline error focus, the current decision badge and the form shortcut. Actual browser/device checks remain pending under the same Chromium environment restriction. This correction performs no production writes, SQL, merge or deployment.

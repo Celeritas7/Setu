@@ -328,3 +328,29 @@ test('R2 one linked location cannot create two staged suggestions and decisions 
   assert.deepEqual(decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',opts)),review);
   assert.equal(model.setDecision(review,'EXAMPLE-2','accept_suggestion',opts).ok,false);
 });
+
+test('shared research pages alone remain advisory for saved and within-file places', () => {
+  const data=fixture();addCandidate(data,'EXAMPLE-2','Different park');
+  data.places[1].location.maps_url='https://example.org/map/2';
+  data.places[1].source_links=copy(data.places[0].source_links);
+  const saved=snapshot({setu_spots:[{id:'other',name:'Another place',address:'Elsewhere',source_url:data.places[0].source_links[0].url}]});
+  let review=readyReview(data,saved);
+  assert.equal(review.candidates[0].match_count,1);
+  assert.deepEqual(review.candidates[0].possible_file_duplicates,[]);
+  assert.deepEqual(review.candidates[0].shared_source_references,['EXAMPLE-2']);
+  assert.equal(review.candidates[0].needs_distinct_review,false);
+  review=decision(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'see'}));
+  assert.equal(review.candidates[0].decision,'accept_suggestion');
+});
+
+test('matching names, addresses and place IDs still require explicit separate-place review', () => {
+  const data=fixture();data.places[0].external_place_id='place-1';
+  const records=[{id:'name',name:data.places[0].name_ja},
+    {id:'address',name:'Different',address:data.places[0].location.address_ja},
+    {id:'external',name:'Different',place_ref:'place-1'}];
+  for(const row of records){
+    const review=readyReview(data,snapshot({setu_spots:[row]}));
+    assert.equal(review.candidates[0].needs_distinct_review,true);
+    assert.equal(model.setDecision(review,'EXAMPLE-1','accept_suggestion',{record_kind:'see'}).ok,false);
+  }
+});

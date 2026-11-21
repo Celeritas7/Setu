@@ -19,6 +19,7 @@ class Element {
   async fire(type) {await this.listeners[type]?.({target:this});}
   get options() {return this.children;}
   focus() {this.focused = true;}
+  scrollIntoView() {this.scrolled = true;}
   click() {this.clicked = true;}
   remove() {this.removed = true;}
 }
@@ -119,6 +120,8 @@ test('R2 UI accepts only after a hub/category choice and exports decisions with 
   let kind = selectFor(e.candidates,'Suggestion category');kind.value='see';await kind.fire('change');
   await button(e.candidates,'Accept as suggestion').fire('click');
   assert.match(e['decision-status'].textContent,/hub resolution/);
+  assert.equal(e['decision-status'].focused,undefined);
+  assert.ok(walk(e.candidates).some(item=>item.focused && /hub resolution/.test(item.textContent)));
   const hub = selectFor(e['hub-counts'],'Hub destination');hub.value='new';
   await button(e['hub-counts'],'Use hub choice').fire('click');
   await button(e.candidates,'Accept as suggestion').fire('click');
@@ -128,6 +131,8 @@ test('R2 UI accepts only after a hub/category choice and exports decisions with 
   assert.equal(exported.proposed_changes[0].suggestion_defaults.accepted,false);
   assert.equal(exported.proposed_changes[0].destination_record.kind,'see');
   assert.equal(exported.candidates[0].decision,'accept_suggestion');
+  assert.match(allText(e.candidates),/Accepted as suggestion · staged/);
+  assert.doesNotMatch(allText(e.candidates),/Suggested · unvisited · not accepted/);
   await button(e.candidates,'Skip').fire('click');assert.match(e.summary.textContent,/1 skipped/);
   await button(e.candidates,'Reset decision').fire('click');assert.match(e.summary.textContent,/1 pending/);
 });
@@ -166,4 +171,11 @@ test('R2 UI filters by decision and retains choices while filtering/paging', asy
   e['decision-filter'].value='skip';await e['decision-filter'].fire('input');
   assert.match(allText(e.candidates),/Skipped · original evidence retained/);
   await e.export.fire('click');assert.equal(JSON.parse(await h.blobs[0].text()).review_summary.skip,1);
+});
+
+test('candidate decision shortcut scrolls to and focuses the decision panel', async () => {
+  const h=harness();await paste(h,data());
+  await button(h.elements.candidates,'Review decision ↓').fire('click');
+  const panel=walk(h.elements.candidates).find(item=>item.className==='review-actions');
+  assert.equal(panel.scrolled,true);assert.equal(panel.focused,true);
 });
