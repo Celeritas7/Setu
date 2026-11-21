@@ -5,11 +5,11 @@
 ## Current phase
 
 - **L0 — Permanent specifications and Ogose fixture:** **in PR review, not yet merged**.
-- **L1–L5:** not started as the six new live-trip phases. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
+- **L1:** first read-only next-five preview implemented on stacked branch `feature/live-next-five-l1-20261121` (not merged/deployed). **L2–L5:** not started as new Live Trip Companion phases.
 - **Production:** no live-trip feature, database migration, Github Pages deployment or import has been performed by L0.
 - **Branch:** `docs/live-trip-companion-phase0-20261121`.
 - **L0 PR:** [#32 — Phase L0 specification and fixture](https://github.com/Celeritas7/Setu/pull/32) (draft, open, not merged).
-- **Next executable phase:** L1 — five safety-ranked next-place suggestions, **only after L0 review/merge**.
+- **Next review gate:** review and merge L0 #32 first, then review L1 stacked PR. L1 remains unchecked until approved and merged; L3/E4 must add verified return-service safety later.
 
 ## Baseline found on main, 2026-11-21
 
@@ -37,7 +37,7 @@
 | Phase | PR / merge commit | State | Next verification |
 | --- | --- | --- | --- |
 | L0 | [#32](https://github.com/Celeritas7/Setu/pull/32) — open draft, not merged | In review | Source files, fixture checks and scope |
-| L1 | — | Not started | Ranked next-five rules, source/unknown handling |
+| L1 | Stacked draft PR (link after opening) | In review, not merged | Ranked preview, source/unknown handling, tests, manual mobile checks |
 | L2 | — | Not started | Practical + personal tag separation |
 | L3 | — | Not started | Explicit sessions, detours and verified return |
 | L4 | — | Not started | Per-space visits and review truthfulness |
@@ -50,3 +50,12 @@
 - Existing commuter pass: Ageo–Warabi, exact covered route/validity unconfirmed; bus and Tobu not automatically covered.
 - Desired style: balanced nature/culture/quiet plus spontaneous detours, low-cost food, no beef and sheltered/resting choices.
 - Reports saved separately in the user's ChatGPT Library; no automatic Setu import or confirmation of a real visit. The public fixture deliberately contains **no private review or location history**.
+
+## L1 preview notes (not production)
+
+- New `js/next-five.js` pure ranker and opt-in Map `Next five · preview`; mood-cycle and rain preference. Existing five-result map unchanged when preview off.
+- Source: existing saved pinned places within 3 km of a **chosen anchor**, not an automatic Ogose dataset import. If Plan trip · No limit has no anchor, show no ranked choices and ask the user to select an area/Near me.
+- Ranking uses Asia/Tokyo local regular hours, estimated minimum straight-line walk, recorded visit budget or unknown, quietness and rain-shelter evidence. Holiday exceptions and route walking time unverified.
+- All cards state return **UNVERIFIED**. Dated operator services/second-to-last buses and leave-by times are separate E4/L3 work. No return safety certification is claimed in L1.
+- Backend, Supabase and `Setu.dc.html` remain unchanged. Packed `index.html` must remain below GitHub's 1 MiB contents API limit; see `docs/live-trip-next-five.md`.
+- Automated Node suite and real-device checks still need to be **run**, not presumed to pass.
