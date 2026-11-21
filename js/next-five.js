@@ -33,19 +33,19 @@ const nextFiveHours = (hours, clock, minVisit) => {
   const current=intervals.filter(p => clock.minute >= p[0] && clock.minute < p[1]).sort((a,b)=>b[1]-a[1])[0];
   if (current) {
     const left=current[1]-clock.minute;
-    if (left < minVisit+10) return {status:'too_short',minutesLeft:left,text:'Only '+left+' min until regular closing'};
+    if (left < minVisit+10) return {status:'too_short',minutesLeft:left,text:left+' min until closing (recorded)'};
     const h=(current[1] % 1440), label=String(Math.floor(h/60)).padStart(2,'0')+':'+String(h%60).padStart(2,'0');
-    return {status:'regular_open',minutesLeft:left,text:'Regular hours until '+label+' · '+left+' min left'};
+    return {status:'regular_open',minutesLeft:left,text:'Recorded until '+label+' · '+left+' min'};
   }
-  if (!Array.isArray(today)) return {status:'unknown',text:'Today’s hours unknown'};
-  return {status:'closed',text:today.length ? 'Outside recorded hours' : 'Recorded closed today'};
+  if (!Array.isArray(today)) return {status:'unknown',text:'Hours unknown today'};
+  return {status:'closed',text:today.length ? 'Outside recorded hours' : 'Closed (recorded)'};
 };
 const nextFivePrice = row => {
   const amount=v => (typeof v==='number' && Number.isInteger(v) && v>=0) ? v : null;
   const spend=amount(row.spend), minimum=amount(row.min_order_yen ?? row.minOrderYen);
-  if (spend != null) return {known:spend,text:'Recorded visit budget ¥'+spend.toLocaleString('ja-JP')+' (not an admission quote)'};
-  if (minimum != null) return {known:null,text:'Minimum order ¥'+minimum.toLocaleString('ja-JP')+' recorded; total cost unknown'};
-  return {known:null,text:'Price unknown — not free'};
+  if (spend != null) return {known:spend,text:'Visit budget ¥'+spend.toLocaleString('ja-JP')+' (not entry fee)'};
+  if (minimum != null) return {known:null,text:'Min order ¥'+minimum.toLocaleString('ja-JP')+'; total unknown'};
+  return {known:null,text:'Price unknown (not free)'};
 };
 const nextFiveTagged = (row,needle) => (row.themes || []).some(t => String(t).toLowerCase().includes(needle));
 const nextFiveCategory = row => row._t==='food' ? 'food' :
@@ -53,7 +53,7 @@ const nextFiveCategory = row => row._t==='food' ? 'food' :
 const nextFiveRank = (rows, options={}) => {
   const anchor=options.anchor, clock=nextFiveJapanClock(options.now || new Date());
   if (!anchor || !Number.isFinite(Number(anchor.lat)) || !Number.isFinite(Number(anchor.lng)))
-    return {rows:[],reason:'Choose a saved area or use Near me for a real distance anchor. No safety ranking for all-Japan browsing.',clock};
+    return {rows:[],reason:'Select an area or Near me; all-Japan distance is unknown.',clock};
   const mood=['balanced','quiet','nature','budget'].includes(options.mood) ? options.mood : 'balanced';
   const rainy=options.rainy===true;
   const limit=typeof options.budget==='number' && Number.isFinite(options.budget) && options.budget>=0 ? options.budget : null;
@@ -77,12 +77,12 @@ const nextFiveRank = (rows, options={}) => {
     if (mood==='budget') score += price.known==null?14:Math.min(price.known/120,30);
     if (mood==='balanced') score += category==='rest'?-5:0;
     const next = {...row,_next:{
-      price:price.text, hours:hrs.text+' · holiday/temporary closures not checked',
-      travel:km.toFixed(1)+' km straight-line · walk route/time unverified (minimum '+travelLowerBound+' min geometric lower bound)',
-      reason:(category==='nature'?'Nature option':category==='rest'?'Possible rest stop':category==='food'?'Food option':'Saved place')+
-        (rainy?(shelter?' · shelter recorded':' · rain protection unknown'):'')+
-        (mood==='quiet'?(quiet==null?' · quietness unknown':' · recorded quiet '+quiet+'/3'):''),
-      risk:remote?'Return and pedestrian access UNVERIFIED; do not rely on a remote bus or walk':'Return UNVERIFIED; check walking route and onward services',
+      price:price.text, hours:hrs.text+' · holiday changes unchecked',
+      travel:km.toFixed(1)+' km straight-line · walk unknown; ≥'+travelLowerBound+' min lower bound',
+      reason:(category==='nature'?'Nature':category==='rest'?'Rest option':category==='food'?'Food':'Saved place')+
+        (rainy?(shelter?' · sheltered (recorded)':' · rain shelter unknown'):'')+
+        (mood==='quiet'?(quiet==null?' · quiet unknown':' · recorded quiet '+quiet+'/3'):''),
+      risk:remote?'Remote return/walk UNVERIFIED':'Return UNVERIFIED; check route',
       category,score,shelter,quiet
     }};
     return [next];
@@ -99,6 +99,6 @@ const nextFiveRank = (rows, options={}) => {
     cats.set(x._next.category,(cats.get(x._next.category)||0)+1);
     chosen.push(x);
   }
-  return {rows:chosen,clock,reason:chosen.length?'':(limit!=null?'No eligible nearby options within this recorded budget / hours window. Unknown costs are not assumed free.':'No eligible pinned options within 3 km of this anchor at the recorded regular hours.')};
+  return {rows:chosen,clock,reason:chosen.length?'':(limit!=null?'No eligible nearby options; unknown cost is not free.':'No eligible pinned places within 3 km.')};
 };
 // LIVE_NEXT_FIVE_END
