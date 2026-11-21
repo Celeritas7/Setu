@@ -112,3 +112,20 @@ separate approval and has **not** been applied. H7, I3–I5 and J remain future 
   runs it. Needs the user's OK for a recurring task.
 - "No-beef setting" (G2): today no-beef is always on (dishes flagged); a toggle would be new.
 - Suggested order: G (fits existing places to eat) → H → I → J.
+
+## Phase L — Live Trip Companion (reusable, Ogose pilot)
+
+**Scope:** independent of the four ChatGPT travel prompts in Phase K. Source-of-truth requirements, acceptance cases and resume status:
+[`docs/live-trip-requirements.md`](docs/live-trip-requirements.md),
+[`docs/live-trip-test-cases.md`](docs/live-trip-test-cases.md),
+[`docs/live-trip-checkpoint.md`](docs/live-trip-checkpoint.md).
+`data/trip-research/ogose-phase0.json` is a **synthetic/non-live** reference fixture, not a production import or a confirmed Saturday itinerary.
+
+- [ ] **L0 · Permanent requirements and fixture:** audit existing features; document safety/reviews/data contracts and test gates; supply an Ogose fixture and contract tests. **In review only until PR merged.** No runtime or production changes.
+- [ ] **L1 · Five safety-ranked next places:** turn nearby five-card paging into up to five eligible recommendations using date, closing window, evidence-backed prices, quiet/rest preferences, weather and **verified** return margin. Unknown return must never become a safe claim.
+- [ ] **L2 · Practical and experience tags:** multiple practical tags and separate Potential vs Personally Confirmed Igloo/Cocoon/Hideout, scoped to the room actually reviewed; preserve existing G4 seating confirmations.
+- [ ] **L3 · Explicit trip sessions, detours and safe return:** manual Start Trip, current stop, optional foreground GPS, safer return deadline and separate missed-bus/train/offline fallbacks. Integrate the already-pending **E4 Getting back** design; no made-up last departures.
+- [ ] **L4 · Personal observations and report drafts:** Suggested / Passed nearby / Visited / Did not enter / Personally reviewed, actual spending, truthful study/seating/comfort fields, planned-vs-actual report and local export without cloud writes.
+- [ ] **L5 · Approved import and sync:** review additive schema/RLS, auth and revision conflicts, deduplicated unaccepted research imports, privacy, cross-device sync and trip reports. **Production migrations and writes require separate approval.**
+
+**Release rhythm:** one reviewable PR per phase, with tests and checkpoint updates; no automatic merge, deploy or SQL. Continue from the first eligible unchecked item after verifying the previous phase is actually merged. A prepared PR is not implemented functionality.

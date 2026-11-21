@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "fixture_id": "ogose-live-trip-phase0",
+  "fixture_kind": "representative_not_live",
+  "description": "Illustrative Phase L0 research/decision data. No selected trip date, real visit, real-time timetable, personal GPS, reviews or permitted automatic Setu import.",
+  "evidence_snapshot_date": "2026-11-20",
+  "trip_context": {
+    "destination": "越生町 (Ogose), 埼玉県, 日本",
+    "origin": "南浦和駅 (Minami-Urawa Station)",
+    "selected_date": null,
+    "former_candidate_date": "2026-11-21",
+    "former_candidate_date_confirmed": false,
+    "travel_style": "balanced: nature, culture, quiet recovery and spontaneous detours",
+    "no_beef": true,
+    "commuter_pass": {
+      "from": "上尾",
+      "to": "蕨",
+      "registered_route_confirmed": false,
+      "validity_on_trip_confirmed": false,
+      "rail_coverage_yen": null,
+      "tobu_coverage": false,
+      "bus_coverage": false
+    },
+    "return_plan": {
+      "applicable_service_date": null,
+      "operator_service_verified": false,
+      "planned_departure": null,
+      "second_to_last_viable_departure": null,
+      "last_viable_departure": null,
+      "sunset": null,
+      "safe_leave_by": null,
+      "status": "unverified"
+    }
+  },
+  "candidates": [
+    {
+      "id": "ogose-houonji",
+      "name_ja": "法恩寺",
+      "hub": "station-west",
+      "address_ja": "埼玉県入間郡越生町越生704",
+      "walk_from_ogose_station_min_est": 1,
+      "visit_duration_min_est": 20,
+      "transport": "walking",
+      "setting": "outdoor",
+      "rain": "poor",
+      "regular_hours": null,
+      "cost_yen": null,
+      "cost_kind": "admission",
+      "cost_evidence": "unknown",
+      "practical_tags": [],
+      "experience": {
+        "tag": null,
+        "status": "none"
+      },
+      "source": {
+        "url": "https://www.ogose-houonji.or.jp/Traffic.html",
+        "authority": "operator",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      }
+    },
+    {
+      "id": "ogose-yamabuki",
+      "name_ja": "山吹の里歴史公園",
+      "hub": "east-park",
+      "address_ja": "埼玉県入間郡越生町如意",
+      "walk_from_ogose_station_min_est": 15,
+      "visit_duration_min_est": 45,
+      "transport": "walking",
+      "setting": "outdoor",
+      "rain": "partial",
+      "regular_hours": null,
+      "cost_yen": 0,
+      "cost_kind": "admission",
+      "cost_evidence": "published",
+      "practical_tags": [
+        "Free",
+        "Rain shelter (partial)"
+      ],
+      "experience": {
+        "tag": "Cocoon",
+        "status": "potential"
+      },
+      "source": {
+        "url": "https://ogose-kanko.jp/tourist_attractions/yamabuki-no-sato/",
+        "authority": "tourism association",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      }
+    },
+    {
+      "id": "ogose-library",
+      "name_ja": "越生町立図書館",
+      "hub": "station-civic",
+      "address_ja": "埼玉県入間郡越生町越生925-1",
+      "walk_from_ogose_station_min_est": 10,
+      "visit_duration_min_est": 60,
+      "transport": "walking",
+      "setting": "indoor",
+      "rain": "sheltered",
+      "regular_hours": "09:30–17:30 (regular; holiday exceptions require checking)",
+      "cost_yen": 0,
+      "cost_kind": "public_reading",
+      "cost_evidence": "published",
+      "practical_tags": [
+        "Indoor",
+        "Free reading",
+        "Rain shelter"
+      ],
+      "independent_study_permission": "unknown",
+      "laptop_permission": "unknown",
+      "wifi": "unknown",
+      "experience": {
+        "tag": "Cocoon",
+        "status": "potential"
+      },
+      "source": {
+        "url": "https://www.town.ogose.saitama.jp/kamei/shogaigakushu/tosyokan/shisetsu.html",
+        "authority": "municipal",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      }
+    },
+    {
+      "id": "ogose-beisia",
+      "name_ja": "ベイシア越生店",
+      "hub": "nishiwada",
+      "address_ja": "埼玉県入間郡越生町西和田384",
+      "walk_from_ogose_station_min_est": 20,
+      "visit_duration_min_est": 20,
+      "transport": "walking",
+      "setting": "indoor",
+      "rain": "sheltered",
+      "regular_hours": "09:00–20:00 (regular; exceptions require checking)",
+      "cost_yen": 700,
+      "cost_kind": "grocery_meal_budget",
+      "cost_evidence": "estimated",
+      "practical_tags": [
+        "Indoor",
+        "Local grocery"
+      ],
+      "experience": {
+        "tag": null,
+        "status": "none"
+      },
+      "source": {
+        "url": "https://map.beisia.co.jp/points/383",
+        "authority": "operator",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      }
+    },
+    {
+      "id": "ogose-kuroyama",
+      "name_ja": "黒山三滝",
+      "hub": "remote-kuroyama",
+      "address_ja": "埼玉県入間郡越生町黒山",
+      "walk_from_ogose_station_min_est": null,
+      "visit_duration_min_est": 90,
+      "transport": "local_bus_or_taxi_unverified_for_date",
+      "setting": "outdoor",
+      "rain": "poor",
+      "regular_hours": null,
+      "cost_yen": 0,
+      "cost_kind": "admission",
+      "cost_evidence": "published",
+      "practical_tags": [
+        "Free"
+      ],
+      "experience": {
+        "tag": null,
+        "status": "none"
+      },
+      "source": {
+        "url": "https://ogose-kanko.jp/tourist_attractions/kuroyamasantaki/",
+        "authority": "tourism association",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      },
+      "return_status": "unverified"
+    },
+    {
+      "id": "ogose-satonoe",
+      "name_ja": "里の駅おごせ",
+      "hub": "station-civic",
+      "address_ja": "埼玉県入間郡越生町越生741-2",
+      "walk_from_ogose_station_min_est": 15,
+      "visit_duration_min_est": 20,
+      "transport": "walking",
+      "setting": "indoor",
+      "rain": "sheltered",
+      "regular_hours": "09:00–16:00 (regular; exceptions require checking)",
+      "cost_yen": null,
+      "cost_kind": "rest_area",
+      "cost_evidence": "unknown",
+      "practical_tags": [
+        "Indoor",
+        "Rain shelter"
+      ],
+      "experience": {
+        "tag": null,
+        "status": "none"
+      },
+      "source": {
+        "url": "https://www.town.ogose.saitama.jp/kankonavi/shisetsu/1450770445288.html",
+        "authority": "municipal",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      }
+    },
+    {
+      "id": "ogose-welcafe",
+      "name_ja": "ウエルシア越生店・ウエルカフェ",
+      "hub": "station-east",
+      "address_ja": "埼玉県入間郡越生町越生東2-6-2",
+      "walk_from_ogose_station_min_est": 10,
+      "visit_duration_min_est": 45,
+      "transport": "walking",
+      "setting": "indoor",
+      "rain": "sheltered",
+      "regular_hours": null,
+      "cost_yen": 0,
+      "cost_kind": "community_seating_if_permitted",
+      "cost_evidence": "published_conditional",
+      "practical_tags": [
+        "Indoor",
+        "Rain shelter",
+        "Free seating (conditional)"
+      ],
+      "study_permission": "unknown",
+      "wifi": "unknown",
+      "experience": {
+        "tag": "Cocoon",
+        "status": "potential"
+      },
+      "source": {
+        "url": "https://www.welcia-yakkyoku.co.jp/welcafe/guide",
+        "authority": "operator",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      }
+    },
+    {
+      "id": "ogose-iwaiya",
+      "name_ja": "岩井屋",
+      "hub": "station-west",
+      "address_ja": "埼玉県入間郡越生町越生891",
+      "walk_from_ogose_station_min_est": 10,
+      "visit_duration_min_est": 60,
+      "transport": "walking",
+      "setting": "indoor",
+      "rain": "sheltered",
+      "regular_hours": "11:30–14:30 lunch (regular; exceptions require checking)",
+      "cost_yen": 1750,
+      "cost_kind": "meal_budget_per_person",
+      "cost_evidence": "estimated",
+      "practical_tags": [
+        "Indoor"
+      ],
+      "food_ingredients_checked": false,
+      "experience": {
+        "tag": null,
+        "status": "none"
+      },
+      "source": {
+        "url": "https://ogose-kanko.jp/food/",
+        "authority": "tourism association",
+        "checked_at": "2026-11-20"
+      },
+      "observation": {
+        "visit_status": "suggested",
+        "entered": "unknown",
+        "reviewed": false
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "undated-remote",
+      "input": "Date remains null; user considers 黒山三滝.",
+      "expected": "No safe-to-return claim or leave-by time without a verified service-day bus and rail return."
+    },
+    {
+      "id": "library-not-study-approved",
+      "input": "Library has documented reading and self-study space, but laptop and Wi-Fi unknown.",
+      "expected": "Show potential indoor rest, not certified iPad study or Wi-Fi."
+    },
+    {
+      "id": "passed-without-entry",
+      "input": "User reports walking past a temple but not entering.",
+      "expected": "Passed nearby / Did not enter; no personal review and no Confirmed Cocoon."
+    },
+    {
+      "id": "estimate-not-free",
+      "input": "Budget estimate ¥700 at Beisia vs unknown entry at 里の駅.",
+      "expected": "Label estimate as estimate and unknown as unknown; do not imply either is free."
+    },
+    {
+      "id": "rainy-detour",
+      "input": "User is at park; rain begins and return window is short.",
+      "expected": "Rank eligible sheltered options with verified access, or station; no invented opening hours or seats."
+    },
+    {
+      "id": "unverified-pass",
+      "input": "Ageo–Warabi pass is known, exact registered route and travel-date validity are not.",
+      "expected": "Do not promise savings or Tobu/bus coverage until verified."
+    }
+  ]
+}
