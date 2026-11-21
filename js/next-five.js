@@ -61,7 +61,10 @@ const nextFiveRank = (rows, options={}) => {
     const km=Number(row.distanceKm);
     if (!Number.isFinite(km) || km < 0 || km > 3 || row.status==='skip' || row.deleted_at) return [];
     const category=nextFiveCategory(row), duration=category==='food' ? 45 : category==='rest' ? 45 : 25;
-    const hrs=nextFiveHours(row.hours,clock,duration), price=nextFivePrice(row);
+    // Straight-line at 80 m/min is an optimistic lower bound, NOT a walking itinerary.
+    // Use it only to eliminate destinations that cannot fit even this lower bound.
+    const travelLowerBound=Math.ceil(km*1000/80);
+    const hrs=nextFiveHours(row.hours,clock,duration+travelLowerBound), price=nextFivePrice(row);
     if (hrs.status==='closed' || hrs.status==='too_short') return [];
     if (limit!=null && price.known!=null && price.known>limit) return [];
     const shelter=row.setting==='indoor'||nextFiveTagged(row,'rain-ok');
@@ -75,7 +78,7 @@ const nextFiveRank = (rows, options={}) => {
     if (mood==='balanced') score += category==='rest'?-5:0;
     const next = {...row,_next:{
       price:price.text, hours:hrs.text+' · holiday/temporary closures not checked',
-      travel:km.toFixed(1)+' km straight-line · walking time/route unverified',
+      travel:km.toFixed(1)+' km straight-line · walk route/time unverified (minimum '+travelLowerBound+' min geometric lower bound)',
       reason:(category==='nature'?'Nature option':category==='rest'?'Possible rest stop':category==='food'?'Food option':'Saved place')+
         (rainy?(shelter?' · shelter recorded':' · rain protection unknown'):'')+
         (mood==='quiet'?(quiet==null?' · quietness unknown':' · recorded quiet '+quiet+'/3'):''),
