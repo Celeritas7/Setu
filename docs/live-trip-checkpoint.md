@@ -5,7 +5,7 @@
 ## Current phase
 
 - **L0 — Permanent specifications and Ogose fixture:** **in PR review, not yet merged**.
-- **L1:** first read-only next-five preview implemented on stacked branch `feature/live-next-five-l1-20261121` (not merged/deployed). **L2–L5:** not started as new Live Trip Companion phases.
+- **L1:** first read-only next-five preview implemented in [stacked draft PR #33](https://github.com/Celeritas7/Setu/pull/33), branch `feature/live-next-five-l1-20261121` (not merged/deployed). **L2–L5:** not started as new Live Trip Companion phases.
 - **Production:** no live-trip feature, database migration, Github Pages deployment or import has been performed by L0.
 - **Branch:** `docs/live-trip-companion-phase0-20261121`.
 - **L0 PR:** [#32 — Phase L0 specification and fixture](https://github.com/Celeritas7/Setu/pull/32) (draft, open, not merged).
@@ -37,7 +37,7 @@
 | Phase | PR / merge commit | State | Next verification |
 | --- | --- | --- | --- |
 | L0 | [#32](https://github.com/Celeritas7/Setu/pull/32) — open draft, not merged | In review | Source files, fixture checks and scope |
-| L1 | Stacked draft PR (link after opening) | In review, not merged | Ranked preview, source/unknown handling, tests, manual mobile checks |
+| L1 | [#33](https://github.com/Celeritas7/Setu/pull/33) (stacked on #32) | In review, not merged | Ranked preview, source/unknown handling, tests, manual mobile checks |
 | L2 | — | Not started | Practical + personal tag separation |
 | L3 | — | Not started | Explicit sessions, detours and verified return |
 | L4 | — | Not started | Per-space visits and review truthfulness |
