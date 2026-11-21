@@ -73,7 +73,7 @@ test('research prompts use the actual Drive destination folder and review-only e
   for (const template of catalog.templates) {
     assert.match(template.body, /Claude_Workspace\/\#Data_storage\/Setu_research\//, template.id);
     assert.match(template.body, /GitHub|Supabase/, template.id);
-    assert.match(template.body, /unknown|unverified/i, template.id);
+    assert.match(template.body, /unknown|unverified|cannot be verified/i, template.id);
     assert.match(template.body, /Drive/, template.id);
   }
   assert.match(catalog.templates[0].body, /setu_research_handoff_v1.schema.json/);

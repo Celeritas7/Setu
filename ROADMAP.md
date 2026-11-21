@@ -121,7 +121,7 @@ separate approval and has **not** been applied. H7, I3–I5 and J remain future 
 [`docs/live-trip-checkpoint.md`](docs/live-trip-checkpoint.md).
 `data/trip-research/ogose-phase0.json` is a **synthetic/non-live** reference fixture, not a production import or a confirmed Saturday itinerary.
 
-- [ ] **L0 · Permanent requirements and fixture:** audit existing features; document safety/reviews/data contracts and test gates; supply an Ogose fixture and contract tests. **In review only until PR merged.** No runtime or production changes.
+- [x] **L0 · Permanent requirements and fixture:** merged in PR #32 (`f74bc76`). Safety/reviews/data contracts, Ogose fixture and test gates. No runtime or production changes.
 - [ ] **L1 · Five safety-ranked next places:** turn nearby five-card paging into up to five eligible recommendations using date, closing window, evidence-backed prices, quiet/rest preferences, weather and **verified** return margin. Unknown return must never become a safe claim.
 - [ ] **L2 · Practical and experience tags:** multiple practical tags and separate Potential vs Personally Confirmed Igloo/Cocoon/Hideout, scoped to the room actually reviewed; preserve existing G4 seating confirmations.
 - [ ] **L3 · Explicit trip sessions, detours and safe return:** manual Start Trip, current stop, optional foreground GPS, safer return deadline and separate missed-bus/train/offline fallbacks. Integrate the already-pending **E4 Getting back** design; no made-up last departures.
@@ -129,3 +129,15 @@ separate approval and has **not** been applied. H7, I3–I5 and J remain future 
 - [ ] **L5 · Approved import and sync:** review additive schema/RLS, auth and revision conflicts, deduplicated unaccepted research imports, privacy, cross-device sync and trip reports. **Production migrations and writes require separate approval.**
 
 **Release rhythm:** one reviewable PR per phase, with tests and checkpoint updates; no automatic merge, deploy or SQL. Continue from the first eligible unchecked item after verifying the previous phase is actually merged. A prepared PR is not implemented functionality.
+
+## Phase R — Reusable Research Import
+
+Separate from the four research prompts. Detailed contract, audit and acceptance status are in
+[`docs/research-import.md`](docs/research-import.md). This is the research preparation track for K4/L5, with E4/L3 retaining return-safety ownership.
+
+- [ ] **R1 · Validator and local dry-run preview:** v1 schema upload/paste, field errors, hub/candidate counts, advisory existing-place matches and differences, full evidence and pending review export. Prepared for review; no persistence.
+- [ ] **R2 · Deduplication and decisions:** resolve hubs and linked places; Accept as suggestion / Skip / Merge selected research facts; preserve personal fields and reviewed pins.
+- [ ] **R3 · Local drafts and backup:** persist approved browser-local suggestions, destination-scoped identities, idempotent re-import, interrupted-operation recovery, export/restore.
+- [ ] **R4 · Approved cloud persistence:** reviewed additive schema/RLS, user isolation, revisions, concurrent retries and sync. Separate approval before SQL or production writes.
+
+Each phase gets a reviewable PR. R1 preview is not a completed persisted import. No automatic merge or deployment.
