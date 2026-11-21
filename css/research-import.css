@@ -32,6 +32,14 @@ summary { cursor: pointer; font-weight: 650; min-height: 28px; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.5; background: #f5f3ee; padding: 12px; max-height: 420px; overflow: auto; }
 .warning, #errors { color: #8b241d; overflow-wrap: anywhere; }
 .chip { display: inline-block; background: #f5ebcf; color: #5f4918; border-radius: 3px; padding: 4px 8px; margin: 3px; font-size: 12px; }
+.review-actions { border: 1px solid #d4d0c7; background: #faf9f5; padding: 16px; margin-top: 20px; }
+.check-label { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; margin: 14px 0; line-height: 1.5; }
+.check-label input { width: auto; flex: none; margin: 4px 0 0; }
+.fact-choice { display: block; border-top: 1px solid #ddd6c7; padding: 8px 0; }
+.fact-choice pre { margin: 0; }
+.hub-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.decision-message { font-weight: 650; color: #23523b; }
+fieldset { min-width: 0; border: 1px solid #d4d0c7; margin: 16px 0; padding: 12px; }
 .source { border-bottom: 1px solid #e5e1d8; padding: 8px 0; overflow-wrap: anywhere; }
 a { color: #23556b; }
 .table-wrap { overflow-x: auto; }
