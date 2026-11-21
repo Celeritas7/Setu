@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1c1b18">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>Research Import · Setu</title>
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/research-import.css">
+  <script defer src="js/research-import-schema.js"></script>
+  <script defer src="js/research-import.js"></script>
+  <script defer src="js/research-import-ui.js"></script>
+</head>
+<body>
+  <header><a href="index.html">← Setu</a><strong>RESEARCH IMPORT</strong><span>Phase R1 · Preview</span></header>
+  <main>
+    <p class="eyebrow">SETU / RESEARCH HANDOFF</p>
+    <h1>Review the research.<br><em>Keep the evidence.</em></h1>
+    <p>Upload a destination research JSON to check its contents and compare places. Every candidate starts as an unvisited suggestion.</p>
+    <div class="notice">Local dry run. Approval and saving become available in later phases. Keep your original JSON as a backup.</div>
+    <p id="comparison-status" role="status"></p>
+    <section aria-labelledby="upload-heading">
+      <h2 id="upload-heading">1. Choose your research</h2>
+      <label>Research JSON file · up to 5 MiB
+        <input id="research-file" type="file" accept=".json,application/json">
+      </label>
+      <details><summary>Or paste JSON</summary>
+        <label for="research-text">Research handoff JSON</label>
+        <textarea id="research-text" rows="8" spellcheck="false" placeholder="Paste a setu_research_handoff v1.0.0 document"></textarea>
+      </details>
+      <div class="actions"><button id="validate" type="button">Validate &amp; preview pasted JSON</button><button id="clear" type="button" class="secondary">Clear preview</button></div>
+      <p id="upload-status" role="status" aria-live="polite">Choose a JSON file to begin. Schema v1.0.0.</p>
+      <div id="errors" role="alert" tabindex="-1"></div>
+    </section>
+    <section id="preview" hidden aria-labelledby="preview-heading">
+      <div class="actions"><h2 id="preview-heading">2. Dry-run preview</h2><button id="export" type="button">Download review JSON</button></div>
+      <p id="summary" role="status" aria-live="polite"></p>
+      <p class="muted">Matches are review leads. Shared addresses and source pages may cover several places. A missing match cannot establish that a place is new.</p>
+      <div id="hub-counts" class="hub-grid"></div>
+      <details><summary>Destination, provenance &amp; historical evidence</summary><pre id="document-evidence"></pre></details>
+      <div class="filters"><label>Hub<select id="hub-filter"><option value="">All hubs</option></select></label>
+        <label>Find a candidate<input id="candidate-search" type="search" placeholder="Name or research ID"></label></div>
+      <p class="muted">Personal reviews, visit status, accepted state and confirmed experience tags require their own review flow. Research coordinates and addresses remain unverified.</p>
+      <div id="candidates"></div>
+      <nav class="actions" aria-label="Candidate pages"><button id="previous" type="button" class="secondary">← Previous</button><span id="page-status"></span><button id="next" type="button" class="secondary">Next →</button></nav>
+    </section>
+    <noscript>Enable JavaScript to validate research locally.</noscript>
+  </main>
+</body>
+</html>

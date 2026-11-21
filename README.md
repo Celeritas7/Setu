@@ -75,3 +75,15 @@ visited or create personal Cocoon/Igloo/Hideout tags. See [`docs/visited-seating
 Signed-in G4 writes remain **disabled until the separately prepared `seating_checks` migration is explicitly approved
 and deployed**; local browser-only food confirmations work without it. No G4 migration is applied automatically by
 opening a PR. The long-trip `Setu.dc.html` app and integration bootstrap are unchanged.
+
+## Research Import — Phase R1 review candidate
+
+**Home → Research Import** (also in ☰) opens the local research validator and dry-run preview. Upload or paste a
+`setu_research_handoff` v1.0.0 JSON for any destination. See field errors, hub counts, five candidate cards at a time,
+possible existing-place matches and saved-versus-research differences. **Download review JSON** preserves the complete
+research and pending comparison. Reopen from Home to refresh the snapshot of already loaded saved places.
+
+R1 provides preview/export only. Decisions and saving are later phases. The preview clears on reload, and comparison
+is limited to records already loaded by Setu. Source dates, unknown prices, estimates, potential tags and historical
+evidence remain separate. See [`docs/research-import.md`](docs/research-import.md) for the four-phase plan and pending
+browser/device acceptance checks. The four research prompts remain independently maintained.
