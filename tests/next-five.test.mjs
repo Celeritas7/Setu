@@ -68,7 +68,7 @@ test('neither proximity nor published hours certify return or walking time',()=>
 test('rain preference can elevate sheltered candidates, but shelter is evidence-limited',()=>{
   const rows=[
     row('garden',{distanceKm:0.3,themes:['nature']}),
-    row('library',{distanceKm:0.5,setting:'indoor',themes:['sit-long']})
+    row('library',{distanceKm:0.7,setting:'indoor',themes:['sit-long']})
   ];
   const normal=run(rows,{mood:'balanced',rainy:false}).rows;
   const rain=run(rows,{mood:'balanced',rainy:true}).rows;
