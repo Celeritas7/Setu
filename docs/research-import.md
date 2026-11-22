@@ -131,9 +131,19 @@ Each successful transaction retains the previous complete workspace payload. **R
 
 ### Offline shell
 
-The importer registers `research-import-sw.js` with the narrow `research-import.html` scope on supported HTTPS browsers. It caches the importer HTML, scripts, stylesheet and icon, and shows **Research Import ready offline** only after an active worker has completed installation. The next offline visit can resume stored reviews and work with local files. This readiness is separate from a successful IndexedDB save.
+The importer registers `research-import-sw.js` with the narrow `research-import.html` scope on supported HTTPS browsers. It caches the importer HTML, scripts, stylesheet and icon. **Research Import ready offline** now requires the expected worker to control the current page and reply that all nine required static files are cached. An installed worker alone does not establish readiness. Missing, outdated or unresponsive setup shows an unverified status; **Check offline setup** requests a worker update and repairs its static cache. No review/draft storage is cleared. The next offline visit can resume stored reviews and work with local files. This readiness is separate from a successful IndexedDB save.
 
-The worker handles only the known static importer assets. It never caches uploaded research JSON or Supabase responses. Other Setu pages/apps and unrelated caches are outside its handler/cleanup. Temporary network/server failures use the cached shell; usable online responses survive cache quota errors. Bump the research-cache version when changing the offline shell. Native browser installation/reopening checks remain pending.
+The worker handles only the known static importer assets. It never caches uploaded research JSON or Supabase responses. Other Setu pages/apps and unrelated caches are outside its handler/cleanup. Temporary network/server failures use the cached shell; usable online responses survive cache quota errors. Bump the matching version in `research-import-sw.js` and `js/research-offline.js` when changing the offline protocol/shell.
+
+For the offline test, wait for verified readiness, download a backup, disconnect, then use **Reopen Research Import** or a normal reload. A forced refresh (Ctrl+Shift+R/Ctrl+F5) bypasses the worker and can show Chrome's offline error even with cached files; see [Chrome's refresh behavior](https://developer.chrome.com/docs/workbox/improving-development-experience#shift_and_reload). The new link uses ordinary navigation to remove that shortcut ambiguity. It opens the importer shell; select Resume saved review afterward.
+
+### R3 offline correction after user testing
+
+The user confirmed accept/skip recovery and repeated local saves with one saved suggestion and zero additional suggestions. Windows offline reopening then displayed `ERR_INTERNET_DISCONNECTED` despite the old readiness label. The precise cause of that screenshot is not established. The old label only checked installation, so it could not distinguish an uncontrolled page or a missing cache. The correction verifies both and provides an explicit repair/reopen path; it does not claim to override a forced refresh or browser bypass setting.
+
+Native Chromium preview checks passed with synthetic research: the new MessageChannel/cache verification reached ready, a skip decision committed to IndexedDB, the preview server was stopped, both ordinary link navigation and normal reload reopened the cached importer, and Resume restored the skipped decision. This verifies native cache/controller/IndexedDB behavior under origin unavailability. It is not a reproduction of the user's Windows network disconnection, and physical Android/iPad checks remain pending. The user's existing 37-candidate review was also observed intact after reopening the live page online; no decisions or drafts were changed during that inspection.
+
+All **292 tests** pass after this correction. Regression tests include missing-cache detection/repair, failed repair preserving existing cache, installed-but-uncontrolled pages, wrong/unresponsive controllers, activation changes, failed installations and reopening with an existing worker when registration cannot reach the network.
 
 ### R3 verification and remaining acceptance
 

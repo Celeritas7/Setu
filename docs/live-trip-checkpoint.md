@@ -13,7 +13,7 @@
 - **Research baseline refreshed:** `50af3b7` (merged PR #34) before R1 publication; existing prompt updates preserved.
 - **R1:** merged in PR #35 (`ee9c7a0`); user upload/preview/export verified with exact research preservation.
 - **R2:** merged in PR #36, with usability correction #37 (`1a73704`). Individual accept/skip controls were user-verified.
-- **Current supporting track:** R3 local drafts and recovery, prepared for separate PR review. 282 tests pass, including simulations of both user-uploaded review exports. Native IndexedDB/service-worker and desktop/Android/iPad checks remain pending. R4 requires separate approval. See `docs/research-import.md`. L1–L5 remain separate work.
+- **Current supporting track:** R3 implementation merged in PR #38 (`0deba68`). User verified decision recovery and duplicate prevention, then Windows offline reopening failed. A focused readiness/repair correction is prepared; the exact Windows cause remains unconfirmed. All 292 tests pass, plus native Chromium cache/controller/IndexedDB recovery with the preview server stopped. Windows disconnection retest, portable-backup restore and physical Android/iPad acceptance remain pending. R4 requires separate approval. See `docs/research-import.md`. L1–L5 remain separate work.
 
 ## Baseline found on main, 2026-11-21
 

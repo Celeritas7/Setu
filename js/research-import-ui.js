@@ -496,14 +496,7 @@
   byId('restore-confirm').addEventListener('click', async () => {restoring=false;updateSaveButtons();if (!await persist()) {restoring=true;updateSaveButtons();}});
   refreshSaved().then(ready => {if (ready && !result) byId('storage-status').textContent='Local storage ready. Resume a saved review or import research.';})
     .catch(error => {byId('storage-status').textContent='Local storage could not be read: ' + error.message;});
-  if (typeof navigator !== 'undefined' && navigator.serviceWorker && window.isSecureContext) {
-    navigator.serviceWorker.register('research-import-sw.js',{scope:'./research-import.html'}).then(registration => {
-      const update = () => {
-        if (registration.active?.state === 'activated') byId('offline-status').textContent='Research Import ready offline. Saved reviews stay in this browser.';
-      };
-      update();
-      const worker = registration.installing || registration.waiting || registration.active;
-      if (worker) worker.addEventListener('statechange',update);
-    }).catch(() => {byId('offline-status').textContent='Offline reopening is unavailable. Local saving and downloaded backups are still available.';});
-  } else byId('offline-status').textContent='Offline reopening needs a supported browser on HTTPS. Local backups remain available.';
+  window.SetuResearchOffline.start({serviceWorker:typeof navigator !== 'undefined' ? navigator.serviceWorker : null,
+    secure:window.isSecureContext,base:document.baseURI,status:byId('offline-status'),
+    check:byId('offline-check'),reopen:byId('offline-reopen')});
 })();
