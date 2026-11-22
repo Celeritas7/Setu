@@ -68,7 +68,7 @@
         payload = await local.mergeWorkspace(record && !corrupt ? payload : null,input.workspace);
         next = payload.reviews[input.report];warnings = payload.restore_warnings || [];
       } else if (input.kind === 'review' || payload.reviews[input.report]) {
-        const restored = local.restoredReview(input.kind === 'review' ? input.exported : payload.reviews[input.report],payload.catalog,today(),input.scope);
+        const restored = local.restoredReview(input.kind === 'review' ? input.exported : payload.reviews[input.report],payload.catalog,today(),input.scope,input.kind === 'research' ? comparison : null);
         next = restored.review;warnings = restored.warnings;
       }
       else next = local.prepare(input.research,comparison,payload.catalog,today(),input.scope);
@@ -205,10 +205,13 @@
       const selected = report || payload.active;
       if (!payload.reviews[selected]) throw new Error('Saved research version is unavailable.');
       if (sequence !== uploadSequence) return;
-      context = {record,payload,report:selected,blocked:false};result = payload.reviews[selected];restoring = recoverPrevious;
+      const refreshed = !recoverPrevious && comparison ? local.restoredReview(payload.reviews[selected],payload.catalog,today(),payload.id,comparison) : null;
+      context = {record,payload,report:selected,blocked:false};result = refreshed?.review || payload.reviews[selected];restoring = recoverPrevious;
       showReview();
       if (payload.restore_warnings?.length) message(payload.restore_warnings.join(' '));
+      if (refreshed?.warnings.length) message(refreshed.warnings.join(' '));
       byId('storage-status').textContent = recoverPrevious ? 'Previous checkpoint preview. Choose Restore review locally to confirm recovery.' : 'Resumed saved review. Comparison evidence is historical and must be rechecked before future cloud sync.';
+      if (refreshed) {byId('storage-status').textContent='Fresh Setu comparison loaded. Changed targets need new approval.';await persist();}
     } catch (error) {byId('storage-status').textContent = 'Could not resume: ' + error.message + ' Try Recover previous checkpoint or a downloaded backup.';}
   }
 

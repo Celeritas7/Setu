@@ -6,8 +6,8 @@
 | --- | --- | --- |
 | R1 | Bundled v1 validator, local dry-run preview, advisory matches and differences, review export | Merged in PR #35, `ee9c7a0`; basic user upload/preview/export verified |
 | R2 | Resolve duplicate hubs and linked places, explicit Accept as suggestion / Skip / Merge selected research facts, field-group decisions | Merged in PR #36, with usability correction #37 (`1a73704`) |
-| R3 | Browser-local accepted drafts, backup/restore, stable destination-scoped identities, repeat-import idempotency and recovery | Prepared for review; browser/device acceptance pending |
-| R4 | Separately approved additive schema/RLS, authenticated persistence, isolation, revisions, retry/concurrency and multi-device sync | Pending, requires separate approval |
+| R3 | Browser-local accepted drafts, backup/restore, stable destination-scoped identities, repeat-import idempotency and recovery | Merged #38/#39; user verified decisions, duplicate prevention, offline reopen and portable restore; two-tab/device checks pending |
+| R4 | Separately approved additive schema/RLS, authenticated persistence, isolation, revisions, retry/concurrency and multi-device sync | Implemented for review; migration not applied and cloud writes disabled |
 
 R1/R2 are the import preparation portion of K4/L5. It does not depend on the L1 recommendation engine. R2/R3 should reuse the L2 potential/personal tag contract and L4 observation boundaries. E4/L3 continue to own current dated transport and return safety. The four travel research prompts remain a separate workflow.
 
@@ -41,7 +41,7 @@ Coverage is always marked incomplete. Existing app reads may be limited by the s
 
 Hub IDs in a handoff are file-local references, not production UUIDs. R1 preserves their grouping and suggests name matches without minting database identities. R2 explicitly resolves existing or shared draft hubs. R3 must create stable destination-scoped identities and demonstrate repeat-import behavior before saving is enabled.
 
-The standalone importer loads no auth, Supabase or broadcast client. Its CSP forbids network connections, and its DOM uses text nodes for imported text. The browser download includes the supplied research and allowed comparison fields, so treat it as a personal backup.
+The standalone importer loads no auth, Supabase or broadcast client. Its CSP forbids network connections, and its DOM uses text nodes for imported text. Its Research cloud link opens the separate online workflow on Setu Home, which reuses Setu's existing client. The browser download includes the supplied research and allowed comparison fields, so treat it as a personal backup.
 
 ## Audit checkpoint
 
@@ -160,3 +160,50 @@ A fresh Chromium launch was attempted for R3 and failed with `socket() failed: O
 5. Open the same saved review in two tabs, change one, then attempt a save in the stale tab. Confirm the conflict preserves the newer record and permits exporting the stale tab's work.
 
 No production SQL, merge or deployment is performed by this R3 implementation. R4 schema/RLS and cloud persistence require separate approval.
+
+## Cloud persistence and conflicts (R4)
+
+R4 starts from merged #39 (`2229c03`). The user subsequently verified offline reopening through **Reopen Research Import**, portable backup restore with 37 candidates and one local suggestion, and offline readiness in the restored browser after normal reload/check. Physical Android/iPad and manual two-tab acceptance remain pending. R4 does not change the travel prompts or transportation-calculation ownership.
+
+### Current release boundary
+
+**Prepared code, not a live cloud import.** `SetuResearchCloud.RELEASE_ENABLED` is `false`. Upload and retry are disabled and the transport also rejects mutations at runtime. The migration `supabase/migrations/20261122065058_research_import_cloud.sql` was generated with the CLI and has **not been applied to any hosted database**. Merging application code does not apply SQL or enable cloud writes.
+
+The existing configured General_apps project was inspected read-only. The three core tables already have owner-scoped RLS and `setu_touch` revision checks; R4 reuses them without altering their policies, grants or triggers. Existing `seating_checks` deployment remains a separate G4 concern. Shared-project advisors also reported existing warnings, including mutable search paths on two older Setu functions; those unrelated functions were not changed. No live keys, account IDs or private research are added to public documentation/tests.
+
+### Online workflow after separate enablement
+
+1. Save/review locally as in R3. From Research Import choose **Research cloud (online)**, or use Setu's menu **Research cloud · Review and sync**. The panel uses the same `window.setu.sb` and sign-in; it starts no second auth/broadcast client. Nothing uploads automatically.
+2. Choose a destination. By default the batch backs up the complete workspace. Optionally select publishing of approved suggestions and selected research merges. **Preview cloud batch** loads the current cloud revision and, for publishing, fresh paged comparison/identity data. A failed or truncated read blocks publication; missing matches are not proof of a new place.
+3. Read new/reused counts, five suggestion details at a time, original evidence and selected merge facts. Cloud-only research versions are retained. Changed decisions for matching report IDs are explicitly listed before the local values replace them. Diverged base drafts or incompatible supplement histories block upload; restore a cloud backup and review selective merges locally instead. A prior complete cloud workspace is retained as a recovery checkpoint.
+4. Confirm the displayed signed-in account and reviewed batch, then **Upload reviewed batch**. Local reviews are browser-scoped, so no account owns them until this explicit upload. Changing accounts clears the preview; changes to local storage invalidate it. A changed cloud revision/target blocks the transaction and requires fresh review.
+5. A confirmed result shows the cloud revision, created suggestions and attached evidence. New food places go to `setu_food_notes`; shop/sight/other records go to `setu_spots`. They appear in **Browse** as `accepted=false`, `status=try`, without pins or personal confirmations. Source price text is retained in the intro; `spend_yen` stays null because admission, estimates and scoped service prices are different concepts.
+6. **List my cloud reviews → Download cloud backup** provides the R3 backup format on another device. Restore it through Research Import's existing preview/confirmation flow. The list shows the latest 200 destinations. **Download previous cloud checkpoint** provides the prior version when available. **View my saved research evidence** displays full source snapshots and selected groups for this account.
+
+### Storage, protected fields and conflicts
+
+- Four new owner-isolated tables store destination workspaces/checkpoints, immutable request receipts, stable local-to-core identities and append-only research evidence. Full research/provenance/history remain in the workspace and attachments. Every new table enables RLS; anon/public access is revoked. Functions use `SECURITY INVOKER`, a fixed empty search path, explicit authenticated execution grants, verified caller ID and rejection of anonymous sign-ins. No service key is introduced.
+- One RPC commits the workspace, new hubs/suggestions, evidence and receipt in a single transaction. Owner-scoped transaction advisory locks serialize research commits across destinations, including competing first inserts. Existing targets are locked in table/ID order and compared with the preview's revisions. Core revision increments continue to use the existing trigger.
+- Publishing twice reuses stable identities and deduplicates evidence. A changed original draft cannot silently replace a published record. Existing personal review/rating/visit/acceptance, coordinates, seating confirmations, experience confirmations and legacy operational facts have no import setter. Selected merges attach scoped research groups and increment the target revision; they do **not** overwrite core names/hours/budgets or personal columns. Consult the evidence panel for imported fact updates. Registry links remain unverified references in preserved evidence/identity metadata; no registry, Cost shop, inferred pin or automatic shop association is written.
+- Duplicate checks span both owned core tables across destinations, including names/aliases plus address, external place IDs and previously imported linked identities. Source URLs alone do not collapse places. Matching hub names require an existing hub choice or a qualified distinct research hub name. Nonunique indexes support these checks without imposing a global uniqueness rule on all venues.
+- Concurrent manual creation outside this RPC is not serialized by its advisory lock; it can race a duplicate check. This is not a universal location-identity registry. Existing-row revision checks and transactional rollback still apply. Review duplicates against refreshed data instead of treating normalization as geographical proof.
+- The cloud transport verifies the user before/after calls and sends the expected owner to the RPC as a separate guard against a session switch during dispatch. RLS remains the database authority. Comparison projections exclude personal reviews, ratings and coordinates. Paging uses exact totals and actual returned row counts rather than assuming the configured API row cap.
+- Before dispatch, the exact owner/destination/request ID, expected revision and payload are committed to a separate IndexedDB outbox. A lost response leaves the result **unconfirmed** and retains that request. **Retry pending upload** sends identical arguments and recovers the original receipt, even if the cloud revision later advanced. It never synthesizes a new request ID or rebuilds an uncertain upload from edited local data. Definitive server rejection permits fresh preview; uncertainty must be resolved first. Account changes never replay another account's queue.
+- Fresh comparison received from Setu Home can now rebase a saved local review. Changed/missing merge targets return to pending and require approval again. Original research remains preserved. A historical backup alone cannot authorize writing a current target revision.
+- Raw handoff/R3 limits remain. Cloud workspace JSON is limited to 25 MiB, 200 report versions, 1,000 suggestions and 200 local hubs. Invalid/unsupported versions and unsafe attachment source URLs/dates are rejected server-side as well as through client validation. Quota/storage errors preserve local work and exports; nothing evicts older reviews automatically.
+
+### Validation and approval sequence
+
+Install pinned development-only dependencies with `npm ci`, then run `npm test`. PGlite executes the proposed migration and actual PL/pgSQL/RLS in a disposable PostgreSQL engine; fixtures reproduce relevant audited core columns, ownership policies and revision triggers. No real auth rows, private research or database backup are copied into tests. This verifies SQL behavior, not Supabase's hosted gateway or physical multi-connection stress. Transport/UI adapters test paging, explicit approval, account changes, lost-response retries, revision conflicts, backup validation and merging of device workspaces. Existing R1–R3 and app regressions remain included.
+
+All **315 tests** pass, including eleven SQL-engine cases. The bundle template round-trips; compressed app/bootstrap assets, the long-trip app, G4 migration and all travel prompts remain unchanged.
+
+The managed preview was occupied by another task during R4, so native R4 browser/layout checks remain pending. Earlier R3 native caching/recovery checks and subsequent user acceptance remain recorded separately. No hosted schema, production record, auth setting or deployment was changed.
+
+Release steps must remain separate:
+
+1. Review/merge the code PR as appropriate; writes remain disabled.
+2. Review the migration and backup/readiness evidence. Obtain separate approval before applying this R4 SQL file to the configured project. Do not bulk-apply older pending migrations: G4 remains separately approved work. Recheck grants, policies, functions, index/build locking and API exposure after application.
+3. Obtain separate approval for activation/production test writes. Enable the release flag in a reviewed change only after database acceptance. The same authentication client/permissions remain in use.
+4. Test a small synthetic destination in an approved environment: backup-only save, new suggestion, repeat publish (zero duplicates), selected merge into a place with a personal review, stale device/target rejection, interrupted-response retry and second-account isolation. Download/restore current and previous cloud checkpoints.
+5. Complete actual desktop, Android/iPad, two-tab and two-device tests before declaring R4 production-accepted. Remove only explicitly identified disposable test data after approval; no cleanup runs automatically.

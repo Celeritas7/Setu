@@ -1,9 +1,9 @@
 (function (root) {
   'use strict';
-  function open(indexedDB = root.indexedDB) {
+  function open(indexedDB = root.indexedDB, databaseName = 'setu-research-local-v1') {
     return new Promise((resolve,reject) => {
       if (!indexedDB) {reject(new Error('Browser storage is unavailable. Download a backup to keep your work.'));return;}
-      const request = indexedDB.open('setu-research-local-v1',1);
+      const request = indexedDB.open(databaseName,1);
       request.onupgradeneeded = () => request.result.createObjectStore('workspaces',{keyPath:'id'});
       request.onerror = () => reject(request.error);
       request.onblocked = () => reject(new Error('Close other Research Import tabs and retry local saving.'));

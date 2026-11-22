@@ -76,28 +76,39 @@ Signed-in G4 writes remain **disabled until the separately prepared `seating_che
 and deployed**; local browser-only food confirmations work without it. No G4 migration is applied automatically by
 opening a PR. The long-trip `Setu.dc.html` app and integration bootstrap are unchanged.
 
-## Research Import — R1/R2 merged, R3 review candidate
+## Research Import — R1–R3 merged, R4 prepared
 
 **Home → Research Import** (also in ☰) opens the local research validator and dry-run preview. Upload or paste a
 `setu_research_handoff` v1.0.0 JSON for any destination. See field errors, hub counts, five candidate cards at a time,
 possible existing-place matches and saved-versus-research differences. **Download review JSON** preserves the complete
 research and pending comparison. Reopen from Home to refresh the snapshot of already loaded saved places.
 
-R1 provides preview/export. R2 adds explicit hub/category choices, Accept as suggestion, Skip, and selected fact merges. Decisions stay in memory until exported; saving drafts is R3 work. The preview clears on reload, and comparison
+R1 provides preview/export. R2 adds explicit hub/category choices, Accept as suggestion, Skip, and selected fact merges.
+R3 autosaves confirmed decisions and approved local drafts, and supports reload recovery and portable backups. Comparison
 is limited to records already loaded by Setu. Source dates, unknown prices, estimates, potential tags and historical
 evidence remain separate. See [`docs/research-import.md`](docs/research-import.md) for the four-phase plan and pending
 browser/device acceptance checks. The four research prompts remain independently maintained.
 
-On the R2 branch, choose a hub destination before accepting a new suggestion. For a merge, search for the same saved
+Choose a hub destination before accepting a new suggestion. For a merge, search for the same saved
 Setu place or another research suggestion already accepted in this review, choose fact groups and confirm the target.
 **Download review JSON** keeps the original research and your decisions. Resetting a base suggestion clears its dependent
 merges. See the R2 section of `docs/research-import.md` for device checks and conflict rules.
 
 
-On the R3 branch, confirmed decisions autosave to IndexedDB. **Saved reviews & local suggestions → Resume saved review**
+With R3, confirmed decisions autosave to IndexedDB. **Saved reviews & local suggestions → Resume saved review**
 reopens them after reload. **Save approved local drafts** creates destination-scoped research suggestions in this importer,
 with repeated saves avoiding duplicates. They retain original evidence and remain unvisited/unpinned. Saved Setu/Supabase
-place merges are deferred proposals for the separately approved cloud phase.
+place merges are proposals for the separately approved cloud phase.
+
+**R4 prepared:** the online **Research cloud** panel reuses Setu's sign-in, previews a destination upload, saves/restores
+cloud backups and can publish approved unvisited suggestions plus selective evidence attachments. Owner RLS, atomic
+revision checks and durable request receipts protect against account changes, stale devices and lost responses.
+Cloud-only research versions and a previous cloud checkpoint are preserved. Personal reviews, pins and confirmed tags
+have no research-import setter. **The migration is not applied and cloud writes are disabled** pending separate approval.
+See the R4 section of [`docs/research-import.md`](docs/research-import.md) for scope, limits and activation checks.
+
+Run regression and disposable SQL-engine tests with `npm ci` then `npm test`. The pinned PostgreSQL test dependency
+is development-only; the app still has no build step.
 
 **Download local backup** includes all research versions and local suggestions for the current destination. Upload a backup
 or an earlier R1/R2 review export, inspect it, then select **Restore review locally**. **Recover previous checkpoint** offers
