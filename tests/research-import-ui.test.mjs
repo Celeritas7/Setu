@@ -7,6 +7,7 @@ import {createRequire} from 'node:module';
 const require = createRequire(import.meta.url);
 const model = require('../js/research-import.js');
 const local = require('../js/research-local.js');
+const offline = require('../js/research-offline.js');
 const ui = fs.readFileSync(new URL('../js/research-import-ui.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('../research-import.html', import.meta.url), 'utf8');
 
@@ -42,7 +43,7 @@ function harness(snapshot = null, backend = new MemoryStorage()) {
   elements.preview.hidden = true;
   const storage = new Map(snapshot ? [[model.SNAPSHOT_KEY, JSON.stringify(snapshot)]] : []), blobs = [];
   const context = vm.createContext({
-    window:{SetuResearchImport:model,SetuResearchLocal:local,SetuResearchStorage:{async open(){return backend;}}}, Date, Intl, Blob, TextEncoder,
+    window:{SetuResearchImport:model,SetuResearchLocal:local,SetuResearchOffline:offline,SetuResearchStorage:{async open(){return backend;}}}, Date, Intl, Blob, TextEncoder,
     URL:{createObjectURL(blob){blobs.push(blob);return 'blob:test';},revokeObjectURL(){}},setTimeout(){},
     sessionStorage:{getItem(key){return storage.get(key);},removeItem(key){storage.delete(key);}},
     document:{body:new Element('body'),getElementById(id){assert.ok(elements[id],id);return elements[id];},
