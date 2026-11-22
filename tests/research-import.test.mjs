@@ -169,8 +169,16 @@ function appHarness() {
     localStorage:{getItem(){return null;}}, sessionStorage:{setItem(k,v){storage.set(k,v);},removeItem(k){storage.delete(k);}},
     document:{}, navigator:{}});
   new vm.Script(runtime + '\n;globalThis.App = Component;').runInContext(context);
-  return {app:new context.App(),storage,navigations};
+  return {app:new context.App(),storage,navigations,window:context.window};
 }
+
+test('R4 menu opens the optional workflow with the existing authenticated client and refresh callback',async()=>{
+  const h=appHarness();let options,refreshes=0;
+  h.window.setu={sb:{existingClient:true}};h.window.SetuOpenResearchCloud=value=>{options=value;};
+  h.app.pullCloud=()=>{refreshes++;};h.app.renderVals().openResearchCloud();
+  assert.equal(options.hub,h.window.setu);await options.onSaved();assert.equal(refreshes,1);
+  assert.match(template,/src="js\/research-cloud-loader.js"/);assert.match(template,/sc-camel-on-click="\{\{ openResearchCloud \}\}"/);
+});
 
 test('normal entry creates a one-use snapshot without reviews, locations or account identifiers', () => {
   const h = appHarness();

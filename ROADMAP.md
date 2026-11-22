@@ -137,7 +137,7 @@ Separate from the four research prompts. Detailed contract, audit and acceptance
 
 - [x] **R1 · Validator and local dry-run preview:** merged in PR #35 (`ee9c7a0`). User verified basic upload/preview/export; original research preservation checked.
 - [x] **R2 · Deduplication and decisions:** merged in PR #36 (`1f3876b`). In-memory accept/skip/selective merges and review export. Usability correction #37 is merged (`1a73704`); remaining manual checks are tracked in `docs/research-import.md`.
-- [ ] **R3 · Local drafts and backup:** implementation merged in PR #38 (`0deba68`). User verified decision recovery and duplicate prevention. Offline correction prepared: verify page control and all cached files, repair setup and normal reopen link. 292 tests pass; native Chromium server-down reopening/resume passed. Windows disconnection retest, portable-backup restore and physical Android/iPad acceptance remain pending.
-- [ ] **R4 · Approved cloud persistence:** reviewed additive schema/RLS, user isolation, revisions, concurrent retries and sync. Separate approval before SQL or production writes.
+- [ ] **R3 · Local drafts and backup:** merged #38/#39 (`2229c03`). User verified decision recovery, duplicate prevention, offline reopening via the link, portable restore and readiness after normal reload. Manual two-tab and physical Android/iPad acceptance remain pending.
+- [ ] **R4 · Approved cloud persistence:** implementation prepared for review: owner-isolated cloud workspaces/checkpoints, explicit upload preview, stable Browse suggestions, selective evidence attachments, atomic revision checks and durable exact-request retries. Migration is unapplied; release writes remain disabled. Native/hosted acceptance pending. Separate approval before SQL, activation or production writes; see `docs/research-import.md`.
 
 Each phase gets a reviewable PR. R1 preview is not a completed persisted import. No automatic merge or deployment.

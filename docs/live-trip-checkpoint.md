@@ -13,7 +13,8 @@
 - **Research baseline refreshed:** `50af3b7` (merged PR #34) before R1 publication; existing prompt updates preserved.
 - **R1:** merged in PR #35 (`ee9c7a0`); user upload/preview/export verified with exact research preservation.
 - **R2:** merged in PR #36, with usability correction #37 (`1a73704`). Individual accept/skip controls were user-verified.
-- **Current supporting track:** R3 implementation merged in PR #38 (`0deba68`). User verified decision recovery and duplicate prevention, then Windows offline reopening failed. A focused readiness/repair correction is prepared; the exact Windows cause remains unconfirmed. All 292 tests pass, plus native Chromium cache/controller/IndexedDB recovery with the preview server stopped. Windows disconnection retest, portable-backup restore and physical Android/iPad acceptance remain pending. R4 requires separate approval. See `docs/research-import.md`. L1–L5 remain separate work.
+- **R3:** merged #38/#39 (`2229c03`). User verified decision recovery, duplicate prevention, offline reopening through Reopen Research Import, portable backup restoration (37 candidates/one local suggestion) and readiness after normal reload/check. Manual two-tab and Android/iPad checks remain pending.
+- **Current supporting track:** R4 prepared for review. Reuses Setu's authenticated client for explicit cloud backup/publishing, owner-isolated SQL workspaces/evidence/identities/receipts, revision conflicts and durable retries. All 315 tests pass, including eleven disposable SQL-engine cases. New suggestions remain unvisited Browse entries; selected research attachments preserve personal reviews/pins/confirmations. The additive migration is unapplied and `RELEASE_ENABLED=false`; separate SQL/activation/write approvals remain required. Actual hosted/browser/device acceptance is pending. See `docs/research-import.md`. L1–L5 remain separate work.
 
 ## Baseline found on main, 2026-11-21
 

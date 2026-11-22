@@ -87,7 +87,7 @@
     }
     return review;
   }
-  function restoredReview(exported, catalog, today, scope) {
+  function restoredReview(exported, catalog, today, scope, freshComparison = null) {
     requireValue(exported.format === 'setu_research_preview' && exported.schema_version === '1.0.0' &&
       [undefined,'2.0.0'].includes(exported.review_version), 'Unsupported review export version.');
     const research = ensureResearch(exported.research);
@@ -96,17 +96,22 @@
     requireValue(Array.isArray(exported.candidates) && exported.candidates.length === research.places.length &&
       new Set(exported.candidates.map(candidate => candidate.research_id)).size === research.places.length &&
       exported.candidates.every(candidate => research.places.some(place => place.research_id === candidate.research_id)), 'Saved review candidate IDs do not match the research.');
-    let review = prepare(research, archivedComparison(exported), catalog, today, scope);
+    let review = prepare(research, freshComparison || archivedComparison(exported), catalog, today, scope);
+    const warnings = [];
     let pending = exported.hubs.filter(hub => hub.resolution);
     while (pending.length) {
       const next = [];
       for (const hub of pending) {
+        const savedHub = hub.resolution.kind === 'existing' && review.review_targets.find(target => target.table === (hub.resolution.table || 'setu_hubs') && String(target.id) === String(hub.resolution.id));
+        if (freshComparison && hub.resolution.kind === 'existing' && (!savedHub || hub.resolution.rev !== savedHub.facts.rev)) {
+          warnings.push(hub.name + ' needs a new hub choice because its saved hub changed.');continue;
+        }
         const outcome = model.resolveHub(review,hub.id,hub.resolution,hub.resolution.distinct_acknowledged === true);
         if (outcome.ok) review = outcome.value;else next.push(hub);
       }
+      if (freshComparison && next.length === pending.length) {warnings.push('Some hub choices need review against the fresh comparison.');break;}
       requireValue(next.length < pending.length, 'Saved hub choices are invalid, unavailable or cyclic.');pending = next;
     }
-    const warnings = [];
     const ordered = [...exported.candidates.filter(candidate => candidate.decision !== 'merge_selected'),
       ...exported.candidates.filter(candidate => candidate.decision === 'merge_selected')];
     for (const candidate of ordered) {
@@ -115,6 +120,10 @@
       // External rows are only deferred proposals. Local targets require a fresh
       // revision check, so a later local edit cannot inherit an old approval.
       const localTarget = details.target?.table === model.LOCAL_PLACES ? catalog.places.find(draft => draft.id === details.target.id) : null;
+      if (freshComparison && candidate.decision === 'merge_selected' && details.target?.kind === 'existing' && details.target.table !== model.LOCAL_PLACES) {
+        const target = review.review_targets.find(item => item.table === details.target.table && String(item.id) === String(details.target.id));
+        if (!target || target.facts.rev !== details.target.rev) {warnings.push(candidate.name + ' needs merge approval again because its saved target changed.');continue;}
+      }
       const source = research.places.find(place => place.research_id === candidate.research_id);
       const alreadyApplied = localTarget?.supplements.some(item => item.research_id === candidate.research_id &&
         stable(item.fields) === stable(details.fields) && stable(item.source) === stable(source) && stable(item.evidence) === stable(sourceEnvelope(research,source)));
@@ -122,6 +131,7 @@
         warnings.push(candidate.name + ' needs review because its local target changed.');continue;
       }
       const outcome = model.setDecision(review,candidate.research_id,candidate.decision || 'pending',options);
+      if (freshComparison && !outcome.ok) {warnings.push(candidate.name + ' needs review: ' + outcome.error);continue;}
       requireValue(outcome.ok, candidate.research_id + ' — ' + outcome.error);review = outcome.value;
     }
     return {review,warnings};

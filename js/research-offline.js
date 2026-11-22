@@ -1,7 +1,7 @@
 /* Verifies this importer's controller and cache; never reads saved research. */
 (function (root) {
   'use strict';
-  const VERSION = 'r3-2';
+  const VERSION = 'r4-1';
   const STATUS = 'SETU_RESEARCH_OFFLINE_STATUS';
   const PREPARE = 'SETU_RESEARCH_OFFLINE_PREPARE';
   function start({serviceWorker, secure, base, status, check, reopen,
