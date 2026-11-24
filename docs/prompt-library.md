@@ -5,6 +5,8 @@
 The same four-stage journey-planning method should work for Ogose, Kawagoe or
 any new destination without having to manually rewrite a long prompt.
 
+**Little World research revision (2026-11-24.1):** [four complete replacement prompt documents](research-prompts/little-world/README.md) add automatic cultural food discovery, its optional v1-compatible authoring extensions, verification checklist and separately scoped future app requirements. This document-only revision leaves the application and shared catalog below unchanged; the current Copy prompt buttons still use catalog `2026-11-22.1`. Use the replacement documents for Little World research until a separate prompt-content release adopts them in the app.
+
 ## Entry and workflow
 
 1. From Setu Home or the menu, open `prompt-library.html`.

@@ -1,0 +1,806 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/setu-little-world-authoring-overlay-v1.schema.json",
+  "title": "Optional Little World research authoring overlay v1",
+  "description": "Research authoring only. Validate the unchanged Setu v1 handoff separately. This overlay is not loaded or enforced by Setu; additional properties remain permitted. Source/id integrity and real-world evidence still need semantic review.",
+  "type": "object",
+  "properties": {
+    "provenance": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "little_world_search": {
+          "$ref": "#/$defs/search"
+        }
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "source_links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "research_fields": {
+            "type": "object",
+            "required": [],
+            "properties": {
+              "little_world": {
+                "$ref": "#/$defs/profile"
+              },
+              "access": {
+                "type": "object",
+                "required": [],
+                "properties": {
+                  "nearest_station": {
+                    "$ref": "#/$defs/claim"
+                  },
+                  "station_exit": {
+                    "$ref": "#/$defs/claim"
+                  },
+                  "walking_distance_m": {
+                    "$ref": "#/$defs/claim"
+                  },
+                  "walking_minutes": {
+                    "$ref": "#/$defs/claim"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "required": [
+        "value",
+        "verification",
+        "source_ids",
+        "checked_at",
+        "notes"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "integer",
+            "boolean",
+            "null"
+          ]
+        },
+        "verification": {
+          "enum": [
+            "official",
+            "reported",
+            "estimated",
+            "unknown"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "checked_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "verification": {
+                "const": "unknown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "source_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true,
+                "minItems": 1
+              },
+              "checked_at": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "price": {
+      "type": "object",
+      "required": [
+        "yen",
+        "currency",
+        "scope",
+        "tax_included",
+        "mandatory_extras_yen",
+        "conditions",
+        "verification",
+        "source_ids",
+        "checked_at"
+      ],
+      "properties": {
+        "yen": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "currency": {
+          "const": "JPY"
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tax_included": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "mandatory_extras_yen": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "conditions": {
+          "type": "string"
+        },
+        "verification": {
+          "enum": [
+            "official",
+            "reported",
+            "estimated",
+            "unknown"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "checked_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    },
+    "non_beef": {
+      "type": "object",
+      "required": [
+        "status",
+        "meat",
+        "broth_stock",
+        "sauces",
+        "cooking_fat",
+        "questions_for_staff"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "supported",
+            "unconfirmed",
+            "contains_beef"
+          ]
+        },
+        "meat": {
+          "$ref": "#/$defs/claim"
+        },
+        "broth_stock": {
+          "$ref": "#/$defs/claim"
+        },
+        "sauces": {
+          "$ref": "#/$defs/claim"
+        },
+        "cooking_fat": {
+          "$ref": "#/$defs/claim"
+        },
+        "questions_for_staff": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dish": {
+      "type": "object",
+      "required": [
+        "id",
+        "name_en",
+        "name_ja",
+        "signature",
+        "description",
+        "price",
+        "non_beef",
+        "recommended_non_beef"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name_en": {
+          "$ref": "#/$defs/claim"
+        },
+        "name_ja": {
+          "$ref": "#/$defs/claim"
+        },
+        "signature": {
+          "$ref": "#/$defs/claim"
+        },
+        "description": {
+          "$ref": "#/$defs/claim"
+        },
+        "price": {
+          "$ref": "#/$defs/price"
+        },
+        "non_beef": {
+          "$ref": "#/$defs/non_beef"
+        },
+        "recommended_non_beef": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "recommended_non_beef": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "non_beef": {
+                "properties": {
+                  "status": {
+                    "const": "supported"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "meal_budget": {
+      "type": "object",
+      "required": [
+        "basis_dish_id",
+        "payable_total_yen",
+        "currency",
+        "price_verified",
+        "tax_and_extras_complete",
+        "band",
+        "verification",
+        "source_ids",
+        "checked_at",
+        "conditions",
+        "exceptional_reason"
+      ],
+      "properties": {
+        "basis_dish_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "payable_total_yen": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "currency": {
+          "const": "JPY"
+        },
+        "price_verified": {
+          "type": "boolean"
+        },
+        "tax_and_extras_complete": {
+          "type": "boolean"
+        },
+        "band": {
+          "enum": [
+            "Economy",
+            "Affordable",
+            "Moderate",
+            "Exceptional",
+            null
+          ]
+        },
+        "verification": {
+          "enum": [
+            "official",
+            "reported",
+            "estimated",
+            "unknown"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "checked_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "conditions": {
+          "type": "string"
+        },
+        "exceptional_reason": {
+          "$ref": "#/$defs/claim"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "type": "string"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "basis_dish_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "payable_total_yen": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "price_verified": {
+                "const": true
+              },
+              "tax_and_extras_complete": {
+                "const": true
+              },
+              "verification": {
+                "enum": [
+                  "official",
+                  "reported"
+                ]
+              },
+              "source_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true,
+                "minItems": 1
+              },
+              "checked_at": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "Economy"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payable_total_yen": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 800
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "Affordable"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payable_total_yen": {
+                "type": "integer",
+                "minimum": 801,
+                "maximum": 1200
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "Moderate"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payable_total_yen": {
+                "type": "integer",
+                "minimum": 1201,
+                "maximum": 1500
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "band": {
+                "const": "Exceptional"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payable_total_yen": {
+                "type": "integer",
+                "minimum": 1501
+              },
+              "exceptional_reason": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/claim"
+                  },
+                  {
+                    "properties": {
+                      "value": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "verification": {
+                        "enum": [
+                          "official",
+                          "reported"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "version",
+        "primary_category",
+        "researched_at",
+        "name_en_status",
+        "cuisines",
+        "special_features",
+        "dishes",
+        "meal_budget",
+        "lunch_offers",
+        "venue_size",
+        "seating_capacity",
+        "crowd_expectation",
+        "solo_suitability",
+        "independence",
+        "community_context",
+        "rarity",
+        "nearby_attraction_ids",
+        "tag_evidence",
+        "unresolved"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "primary_category": {
+          "const": "Little World — Food Hideouts"
+        },
+        "researched_at": {
+          "type": "string",
+          "format": "date"
+        },
+        "name_en_status": {
+          "enum": [
+            "official",
+            "transliteration",
+            "unknown"
+          ]
+        },
+        "cuisines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "country",
+              "region"
+            ],
+            "properties": {
+              "country": {
+                "$ref": "#/$defs/claim"
+              },
+              "region": {
+                "$ref": "#/$defs/claim"
+              }
+            }
+          }
+        },
+        "special_features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "dishes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dish"
+          }
+        },
+        "meal_budget": {
+          "$ref": "#/$defs/meal_budget"
+        },
+        "lunch_offers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "venue_size": {
+          "$ref": "#/$defs/claim"
+        },
+        "seating_capacity": {
+          "$ref": "#/$defs/claim"
+        },
+        "crowd_expectation": {
+          "$ref": "#/$defs/claim"
+        },
+        "solo_suitability": {
+          "$ref": "#/$defs/claim"
+        },
+        "independence": {
+          "$ref": "#/$defs/claim"
+        },
+        "community_context": {
+          "$ref": "#/$defs/claim"
+        },
+        "rarity": {
+          "$ref": "#/$defs/claim"
+        },
+        "nearby_attraction_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "tag_evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "tag",
+              "support"
+            ],
+            "properties": {
+              "tag": {
+                "enum": [
+                  "Affordable",
+                  "Hidden Gem",
+                  "Rare Cuisine",
+                  "Regional Speciality",
+                  "Traditional Food",
+                  "Independent Restaurant",
+                  "Solo Dining",
+                  "Small Restaurant",
+                  "Lunch Special",
+                  "Cultural Experience",
+                  "Street Food",
+                  "Non-beef Options"
+                ]
+              },
+              "support": {
+                "$ref": "#/$defs/claim"
+              }
+            }
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "search": {
+      "type": "object",
+      "required": [
+        "version",
+        "status",
+        "scope",
+        "checked_at",
+        "queries",
+        "candidate_ids",
+        "qualifying_ids",
+        "limits",
+        "unresolved"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "status": {
+          "enum": [
+            "searched_with_results",
+            "searched_no_suitable_results",
+            "not_completed"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "candidate_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "qualifying_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "limits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "searched_with_results"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "qualifying_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true,
+                "minItems": 1
+              },
+              "queries": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "searched_no_suitable_results"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "qualifying_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true,
+                "maxItems": 0
+              },
+              "queries": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

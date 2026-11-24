@@ -1,0 +1,587 @@
+{
+  "format": "setu_research_handoff",
+  "schema_version": "1.0.0",
+  "data_classification": "synthetic_fixture_not_a_real_recommendation",
+  "destination": {
+    "name_ja": "架空例市（検証専用）",
+    "origin_station_ja": "架空例駅",
+    "travel_date": null,
+    "date_confirmed": false
+  },
+  "provenance": {
+    "checked_at": "2026-11-24",
+    "little_world_search": {
+      "version": 1,
+      "status": "searched_with_results",
+      "scope": "Synthetic example town; no real search performed",
+      "checked_at": "2026-11-24",
+      "queries": [
+        "SYNTHETIC fixture only; not an executed restaurant query"
+      ],
+      "candidate_ids": [
+        "FOOD-1"
+      ],
+      "qualifying_ids": [
+        "FOOD-1"
+      ],
+      "limits": [
+        "All venues, sources and prices are fictional compatibility examples."
+      ],
+      "unresolved": []
+    }
+  },
+  "import_contract": {
+    "no_direct_supabase_writes": true,
+    "review_required": true
+  },
+  "hubs": [
+    {
+      "id": "example-centre",
+      "name_ja": "架空例市・中心部"
+    }
+  ],
+  "places": [
+    {
+      "research_id": "FOOD-1",
+      "name_ja": "架空例食堂（検証専用）",
+      "name_en": "Fictional Example Kitchen",
+      "aliases": [
+        "Fictional example only"
+      ],
+      "place_type": "restaurant",
+      "hub_id": "example-centre",
+      "location": {
+        "address_ja": "架空県見本市・検証用住所（実在しない）",
+        "coordinates": null,
+        "maps_url": "https://example.org/synthetic/map/food-1"
+      },
+      "research_fields": {
+        "cost": {
+          "raw_text": "Synthetic ¥1,000 set plus ¥100 compulsory drink; other dish price unknown; not admission",
+          "admission_yen": null,
+          "admission_evidence": "unknown",
+          "meal_budget_yen": null,
+          "price_checked_at": "2026-11-24",
+          "sample_prices": [
+            {
+              "yen": 1000,
+              "scope": "Synthetic lunch set excluding required drink",
+              "evidence": "Fictional menu fixture; menu source"
+            },
+            {
+              "yen": 100,
+              "scope": "Synthetic mandatory drink",
+              "evidence": "Fictional menu fixture; menu source"
+            }
+          ]
+        },
+        "hours": {
+          "raw_summary": "Unknown real opening hours: synthetic fixture only",
+          "weekly_intervals": null,
+          "date_specific_open": null,
+          "holidays": "unknown"
+        },
+        "access": {
+          "nearest_station": {
+            "value": "架空例駅",
+            "verification": "official",
+            "source_ids": [
+              "access"
+            ],
+            "checked_at": "2026-11-24",
+            "notes": ""
+          },
+          "station_exit": {
+            "value": null,
+            "verification": "unknown",
+            "source_ids": [],
+            "checked_at": null,
+            "notes": ""
+          },
+          "walking_distance_m": {
+            "value": null,
+            "verification": "unknown",
+            "source_ids": [],
+            "checked_at": null,
+            "notes": ""
+          },
+          "walking_minutes": {
+            "value": null,
+            "verification": "unknown",
+            "source_ids": [],
+            "checked_at": null,
+            "notes": ""
+          }
+        },
+        "little_world": {
+          "version": 1,
+          "primary_category": "Little World — Food Hideouts",
+          "researched_at": "2026-11-24",
+          "name_en_status": "official",
+          "cuisines": [
+            {
+              "country": {
+                "value": "Nepal",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "region": {
+                "value": null,
+                "verification": "unknown",
+                "source_ids": [],
+                "checked_at": null,
+                "notes": ""
+              }
+            }
+          ],
+          "special_features": [
+            {
+              "value": "Fictional regional cooking demonstration; fixture only",
+              "verification": "official",
+              "source_ids": [
+                "menu"
+              ],
+              "checked_at": "2026-11-24",
+              "notes": ""
+            }
+          ],
+          "dishes": [
+            {
+              "id": "set-1",
+              "name_en": {
+                "value": "Fictional regional set",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "name_ja": {
+                "value": "架空の郷土定食",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "signature": {
+                "value": true,
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "description": {
+                "value": "Synthetic menu description; not a real restaurant",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "price": {
+                "yen": 1000,
+                "currency": "JPY",
+                "scope": "Synthetic complete set meal; drink extra shown separately",
+                "tax_included": true,
+                "mandatory_extras_yen": 100,
+                "conditions": "Fictional weekday lunch offer",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24"
+              },
+              "non_beef": {
+                "status": "supported",
+                "meat": {
+                  "value": "Explicitly no beef in this fictional component",
+                  "verification": "official",
+                  "source_ids": [
+                    "menu"
+                  ],
+                  "checked_at": "2026-11-24",
+                  "notes": ""
+                },
+                "broth_stock": {
+                  "value": "Explicitly no beef in this fictional component",
+                  "verification": "official",
+                  "source_ids": [
+                    "menu"
+                  ],
+                  "checked_at": "2026-11-24",
+                  "notes": ""
+                },
+                "sauces": {
+                  "value": "Explicitly no beef in this fictional component",
+                  "verification": "official",
+                  "source_ids": [
+                    "menu"
+                  ],
+                  "checked_at": "2026-11-24",
+                  "notes": ""
+                },
+                "cooking_fat": {
+                  "value": "Explicitly no beef in this fictional component",
+                  "verification": "official",
+                  "source_ids": [
+                    "menu"
+                  ],
+                  "checked_at": "2026-11-24",
+                  "notes": ""
+                },
+                "questions_for_staff": []
+              },
+              "recommended_non_beef": true
+            },
+            {
+              "id": "soup-2",
+              "name_en": {
+                "value": "Fictional soup",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "name_ja": {
+                "value": "架空のスープ",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "signature": {
+                "value": false,
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "description": {
+                "value": "Synthetic menu description; not a real restaurant",
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              },
+              "price": {
+                "yen": null,
+                "currency": "JPY",
+                "scope": "Synthetic soup; menu price unavailable",
+                "tax_included": null,
+                "mandatory_extras_yen": null,
+                "conditions": "Not verified",
+                "verification": "unknown",
+                "source_ids": [],
+                "checked_at": null
+              },
+              "non_beef": {
+                "status": "unconfirmed",
+                "meat": {
+                  "value": null,
+                  "verification": "unknown",
+                  "source_ids": [],
+                  "checked_at": null,
+                  "notes": ""
+                },
+                "broth_stock": {
+                  "value": null,
+                  "verification": "unknown",
+                  "source_ids": [],
+                  "checked_at": null,
+                  "notes": ""
+                },
+                "sauces": {
+                  "value": null,
+                  "verification": "unknown",
+                  "source_ids": [],
+                  "checked_at": null,
+                  "notes": ""
+                },
+                "cooking_fat": {
+                  "value": null,
+                  "verification": "unknown",
+                  "source_ids": [],
+                  "checked_at": null,
+                  "notes": ""
+                },
+                "questions_for_staff": [
+                  "Check broth, sauces and cooking fat before recommending."
+                ]
+              },
+              "recommended_non_beef": false
+            }
+          ],
+          "meal_budget": {
+            "basis_dish_id": "set-1",
+            "payable_total_yen": 1100,
+            "currency": "JPY",
+            "price_verified": true,
+            "tax_and_extras_complete": true,
+            "band": "Affordable",
+            "verification": "official",
+            "source_ids": [
+              "menu"
+            ],
+            "checked_at": "2026-11-24",
+            "conditions": "Fictional ¥1,000 set plus mandatory ¥100 drink, tax included",
+            "exceptional_reason": {
+              "value": null,
+              "verification": "unknown",
+              "source_ids": [],
+              "checked_at": null,
+              "notes": ""
+            }
+          },
+          "lunch_offers": [
+            {
+              "value": "Fictional weekday set; actual travel-day availability unverified",
+              "verification": "official",
+              "source_ids": [
+                "menu"
+              ],
+              "checked_at": "2026-11-24",
+              "notes": ""
+            }
+          ],
+          "venue_size": {
+            "value": "Small fictional dining room",
+            "verification": "official",
+            "source_ids": [
+              "venue"
+            ],
+            "checked_at": "2026-11-24",
+            "notes": ""
+          },
+          "seating_capacity": {
+            "value": null,
+            "verification": "unknown",
+            "source_ids": [],
+            "checked_at": null,
+            "notes": ""
+          },
+          "crowd_expectation": {
+            "value": null,
+            "verification": "unknown",
+            "source_ids": [],
+            "checked_at": null,
+            "notes": ""
+          },
+          "solo_suitability": {
+            "value": true,
+            "verification": "official",
+            "source_ids": [
+              "venue"
+            ],
+            "checked_at": "2026-11-24",
+            "notes": ""
+          },
+          "independence": {
+            "value": true,
+            "verification": "official",
+            "source_ids": [
+              "venue"
+            ],
+            "checked_at": "2026-11-24",
+            "notes": ""
+          },
+          "community_context": {
+            "value": null,
+            "verification": "unknown",
+            "source_ids": [],
+            "checked_at": null,
+            "notes": ""
+          },
+          "rarity": {
+            "value": null,
+            "verification": "unknown",
+            "source_ids": [],
+            "checked_at": null,
+            "notes": ""
+          },
+          "nearby_attraction_ids": [
+            "PARK-1"
+          ],
+          "tag_evidence": [
+            {
+              "tag": "Affordable",
+              "support": {
+                "value": true,
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              }
+            },
+            {
+              "tag": "Traditional Food",
+              "support": {
+                "value": true,
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              }
+            },
+            {
+              "tag": "Independent Restaurant",
+              "support": {
+                "value": true,
+                "verification": "official",
+                "source_ids": [
+                  "venue"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              }
+            },
+            {
+              "tag": "Non-beef Options",
+              "support": {
+                "value": true,
+                "verification": "official",
+                "source_ids": [
+                  "menu"
+                ],
+                "checked_at": "2026-11-24",
+                "notes": ""
+              }
+            }
+          ],
+          "unresolved": [
+            "Seat count and crowd levels unknown.",
+            "Soup ingredient and price verification pending."
+          ]
+        }
+      },
+      "tags": {
+        "practical_candidates": [
+          {
+            "tag": "Little World — Food Hideouts",
+            "status": "potential",
+            "source_ids": [
+              "menu",
+              "venue"
+            ]
+          },
+          {
+            "tag": "Affordable",
+            "status": "potential",
+            "source_ids": [
+              "menu"
+            ]
+          },
+          {
+            "tag": "Traditional Food",
+            "status": "potential",
+            "source_ids": [
+              "menu"
+            ]
+          },
+          {
+            "tag": "Independent Restaurant",
+            "status": "potential",
+            "source_ids": [
+              "venue"
+            ]
+          },
+          {
+            "tag": "Non-beef Options",
+            "status": "potential",
+            "source_ids": [
+              "menu"
+            ]
+          }
+        ],
+        "experiential_candidates": [],
+        "personal_confirmed_experiences": []
+      },
+      "source_links": [
+        {
+          "id": "menu",
+          "url": "https://example.org/synthetic/menu",
+          "checked_at": "2026-11-24",
+          "title": "Synthetic evidence only: menu"
+        },
+        {
+          "id": "venue",
+          "url": "https://example.org/synthetic/venue",
+          "checked_at": "2026-11-24",
+          "title": "Synthetic evidence only: venue"
+        },
+        {
+          "id": "access",
+          "url": "https://example.org/synthetic/access",
+          "checked_at": "2026-11-24",
+          "title": "Synthetic evidence only: access"
+        }
+      ],
+      "visit_status": "suggested",
+      "accepted_into_setu": false,
+      "review_status": "not_reviewed",
+      "personal_observation": null
+    },
+    {
+      "research_id": "PARK-1",
+      "name_ja": "架空例公園（検証専用）",
+      "name_en": null,
+      "place_type": "park",
+      "hub_id": "example-centre",
+      "location": {
+        "address_ja": "架空県見本市・公園検証用住所（実在しない）",
+        "coordinates": null,
+        "maps_url": "https://example.org/synthetic/map/park-1"
+      },
+      "research_fields": {
+        "cost": {
+          "raw_text": "Unknown",
+          "admission_yen": null,
+          "admission_evidence": "unknown"
+        },
+        "hours": {
+          "raw_summary": "Unknown",
+          "weekly_intervals": null,
+          "date_specific_open": null
+        },
+        "access": {}
+      },
+      "tags": {
+        "practical_candidates": [],
+        "experiential_candidates": [],
+        "personal_confirmed_experiences": []
+      },
+      "source_links": [
+        {
+          "id": "park",
+          "url": "https://example.org/synthetic/park",
+          "checked_at": "2026-11-24"
+        }
+      ],
+      "visit_status": "suggested",
+      "accepted_into_setu": false,
+      "review_status": "not_reviewed",
+      "personal_observation": null
+    }
+  ]
+}
