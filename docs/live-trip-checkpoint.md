@@ -1,6 +1,6 @@
 # Live Trip Companion — resumable development checkpoint
 
-**Last prepared:** 2026-11-22. **Source of truth:** `main` plus accepted/merged PRs; this document may be ahead of `main` while its own PR is under review.
+**Last prepared:** 2026-11-25. **Source of truth:** `main` plus accepted/merged PRs; this document may be ahead of `main` while its own PR is under review.
 
 ## Current phase
 
@@ -14,7 +14,7 @@
 - **R1:** merged in PR #35 (`ee9c7a0`); user upload/preview/export verified with exact research preservation.
 - **R2:** merged in PR #36, with usability correction #37 (`1a73704`). Individual accept/skip controls were user-verified.
 - **R3:** merged #38/#39 (`2229c03`). User verified decision recovery, duplicate prevention, offline reopening through Reopen Research Import, portable backup restoration (37 candidates/one local suggestion) and readiness after normal reload/check. Manual two-tab and Android/iPad checks remain pending.
-- **Current supporting track:** R4 code merged in #40 (`21524b5`). Reuses Setu's authenticated client for explicit cloud backup/publishing, owner-isolated SQL workspaces/evidence/identities/receipts, revision conflicts and durable retries. The exact merged tree previously passed 315 tests, including eleven disposable SQL-engine cases. New suggestions remain unvisited Browse entries; selected research attachments preserve personal reviews/pins/confirmations. Read-only metadata preflight on 22 November found compatible core schema and no installed R4 objects. A General_apps backup archive is reported, but checksum/content and isolated restore evidence remain pending. The additive migration is unapplied and `RELEASE_ENABLED=false`; separate SQL/activation/write approvals remain required. Hosted/browser/device acceptance is pending. See `docs/research-import.md` and `docs/research-r4-readiness.md`. L1–L5 remain separate work.
+- **Current supporting track:** R4 code merged in #40 (`21524b5`). The next isolated validation change starts from merged #43 (`22d4c4a`): **316 regression tests plus 18 native PostgreSQL 17 tests pass**, including actual independent-connection lock waits, stale manual edits, duplicate/atomic rollback and exact-request recovery. It fixes an omitted optional `personal_observation` being rejected by the unapplied migration; original evidence remains unchanged and personal fields remain protected. Read-only hosted metadata still shows no installed R4 tables/migration. `RELEASE_ENABLED=false` is unchanged. The synthetic cluster does not replace or recheck the separately tracked General_apps backup/restore work. API/JWT, recovery-evidence reconciliation and hosted/browser/device acceptance remain pending; separate SQL/activation/write approvals are required. See `docs/research-r4-isolated-validation.md` for current migration fingerprint and reproduction, and `docs/research-import.md` for workflow. L1–L5 remain separate work.
 
 ## Baseline found on main, 2026-11-21
 

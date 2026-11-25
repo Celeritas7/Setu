@@ -1,5 +1,7 @@
 # R4 database readiness — 22 November 2026
 
+**25 November follow-up:** [the isolated native PostgreSQL rehearsal](research-r4-isolated-validation.md) passed 18 native tests plus 316 regressions and corrected the unapplied migration's handling of an omitted optional observation. That report gives the **current migration fingerprint** and remaining API/Auth/recovery/device acceptance. The backup observations and fingerprint below describe the original 22 November inspection; they must not be presented as a new verification or a reason to repeat existing backup work. Production installation/activation remain unapproved.
+
 **Decision: schema preflight passed; installation and activation remain on hold.**
 The existing database is compatible with the R4 inputs inspected below. A General_apps backup archive has been reported, but its checksum/content verification and an isolated restore have not yet been evidenced. No hosted migration or production write is authorized by this report.
 

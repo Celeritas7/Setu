@@ -97,7 +97,8 @@ begin
     raise exception 'Invalid research fact selection';
   end if;
   if p_source->>'visit_status' is distinct from 'suggested' or p_source->'accepted_into_setu' is distinct from 'false'::jsonb
-    or p_source->'personal_observation' is distinct from 'null'::jsonb or p_source#>'{tags,personal_confirmed_experiences}' is distinct from '[]'::jsonb then
+    or coalesce(p_source->'personal_observation','null'::jsonb) is distinct from 'null'::jsonb
+    or p_source#>'{tags,personal_confirmed_experiences}' is distinct from '[]'::jsonb then
     raise exception 'Research cannot supply personal confirmations';
   end if;
   if jsonb_typeof(p_source->'source_links') is distinct from 'array' or jsonb_array_length(p_source->'source_links')=0 then raise exception 'Research source links are required'; end if;
