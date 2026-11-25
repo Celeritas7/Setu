@@ -2,6 +2,8 @@
 
 **25 November follow-up:** [the isolated native PostgreSQL rehearsal](research-r4-isolated-validation.md), merged in #44 (`c939c1c`), passed 18 native tests plus 316 regressions and corrected the unapplied migration's handling of an omitted optional observation. The subsequent [local API/JWT report](research-r4-api-validation.md) records 19 passing real-HTTP checks and its full Auth/hosted/device limits. Those reports give the **current migration fingerprint**. The backup observations and fingerprint below describe the original 22 November inspection; they must not be presented as a new verification or a reason to repeat existing backup work. Reconcile the separately tracked recovery evidence before a release proposal. Production installation/activation remain unapproved.
 
+**Current release preparation:** #45 is merged (`a535ddf`). [The release plan](research-r4-release-plan.md) now reconciles the closed recovery exercise and verified-archive report, retaining their provenance/Auth limits; adds tested metadata-only pre/post checks; and records six legacy core TRUNCATE grants found read-only. Its separate revoke proposal remains unapplied. The historical “archive reported” status below is superseded by that dated reconciliation, not erased or treated as proof of full recovery. Installation and activation remain on hold.
+
 **Decision: schema preflight passed; installation and activation remain on hold.**
 The existing database is compatible with the R4 inputs inspected below. A General_apps backup archive has been reported, but its checksum/content verification and an isolated restore have not yet been evidenced. No hosted migration or production write is authorized by this report.
 
