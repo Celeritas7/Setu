@@ -75,6 +75,8 @@ The headless-shell build uses the browser control pipe and avoids the full deskt
 - **316 default regressions**, **20 native PostgreSQL checks**, **19 HTTP/JWT checks**, **13 browser checks**: **368 passed**, zero failures/skips.
 - The product gate remains false, the original migration fingerprint is unchanged, and app bootstrap/auth, travel prompts and the G4 migration are untouched.
 
+The subsequent [R3 offline/recovery browser report](research-r3-browser-validation.md) adds eight importer cases and three worker regressions. `npm run test:research-import-browser` runs only those importer cases without the local database/gateway; `npm run test:research-browser` now runs both browser files (**21 cases**). The 368-check count above records this R4 phase's original result; the combined follow-up total is **379**.
+
 ## Remaining acceptance
 
 This is local headless Chromium module/loader acceptance with fictional records. Viewport widths are not physical Android/iPad tests. It does not execute the full packaged Home/Browse lifecycle, real OAuth/GoTrue/refresh/revocation, a real-device cold reopen, R3 offline-worker loading, shared-project recovery, hosted gateway configuration or production load. IndexedDB was tested across a page reload in the same isolated browser context, not a physical browser restart.
