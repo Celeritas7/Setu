@@ -106,7 +106,7 @@ separate approval and has **not** been applied. H7, I3–I5 and J remain future 
 - [ ] K3 · Personal browser-only wording overrides, reset to updated shared templates, offline fallback, regression checks. Code prepared for PR review.
 - [ ] K4 · Optional future cross-device template sync and importing sourced research as Setu drafts; requires a separate access-control design and approval before any new database work.
 
-**Little World — Food Hideouts research wording:** [complete four-prompt replacements and authoring contracts](docs/research-prompts/little-world/README.md), revision `2026-11-24.1`, prepared as documents only. The application/shared prompt catalog is unchanged. Future catalog adoption, filters and profile-specific validation/merges are separately documented; this adds no fifth prompt and does not activate R4.
+**Little World — Food Hideouts research wording:** [four upgraded prompts and authoring contracts](docs/research-prompts/little-world/README.md), text revision `2026-11-24.1`, merged in #42 (`a18774d`). Prompt-content adoption is prepared in shared catalog `2026-11-25.1`, preserving the exact document bodies, existing instructions, four steps and personal overrides. Filters and profile-specific validation/merges remain future work; this adds no fifth prompt, changes no UI behavior and does not activate R4. Merge/publication and live revision checks remain separate.
 
 ### Open questions for G–J
 - Reminders (H7, I4): Setu has no push. Options: a Home strip when the app opens, or send to the Calendar app via A6.

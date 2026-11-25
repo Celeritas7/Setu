@@ -1,6 +1,6 @@
 # Future Setu support for Little World — Food Hideouts
 
-**Planning only. No application implementation or database migration in this change.** This is separate from updating travel research wording and does not unblock or activate R4 cloud persistence.
+**Planning for application capabilities; no database migration.** Shared prompt-text adoption is prepared separately in catalog `2026-11-25.1`. The data/UI capabilities below remain future work and do not unblock or activate R4 cloud persistence.
 
 ## Existing compatibility
 
@@ -13,7 +13,7 @@
 
 | Capability | Additional data/behavior | Acceptance requirement |
 | --- | --- | --- |
-| Shared prompt content | Adopt these four replacement bodies in the existing versioned catalog, preserving IDs and placeholders; bump its revision | Four buttons generate the new text; warn about older local overrides; no fifth step or runtime redesign |
+| Shared prompt content — prepared | Catalog `2026-11-25.1` adopts the exact four document bodies, preserving IDs and placeholders; no UI logic changes | After publication, four buttons generate the new text; existing older-override warnings remain; no fifth step or runtime redesign |
 | Optional extension validation | Validate `little_world_search`, source-reference integrity, profile evidence, price bands and related IDs | Retain unknown future fields; report semantic errors without discarding the original document |
 | Evidence presentation | Show country/region, signature dishes, why distinctive, English-name/transliteration status, venue size, seats, crowds/solo suitability and checked dates | Clearly separate official, third-party, estimated and unknown claims; show disagreements/history |
 | Dietary review | Dish-specific beef meat/broth/stock/sauce/fat evidence, open questions and later staff/user observations | No blanket non-beef guarantee or dietary certification inferred from cuisine, halal status or a dish name |

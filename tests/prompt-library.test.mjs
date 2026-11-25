@@ -69,7 +69,7 @@ test('invalid catalog revisions and duplicate ids are rejected', () => {
 
 test('research prompts use the actual Drive destination folder and review-only export safeguards', () => {
   const catalog=catalogFromSource();
-  assert.equal(catalog.revision,'2026-11-22.1');
+  assert.equal(catalog.revision,'2026-11-25.1');
   for (const template of catalog.templates) {
     assert.match(template.body, /Claude_Workspace\/\#Data_storage\/Setu_research\//, template.id);
     assert.match(template.body, /GitHub|Supabase/, template.id);
