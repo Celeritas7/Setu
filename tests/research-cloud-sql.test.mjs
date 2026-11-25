@@ -56,6 +56,13 @@ test('publishing uses fixed unvisited defaults and preserves complete research, 
   const evidence=(await rows('setu_research_evidence'))[0];assert.deepEqual(evidence.source,data.catalog.places[0].source);assert.equal(evidence.source.tags.experiential_candidates[0].status,'potential');
   assert.deepEqual((await rows('setu_research_workspaces'))[0].payload,data);
 });
+test('a v1 source may omit optional personal_observation without losing evidence or confirming a visit',async()=>{
+  const source=research();delete source.places[0].personal_observation;
+  assert.equal(model.validateText(JSON.stringify(source)).ok,true);
+  const data=await workspace(source),saved=await commit(data);assert.equal(saved.created,1);
+  const row=(await rows('setu_spots'))[0];assert.equal(row.review,null);assert.equal(row.accepted,false);assert.equal(row.status,'try');
+  assert.deepEqual((await rows('setu_research_evidence'))[0].source,source.places[0]);
+});
 test('lost-response retries return the exact receipt even after a later save and reject altered request reuse',async()=>{
   const data=await workspace(),request=randomUUID(),first=await commit(data,{request});
   await commit(data,{expected:1,publish:false});assert.deepEqual(await commit(data,{request}),first);
