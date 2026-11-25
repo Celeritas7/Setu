@@ -2,6 +2,8 @@
 
 **Result: native database rehearsal passed. Production installation and activation remain unapproved.**
 
+**HTTP follow-up:** after this phase merged in [PR #44](https://github.com/Celeritas7/Setu/pull/44), the [isolated API/JWT rehearsal](research-r4-api-validation.md) added 19 passing checks through real PostgREST, signed fictional tokens and the Supabase JS client. The native results and limits below remain distinct from that HTTP evidence; neither proves full hosted Auth or device acceptance.
+
 The next R4 step after the merged prompt-content upgrade (#43, `22d4c4a`) was to validate the research migration with independent PostgreSQL connections. The earlier PGlite suite uses one embedded engine and could not establish native lock contention. This change adds an explicit, reproducible native rehearsal and fixes one compatibility defect it exposed. The travel prompts are unchanged.
 
 ## What ran
@@ -52,7 +54,7 @@ This supersedes the migration fingerprint in the dated 22 November readiness ins
 
 ## Reproduce without touching an existing database
 
-Use Node **20 or newer** and a normal, non-root development user:
+Use Node **22 or newer** for the current pinned development dependencies and a normal, non-root development user:
 
 ```sh
 npm ci
@@ -75,7 +77,7 @@ Native startup was tested on Linux x64 only. Windows/macOS package support is no
 - **Devices:** desktop/Android/iPad, physical two-tab/two-device acceptance and live prompt revision checks remain separate.
 - **Release:** `RELEASE_ENABLED=false` remains unchanged. Hosted SQL, release activation, production test writes, merge and deployment still require their existing separate approval.
 
-The next backend acceptance work is an isolated API/JWT rehearsal and recovery-evidence reconciliation before proposing a concrete hosted installation. This phase alone is not permission to apply production SQL.
+The subsequent [isolated API/JWT rehearsal](research-r4-api-validation.md) covers the local HTTP gap described above. Recovery-evidence reconciliation and a concrete hosted installation/acceptance proposal remain next release-preparation work. These phases are not permission to apply production SQL.
 
 ## References
 

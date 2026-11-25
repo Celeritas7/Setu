@@ -1,16 +1,18 @@
 -- Synthetic rehearsal only; never apply this file to a hosted database.
 -- Core column/default/check/trigger shapes inspected read-only on 2026-11-25.
--- Only generated test UUIDs are inserted. Auth helpers are local GUC stubs,
--- not Supabase Auth or JWT signature validation. contacts is an empty FK stub.
+-- Only generated test UUIDs are inserted. Auth SQL helpers match the inspected
+-- legacy + JSON claim lookup, not a full Auth service. contacts is an empty FK stub.
 create role authenticated nologin nosuperuser nobypassrls;
 create role anon nologin nosuperuser nobypassrls;
 create schema auth;
 create table auth.users(id uuid primary key);
 create function auth.uid() returns uuid language sql stable as $$
-  select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid
+  select coalesce(nullif(current_setting('request.jwt.claim.sub',true),''),
+    nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid
 $$;
 create function auth.jwt() returns jsonb language sql stable as $$
-  select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb
+  select coalesce(nullif(current_setting('request.jwt.claim',true),''),
+    nullif(current_setting('request.jwt.claims',true),''))::jsonb
 $$;
 grant usage on schema public,auth to authenticated,anon;
 grant execute on function auth.uid(),auth.jwt() to authenticated,anon;
