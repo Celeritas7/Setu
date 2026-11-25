@@ -22,6 +22,9 @@ Both are self-contained; no build step.
 Replace both HTML files with a new export and commit. Pages redeploys in about a minute.
 
 ## Nearby map
+
+**Home / ☰ → Next places · Preview** compares up to five accepted saved places from a manually selected stop, with optional Japan-time opening, stay, budget, rain and quiet/rest checks. On phones expand **Time, budget & weather**. Unknown prices and travel stay unknown; estimates, minimum orders and source dates remain separate. All cards still need route and return verification, and no safe leave-by time is supplied. The preview changes no plan, visit or review. See [the L1A guide and remaining safety work](docs/live-trip-l1-preview.md).
+
 Open **☰ → Map → Near me** and allow location. Nearby saved places and suggestions are sorted by distance, five at a time.
 **Filters** adjusts distance and type. **DAY OFF** opens trip-planning mode: all saved DAY OFF destinations, all regions, no radius limit. It clears inherited nearby/type filters, stops GPS following and fits the destination pins. **All DAY OFF destinations** restores this view after narrowing your search.
 Choose **Near me** explicitly to apply a radius to DAY OFF. **Search this area** uses the visible map bounds, not a hidden 3 km circle; it is available after either panning or zooming. The area picker also supports manual browsing without GPS.

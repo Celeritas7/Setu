@@ -1,22 +1,22 @@
 # Live Trip Companion — resumable development checkpoint
 
-**Last prepared:** 2026-11-25. **Source of truth:** `main` plus accepted/merged PRs; this document may be ahead of `main` while its own PR is under review.
+**Last prepared:** 2026-11-26. **Source of truth:** `main` plus accepted/merged PRs; this document may be ahead of `main` while its own PR is under review.
 
 ## Current phase
 
 - **L0 — Permanent specifications and Ogose fixture:** verified merged in PR #32, commit `f74bc76`.
-- **L1–L5:** not started as the six new live-trip phases. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
-- **Production:** no live-trip feature, database migration, Github Pages deployment or import has been performed by L0.
-- **Branch:** `docs/live-trip-companion-phase0-20261121`.
+- **L1A:** read-only Next places preview prepared for review; L1B's verified route/return eligibility is still open. L2–L5 are not started. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
+- **Production:** no live-trip SQL, data writes, merge or deployment performed by this phase.
+- **Branch:** `feature/live-trip-l1-next-places`, from merged #49 (`f8073e3`).
 - **L0 PR:** [#32 — Phase L0 specification and fixture](https://github.com/Celeritas7/Setu/pull/32) (merged).
-- **Next Live Trip phase:** L1 — five safety-ranked next-place suggestions.
+- **Current Live Trip work:** L1A — Home/menu preview from a manual stop, date/time, budget, weather and quiet/rest preferences. Reuses existing hours, price, Maps and walking-estimate helpers. All cards remain conditional with unverified return and no leave-by. **340 default + 20 native PostgreSQL + 19 HTTP + 33 browser = 412 checks pass.** See `docs/live-trip-l1-preview.md`. Await review/merge, then physical Home/menu testing. Next L1B needs the actual Solitro handoff before dated route/access/return integration; no companion API or new transport engine is invented here.
 - **Research baseline refreshed:** `50af3b7` (merged PR #34) before R1 publication; existing prompt updates preserved.
 - **R1:** merged in PR #35 (`ee9c7a0`); user upload/preview/export verified with exact research preservation.
 - **R2:** merged in PR #36, with usability correction #37 (`1a73704`). Individual accept/skip controls were user-verified.
 - **R3:** merged #38/#39 (`2229c03`). User verified decision recovery, duplicate prevention, offline reopening through Reopen Research Import, portable backup restoration (37 candidates/one local suggestion) and readiness after normal reload/check. Automated native-browser two-tab and offline/recovery acceptance now passes in the follow-up below; physical Android/iPad checks remain pending.
 - **Current supporting track:** R4 code merged #40 (`21524b5`), native validation #44 (`c939c1c`), HTTP validation #45 (`a535ddf`), release preparation #46 (`d31bcfe`); the latter passed **316 regressions + 20 native PostgreSQL tests + 19 HTTP tests**. The owner subsequently reported success after the separate core TRUNCATE repair. Read-only verification at **25 November, 23:16 JST** confirms all six effective permissions denied; other reported browser grants, owner-policy expressions, core counts/triggers and revision-function fingerprint match the precheck. `docs/research-r4-permission-repair-verification.md` retains the new post-repair catalog baseline. **Do not re-propose/repeat the repair.** R4 objects/history remain absent and `RELEASE_ENABLED=false`. **Next:** obtain the already tracked recovery workflow's final exact comparison-input/archive linkage and relevant Auth/permission/configuration results, then present a fresh, exact R4 installation approval request under `docs/research-r4-release-plan.md`. No new backup/repeat full restore, R4 SQL, activation or production test writes under a generic “next”. The permission-verification step changed no app/travel prompts; full hosted/device acceptance and L1–L5 remain separate work.
 - **Local cloud browser follow-up:** confirmed merged in #48 (`53f2bb4`). The owner's selected local screen tests pass **13 isolated browser checks / 368 checks total** using actual IndexedDB, DOM, downloads, SDK sessions and the owned HTTP gateway. They fix long-destination phone overflow and clear preview/approval controls after completed or rejected uploads; cloud conflicts ask for a fresh preview. Four viewport widths and second-tab/account/reload/merge paths pass. See `docs/research-r4-browser-validation.md`; real Auth, full Home integration and physical Android/iPad acceptance remain separate.
-- **Current local acceptance follow-up:** prepared from merged #48 on `test/research-r3-offline-browser`. **Eight actual importer browser cases** cover 37-place/seven-hub upload, idempotent materialization, explicit portable/checkpoint restore, offline new-tab/reload, stale-tab rejection/export/resume, missing-cache repair, worker upgrade/reopening and a second destination. It reproduces and fixes network-first startup hanging on an unanswered network request: cached static files now load immediately with background refresh, using matching shell version `r4-2`. **319 default + 20 native PostgreSQL + 19 HTTP + 21 browser = 379 checks pass.** See `docs/research-r3-browser-validation.md`. Await PR review/merge, then physical Android/iPad acceptance; R3 remains unchecked. The original migration and travel prompts are unchanged, `RELEASE_ENABLED=false`, and no hosted changes occur. The next R4 installation gate remains the existing recovery evidence above.
+- **Local importer acceptance follow-up:** confirmed merged in #49 (`f8073e3`). **Eight actual importer browser cases** cover 37-place/seven-hub upload, idempotent materialization, explicit portable/checkpoint restore, offline new-tab/reload, stale-tab rejection/export/resume, missing-cache repair, worker upgrade/reopening and a second destination. It fixes network-first startup hanging on unanswered requests: cached files load immediately with background refresh, shell version `r4-2`. Its **379-check** baseline remains recorded in `docs/research-r3-browser-validation.md`; physical Android/iPad acceptance remains pending and R3 stays unchecked. The original migration/travel prompts are unchanged, `RELEASE_ENABLED=false`, and the next R4 installation gate remains the existing recovery evidence above.
 
 ## Baseline found on main, 2026-11-21
 
@@ -44,7 +44,7 @@
 | Phase | PR / merge commit | State | Next verification |
 | --- | --- | --- | --- |
 | L0 | [#32](https://github.com/Celeritas7/Setu/pull/32), `f74bc76` | Merged | Source files and fixture checks verified |
-| L1 | — | Not started | Ranked next-five rules, source/unknown handling |
+| L1 | L1A preview prepared for review | In progress; not complete | Merge/device preview checks; Solitro handoff, dated route/holiday/return eligibility for L1B |
 | L2 | — | Not started | Practical + personal tag separation |
 | L3 | — | Not started | Explicit sessions, detours and verified return |
 | L4 | — | Not started | Per-space visits and review truthfulness |
