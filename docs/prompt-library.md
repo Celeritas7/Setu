@@ -5,7 +5,7 @@
 The same four-stage journey-planning method should work for Ogose, Kawagoe or
 any new destination without having to manually rewrite a long prompt.
 
-**Little World research revision (2026-11-24.1):** [four complete replacement prompt documents](research-prompts/little-world/README.md) add automatic cultural food discovery, its optional v1-compatible authoring extensions, verification checklist and separately scoped future app requirements. This document-only revision leaves the application and shared catalog below unchanged; the current Copy prompt buttons still use catalog `2026-11-22.1`. Use the replacement documents for Little World research until a separate prompt-content release adopts them in the app.
+**Little World catalog revision (2026-11-25.1):** the shared catalog now contains the exact [four upgraded prompt texts](research-prompts/little-world/README.md) merged in #42. They preserve the existing instructions and add automatic cultural food discovery, budget/non-beef evidence, source preservation and no-result reporting. This is a prompt-content change only; UI behavior, import validation, authentication and databases are unchanged. The optional authoring extensions, verification checklist and future app requirements remain separate documents. These defaults become available to Copy prompt after this content change is reviewed, merged and published; no deployment is performed by preparing the change.
 
 ## Entry and workflow
 
@@ -53,6 +53,8 @@ ChatGPT conversations.
 The Catalog revision is shown in the UI. The last successfully loaded catalog
 is cached per browser so it can be reused if the next visit is offline.
 
+After the Little World content release, open the Prompt Library online and check for **Setu v2026-11-25.1** on a shared template. Select each of the four steps and check that its preview includes **PERMANENT POLICY — Little World — Food Hideouts**. Copy prompt uses that preview text with the destination fields filled in. An older offline cache may still show its older revision until an online visit loads the new catalog.
+
 ## Personal edits
 
 **Edit template** lets the user save wording changes in this browser's local
@@ -60,6 +62,8 @@ storage. These remain personal to this browser and are not synchronized to
 other devices. A personal version shows its status explicitly; if the shared
 catalog advances, the UI warns that the personal edit uses an older base.
 **Restore latest Setu version** deletes the local override for that step.
+
+This content release preserves personal edits. An existing override may show **Personal edit · older base** and continue using its saved text. Keep it if desired; to adopt the shared upgrade instead, copy any custom wording somewhere safe first, then select **Restore latest Setu version** for that step. Never clear browser data to update these prompts.
 
 The destination fields and selected step are also saved locally. No saved
 place, review, hub, trip, or personally confirmed experience tag is modified.

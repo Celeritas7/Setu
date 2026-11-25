@@ -1,6 +1,6 @@
 # Little World — Food Hideouts: four-prompt revision
 
-**Revision:** `2026-11-24.1` · **Scope:** research prompt documents and authoring contracts only.
+**Prompt-text revision:** `2026-11-24.1` · **Shared catalog adoption:** `2026-11-25.1`.
 
 These are complete replacements for the four existing research prompts, with the original destination, transport, itinerary and review capabilities retained. Use the four documents in order; their shared policy is included in each, so it is not a fifth prompt. When pasting directly into a chat, replace `{{destination}}`, `{{origin}}`, `{{travel_date}}` and `{{travel_style}}` before sending. When saving a personal template as below, leave these placeholders intact so the existing Prompt Library fills them.
 
@@ -17,18 +17,22 @@ Every prompt includes Little World automatically for its destination. A later st
 
 The actual existing catalog has **no separate food-only prompt**. Detailed food research belongs to Discover; geographical planning and final consolidation belong to Itinerary. Transport and Live review retain their original roles.
 
-Per the instruction to leave the app untouched, `data/travel-prompt-templates.js`, application JavaScript/HTML/CSS, the bundled import schema, migrations and databases are unchanged. The app's current **Copy prompt** buttons still return the older catalog. Use these replacement documents for the enhanced research. Updating the shared in-app prompt text is a separate content release; do not claim it happened here. Previously copied prompts, old conversations, browser-specific overrides and arbitrary new chats are not automatically rewritten by these documents.
+PR #42 merged these upgraded documents without changing the app. The separately authorized prompt-content update now adopts their exact bodies in `data/travel-prompt-templates.js`, catalog revision `2026-11-25.1`. The four IDs, order, titles, descriptions and supported placeholders are preserved. UI logic/HTML/CSS, import validation/schema, authentication, migrations and databases remain unchanged. There is no fifth prompt or new food-filter feature.
 
-You can use the revised text through the **existing** personal-template feature without a code release:
+After this catalog change is reviewed, merged and published, open Setu's Prompt Library online, select a step and check **Setu v2026-11-25.1**. The shared **Copy prompt** text then includes Little World automatically for the destination entered. Check all four steps. This preparation does not itself deploy the content, rewrite prompts already sent in ChatGPT or alter arbitrary new conversations. An old offline catalog remains old until an online load succeeds.
+
+Existing personal template versions are preserved. **Personal edit · older base** means that step still uses the saved personal text. Keep it if wanted. To switch to the new shared default, back up any custom wording, then use **Restore latest Setu version** for that step. No browser data or personal wording is reset automatically.
+
+You can also use the revised text through the **existing** personal-template feature:
 
 1. Open Setu's Prompt Library and choose the corresponding step.
 2. Select **Edit template**, replace its text with the matching document's complete prompt **below the horizontal divider**, and keep the four placeholders intact.
 3. Select **Save my version**. Repeat for the other three steps.
 4. Enter the destination/origin/date/style normally, then **Copy prompt**. Check that Little World appears and the placeholders are filled.
 
-These personal versions are stored in that browser only. Repeat the adoption on another device if needed; **Restore latest Setu version** returns to the current shared catalog and removes that step's local revision. No personal template has been changed automatically by this documentation task.
+These personal versions are stored in that browser only. Repeat any custom edits on another device if needed; **Restore latest Setu version** returns to the published shared catalog and removes that step's local revision. Until the content release is published, use these documents directly or save them as personal versions.
 
-No deployment, Drive reorganization, extra destination folder, live restaurant research, production import or fifth prompt is part of this revision. The Potohar visit motivates the research policy; these documents do not assert additional facts about that restaurant or infer a personal Hideout experience from its size.
+No deployment, Drive reorganization, extra destination folder, live restaurant research or production import is performed by this change. The Potohar visit motivates the research policy; these documents do not assert additional facts about that restaurant or infer a personal Hideout experience from its size.
 
 ## Storage and output stay compatible
 
@@ -61,7 +65,7 @@ Run the following against research generated with the replacement prompts; a tex
 - [ ] Each real branch appears once; shared names, menus, buildings or source URLs do not cause automatic merging. Existing personal reviews and research IDs remain intact.
 - [ ] Transport reuses menus and investigates only access/timing gaps; itinerary links restaurants to real hubs/attractions; live review adds only explicit observations. Closed/unverified/inaccessible restaurants are not promoted as available choices.
 - [ ] Validate the base v1 envelope and, separately, the optional overlay plus its semantic checks. Preview/export and an explicitly approved local draft/backup round-trip preserve the entire profile; no production write is needed.
-- [ ] Original four-stage capabilities, date/return safeguards, Drive folder/version rules and the separate transport/review boundaries remain present. No app update, automatic import or globally automatic ChatGPT behavior is claimed.
+- [ ] Original four-stage capabilities, date/return safeguards, Drive folder/version rules and the separate transport/review boundaries remain present. The shared text matches these documents; no new app functionality, automatic import or globally automatic ChatGPT behavior is claimed.
 
 ## Review evidence
 
@@ -70,3 +74,5 @@ Baseline: `Celeritas7/Setu` main `c00db72` (merged #41), `data/travel-prompt-tem
 Validation completed: all **315 existing tests pass**. Standalone checks validated the authoring overlay and fictional example, old v1 documents without the extension, all six budget boundaries and incorrect bands, unknown/unchecked totals or extras, unconfirmed broth recommendations, explicit no-result/incomplete searches, calendar dates and reference integrity. The unchanged importer/model demonstrated exact preservation through preview, review export, approved local materialization and portable backup/restore; a repeated local save added zero duplicates. All four original prompt bodies and the existing placeholders were preserved around the inserted policy. Document links and whitespace were checked.
 
 These checks do not prove the truth of a restaurant claim, that a future chat follows the policy, physical-device editor behavior or production cloud acceptance. No new runtime code or permanent app test was needed. Human acceptance of generated restaurant research remains the checklist above, not a fabricated completed search.
+
+The subsequent catalog adoption starts from merged #42 (`a18774d`). Its bodies match these four documents exactly, with the catalog revision advanced to `2026-11-25.1`. The existing pinned-revision test is updated; no new UI or storage behavior is introduced. Content-generation and existing regression checks are recorded with that PR; actual published-page acceptance remains the revision/preview check described above.
