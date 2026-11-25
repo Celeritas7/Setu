@@ -2,6 +2,8 @@
 
 **Decision: preparation complete; hosted installation and activation remain on hold.**
 
+**Permission-repair follow-up, 23:16 JST:** #46 is merged (`d31bcfe`). After the owner's reported execution, [read-only verification](research-r4-permission-repair-verification.md) confirms all six effective core browser-role TRUNCATE privileges denied, with other reported grants and owner policies retained. The post-repair fingerprints are recorded there. The original precheck below remains dated evidence; its grant repair is now verified and must not be repeated. R4 installation/activation remain on hold.
+
 This phase starts from merged [PR #45](https://github.com/Celeritas7/Setu/pull/45), `a535ddf`. It reconciles existing recovery evidence, refreshes Setu's read-only catalog inspection and prepares exact, separate change scopes. It performs no hosted SQL changes, Auth changes, production data writes, activation or deployment. Merging this proposal authorizes none of those actions.
 
 ## Recovery evidence reconciled
@@ -86,7 +88,7 @@ Ordinary index creation can block concurrent core writes. Review current activit
 | --- | --- | --- |
 | 1 — Review this PR | Read the recovery limits, catalog probe and separate grant proposal; preserve the existing evidence | Merge changes repository preparation only |
 | 2 — Close release prerequisites | Reconcile exact snapshot/provenance and relevant Auth/permission/configuration recovery; record the chosen recovery cutoff and final bounded outcome. Review the six-grant repair independently | No duplicate full restore, synthetic users in a real database, shared Auth change or automatic permission repair |
-| 3 — Optional separately approved grant repair | Recheck target and six direct/effective grant paths, execute only the one REVOKE, then verify effective denial plus retained core CRUD/RLS | Its approval does not approve R4 installation. Capture a new baseline afterward because this intentionally changes ACL fingerprints |
+| 3 — Grant repair verified | Owner reported execution; read-only postchecks confirm all six effective privileges denied and other reported grants/policies retained. Post-repair fingerprints are recorded in the verification report | Do not repeat it. This does not approve R4 installation; refresh the new baseline before any later approved operation |
 | 4 — Ask for exact R4 SQL approval | Present selected project, pinned payload/hash, the fresh preflight, recovery decision and maintenance/stop plan | Approval applies only to this file; activation and test data remain separate |
 | 5 — Install only the approved payload | Use the migration tool's single-query route with name `research_import_cloud`, selected project and the exact reviewed file bytes; record returned outcome and actual history version/name | Do not use bulk `db push`/`migration up`, apply older G4, or rewrite/reset shared history |
 | 6 — Database acceptance while disabled | Rerun the catalog probe, compare the baseline, inspect history and advisors, then verify actual REST schema/RPC exposure with the approved scope | Catalog success alone does not authorize uploads; no automatic synthetic production writes |
