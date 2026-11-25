@@ -67,6 +67,12 @@ export async function freshPostgres() {
     const info=(await admin.query("select version() as version,current_setting('listen_addresses') as listen")).rows[0];
     assert.equal(info.listen,'127.0.0.1');
     return {admin,info,connect,close,
+      async gatewayConnection(){
+        // The URI is generated only from this cluster; no external URI is read.
+        await admin.query(`create role setu_gateway login noinherit nocreatedb nocreaterole nosuperuser nobypassrls password '${password}'`);
+        await admin.query('grant authenticated,anon to setu_gateway');
+        return Object.freeze({host:'127.0.0.1',port,user:'setu_gateway',password,database});
+      },
       async actor(owner,anonymous=false,role='authenticated') {
         assert.ok(['authenticated','anon'].includes(role));
         const client=await connect(role==='anon'?'setu_guest':'setu_actor');
