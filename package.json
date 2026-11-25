@@ -7,7 +7,8 @@
     "setup:research-api": "node scripts/prepare-research-api.mjs",
     "test:research-api": "node --test tests/api/research-cloud-http.test.mjs",
     "setup:research-browser": "node scripts/prepare-research-browser.mjs",
-    "test:research-browser": "node --test tests/browser/research-cloud-browser.test.mjs"
+    "test:research-browser": "node --test --test-timeout=60000 tests/browser/*.test.mjs",
+    "test:research-import-browser": "node --test --test-timeout=60000 tests/browser/research-import-browser.test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.17",

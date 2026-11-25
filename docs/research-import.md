@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | R1 | Bundled v1 validator, local dry-run preview, advisory matches and differences, review export | Merged in PR #35, `ee9c7a0`; basic user upload/preview/export verified |
 | R2 | Resolve duplicate hubs and linked places, explicit Accept as suggestion / Skip / Merge selected research facts, field-group decisions | Merged in PR #36, with usability correction #37 (`1a73704`) |
-| R3 | Browser-local accepted drafts, backup/restore, stable destination-scoped identities, repeat-import idempotency and recovery | Merged #38/#39; user verified decisions, duplicate prevention, offline reopen and portable restore; two-tab/device checks pending |
+| R3 | Browser-local accepted drafts, backup/restore, stable destination-scoped identities, repeat-import idempotency and recovery | Merged #38/#39; user verified decisions/offline/portable restore; eight native browser checks and stalled-network fix prepared in the follow-up; physical device acceptance pending |
 | R4 | Separately approved additive schema/RLS, authenticated persistence, isolation, revisions, retry/concurrency and multi-device sync | Code/native/API validation merged #40/#44/#45; release proposal and recovery reconciliation prepared, with provenance/Auth/permission limits open; migration unapplied and writes disabled |
 
 R1/R2 are the import preparation portion of K4/L5. It does not depend on the L1 recommendation engine. R2/R3 should reuse the L2 potential/personal tag contract and L4 observation boundaries. E4/L3 continue to own current dated transport and return safety. The four travel research prompts remain a separate workflow.
@@ -133,7 +133,7 @@ Each successful transaction retains the previous complete workspace payload. **R
 
 The importer registers `research-import-sw.js` with the narrow `research-import.html` scope on supported HTTPS browsers. It caches the importer HTML, scripts, stylesheet and icon. **Research Import ready offline** now requires the expected worker to control the current page and reply that all nine required static files are cached. An installed worker alone does not establish readiness. Missing, outdated or unresponsive setup shows an unverified status; **Check offline setup** requests a worker update and repairs its static cache. No review/draft storage is cleared. The next offline visit can resume stored reviews and work with local files. This readiness is separate from a successful IndexedDB save.
 
-The worker handles only the known static importer assets. It never caches uploaded research JSON or Supabase responses. Other Setu pages/apps and unrelated caches are outside its handler/cleanup. Temporary network/server failures use the cached shell; usable online responses survive cache quota errors. Bump the matching version in `research-import-sw.js` and `js/research-offline.js` when changing the offline protocol/shell.
+The worker handles only the known static importer assets. It never caches uploaded research JSON or Supabase responses. Other Setu pages/apps and unrelated caches are outside its handler/cleanup. The native browser follow-up changes startup to use cached files immediately and refresh successful responses in the background, so an unanswered network request cannot stall an installed shell. Uncached files still need the network; usable online responses survive cache-storage errors. Bump the matching version in `research-import-sw.js` and `js/research-offline.js` when changing the offline protocol/shell; this correction uses `r4-2`.
 
 For the offline test, wait for verified readiness, download a backup, disconnect, then use **Reopen Research Import** or a normal reload. A forced refresh (Ctrl+Shift+R/Ctrl+F5) bypasses the worker and can show Chrome's offline error even with cached files; see [Chrome's refresh behavior](https://developer.chrome.com/docs/workbox/improving-development-experience#shift_and_reload). The new link uses ordinary navigation to remove that shortcut ambiguity. It opens the importer shell; select Resume saved review afterward.
 
@@ -151,7 +151,7 @@ All **282 tests** pass via `node --test tests/*.test.mjs`. New checks execute th
 
 The actual Ogose file was simulated through approval, local materialization and backup restore. It retained **37 suggestions across seven hubs**; repeated saving added zero records; the full original research round-tripped exactly. The two user-uploaded R1/R2 exports restored all 37 candidates, including the R2 skipped decision. These were local simulations, not production imports. No private research payload is committed.
 
-A fresh Chromium launch was attempted for R3 and failed with `socket() failed: Operation not permitted`. Manual desktop/Android/iPad checks are required before release acceptance.
+A fresh Chromium launch was attempted during the original R3 implementation and failed with `socket() failed: Operation not permitted`. The subsequent [native browser acceptance report](research-r3-browser-validation.md), prepared from merged #48 (`53f2bb4`), uses the pinned headless-shell build and passes **eight importer browser cases**. It verifies actual IndexedDB/worker behavior, 37-place upload/backup preservation, duplicate prevention, explicit portable and checkpoint restore, offline new-tab/reload, stale-tab rejection with exportable losing work, missing-cache repair, worker upgrade/reopening and destination separation. It also reproduces and corrects cached startup hanging on a network request that never answers. The current combined suites pass **379 checks**; physical Android/iPad acceptance remains pending. Earlier test counts above record their original phase results.
 
 1. Accept one candidate and skip a different one. Wait for the saved status, reload, then Resume saved review and verify both decisions.
 2. Save approved local drafts twice. Confirm the second save adds zero duplicates and the local list retains source details and unknown prices.
@@ -163,7 +163,7 @@ No production SQL, merge or deployment is performed by this R3 implementation. R
 
 ## Cloud persistence and conflicts (R4)
 
-R4 starts from merged #39 (`2229c03`). The user subsequently verified offline reopening through **Reopen Research Import**, portable backup restore with 37 candidates and one local suggestion, and offline readiness in the restored browser after normal reload/check. Physical Android/iPad and manual two-tab acceptance remain pending. R4 does not change the travel prompts or transportation-calculation ownership.
+R4 starts from merged #39 (`2229c03`). The user subsequently verified offline reopening through **Reopen Research Import**, portable backup restore with 37 candidates and one local suggestion, and offline readiness in the restored browser after normal reload/check. Native two-tab rejection is now automated in the R3 browser follow-up; physical Android/iPad acceptance remains pending. R4 does not change the travel prompts or transportation-calculation ownership.
 
 ### Current release boundary
 
@@ -208,7 +208,7 @@ The owner's selected [local browser follow-up](research-r4-browser-validation.md
 
 The SQL attachment guard now accepts an omitted optional `personal_observation` without changing the source JSON, while rejecting non-null observations. The migration remains unapplied on the hosted project. The bundle template round-trips; compressed app/bootstrap assets, the long-trip app, G4 migration and travel prompts remain unchanged by this validation phase.
 
-The managed preview was occupied by another task during R4, so native R4 browser/layout checks remain pending. Earlier R3 native caching/recovery checks and subsequent user acceptance remain recorded separately. No hosted schema, production record, auth setting or deployment was changed.
+The managed preview was occupied during the original R4 implementation. The subsequent isolated native-browser report above verifies the cloud modules and layout; full packaged Home/Browse, real Auth and physical-device acceptance remain pending. R3's importer-worker checks and user acceptance are recorded separately. No hosted schema, production record, auth setting or deployment was changed.
 
 Release steps must remain separate:
 
