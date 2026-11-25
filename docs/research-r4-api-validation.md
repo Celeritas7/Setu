@@ -4,6 +4,8 @@
 
 **Release-preparation follow-up:** this HTTP phase merged in #45 (`a535ddf`). The [release plan](research-r4-release-plan.md) reconciles recovery evidence, refreshes hosted metadata and adds catalog/privilege-repair lifecycle checks. The historical results and fixture limits below remain unchanged; hosted installation/activation are still on hold.
 
+**Browser follow-up:** the owner's selected [isolated browser phase](research-r4-browser-validation.md), from merged #47 (`1d88752`), adds 13 passing actual-DOM/IndexedDB/session/download checks and corrects three UI state/layout issues. It reuses this real HTTP fixture and its controlled identity endpoint; it does not establish full GoTrue/hosted/device acceptance or enable cloud saving.
+
 This phase starts from merged [PR #44](https://github.com/Celeritas7/Setu/pull/44), `c939c1c`. It follows the [native PostgreSQL rehearsal](research-r4-isolated-validation.md) with a real PostgREST server, signed fictional JWTs and the actual Supabase JavaScript client. It changes development tests, fixtures and documentation. It does not change the app, travel prompts or migration.
 
 ## Rehearsal stack and scope

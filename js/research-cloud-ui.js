@@ -34,9 +34,15 @@
         const preview=node('div');let draftPage=0;
         const commit=button('Upload reviewed batch',()=>run(async()=>{
           if(!plan)throw Error('Preview the destination first.');
-          const receipt=await client.commit(plan,confirmation.checked);
+          let receipt;
+          try{receipt=await client.commit(plan,confirmation.checked);}
+          catch(error){
+            invalidate();
+            if(error.code==='40001')error.message='Cloud records changed after this preview. Preview again and review the differences before approving.';
+            throw error;
+          }
           status.textContent='Cloud save confirmed · revision '+receipt.rev+' · '+receipt.created+' new suggestions · '+receipt.evidence_added+' evidence attachments.';
-          plan=null;commit.disabled=true;confirmation.checked=false;await onSaved();
+          invalidate();await onSaved();
         }));commit.disabled=true;
         function invalidate(){plan=null;confirmation.checked=false;commit.disabled=true;preview.replaceChildren();}
         select.addEventListener('change',invalidate);mode.addEventListener('change',invalidate);
