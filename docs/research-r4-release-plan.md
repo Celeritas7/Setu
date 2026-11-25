@@ -4,6 +4,8 @@
 
 **Permission-repair follow-up, 23:16 JST:** #46 is merged (`d31bcfe`). After the owner's reported execution, [read-only verification](research-r4-permission-repair-verification.md) confirms all six effective core browser-role TRUNCATE privileges denied, with other reported grants and owner policies retained. The post-repair fingerprints are recorded there. The original precheck below remains dated evidence; its grant repair is now verified and must not be repeated. R4 installation/activation remain on hold.
 
+**Browser follow-up:** #47 is merged (`1d88752`). At the owner's selection, [isolated browser validation](research-r4-browser-validation.md) adds 13 actual browser checks and fixes phone overflow plus stale preview/approval controls. All 368 checks pass; no production operation occurs. Real recovery/Auth and full hosted/device acceptance remain open, and the exact migration fingerprint below is unchanged.
+
 This phase starts from merged [PR #45](https://github.com/Celeritas7/Setu/pull/45), `a535ddf`. It reconciles existing recovery evidence, refreshes Setu's read-only catalog inspection and prepares exact, separate change scopes. It performs no hosted SQL changes, Auth changes, production data writes, activation or deployment. Merging this proposal authorizes none of those actions.
 
 ## Recovery evidence reconciled
@@ -118,12 +120,14 @@ The current gate is a client feature flag. Installing the SQL makes authenticate
 ```sh
 npm ci
 npm run setup:research-api
+npm run setup:research-browser
 npm test
 npm run test:research-postgres
 npm run test:research-api
+npm run test:research-browser
 ```
 
-Use the existing Linux x64 / Node 22+ rehearsal requirements. **316 regressions + 20 native PostgreSQL tests + 19 HTTP/JWT tests pass.** The two new native lifecycle checks exercise the probe inside a read-only transaction, before/after the exact migration; detect disabled RLS, a permissive policy, PUBLIC/inherited privilege drift, unexpected routines and a missing index; preserve a personal row; and verify the separate TRUNCATE proposal with normal owner CRUD and R4 publication. The previous test reports remain dated records of their 18-test native and 19-test HTTP phases.
+Use the existing Linux x64 / Node 22+ rehearsal requirements. Release preparation #46 passed **316 regressions + 20 native PostgreSQL tests + 19 HTTP/JWT tests**. The browser follow-up adds **13 checks**, for **368 total**. The two native lifecycle checks exercise the probe inside a read-only transaction, before/after the exact migration; detect disabled RLS, a permissive policy, PUBLIC/inherited privilege drift, unexpected routines and a missing index; preserve a personal row; and verify the separate TRUNCATE proposal with normal owner CRUD and R4 publication. The previous reports remain dated records of their own phases.
 
 These checks and the read-only hosted observations do not establish the outstanding full Auth, snapshot recovery or physical-device results. App behavior and travel prompts are unchanged.
 

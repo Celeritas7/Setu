@@ -5,13 +5,16 @@
     "test": "node --test tests/*.test.mjs",
     "test:research-postgres": "node --test tests/postgres/*.test.mjs",
     "setup:research-api": "node scripts/prepare-research-api.mjs",
-    "test:research-api": "node --test tests/api/research-cloud-http.test.mjs"
+    "test:research-api": "node --test tests/api/research-cloud-http.test.mjs",
+    "setup:research-browser": "node scripts/prepare-research-browser.mjs",
+    "test:research-browser": "node --test tests/browser/research-cloud-browser.test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.17",
     "@supabase/supabase-js": "2.119.2",
     "embedded-postgres": "17.12.0-beta.19",
     "jose": "6.2.18",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "playwright-core": "1.62.1"
   }
 }
