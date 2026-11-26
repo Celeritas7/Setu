@@ -10,6 +10,12 @@ Run `node --test tests/live-trip-draft-schema.test.mjs` after installing the rep
 
 The rehearsal starts with owner-scoped insert and read. On a source-key collision, leave the first row intact and compare all three stored values (stop name, place reference and observation) using JSONB equality and null-aware comparison. An identical retry reuses the original draft. A changed retry requires an explicit conflict decision. The rehearsal covers a changed amount, stop name and place reference separately.
 
+## L5C storage validation
+
+The fixture checks each inserted draft at the table boundary. It requires a named space, a supported outcome, a valid calendar date, an explicit note or null, and spending in whole nonnegative yen or null. A personal review needs a first-hand note. Optional comfort answers belong to personal reviews and use the choices offered in Trip session. Extra observation and place-reference fields are rejected. A supplied place reference needs a type and ID; its existence and ownership still require separate verification before use.
+
+The regression sends invalid rows directly to PostgreSQL as the authenticated owner. It also reads back a leap-day personal review with zero spending, negative comfort feedback and an unknown Wi-Fi answer.
+
 ## Remaining release work
 
-The fixture assumes validated L4D input. Before exposing any write path, design and test server-side payload validation, explicit signed-in selection and consent, concurrent retries, correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
+The fixture covers stored row fields. Before exposing any write path, design and test request-envelope validation, explicit signed-in selection and consent, concurrent retries, correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
