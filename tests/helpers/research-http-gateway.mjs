@@ -22,7 +22,7 @@ async function stop(child){
   const timer=setTimeout(()=>child.kill('SIGKILL'),3000);try{await done;}finally{clearTimeout(timer);}
 }
 
-export async function freshResearchApi(){
+export async function freshResearchApi({prepareDatabase}={}){
   const binary=await verifiedPostgrest(),db=await freshPostgres();
   const logs=[],requests=[],control={dropCommitResponses:false,swapCommitToken:null,identityFailure:false,afterCommit:null};
   let root,pgrstPort,child,front,connection,privateKey,publicKey,kid,jwk,spawnFailure;
@@ -51,6 +51,7 @@ export async function freshResearchApi(){
       grant select on public.akatsuki_places,public.akatsuki_shops to authenticated;
       create policy owner_read on public.akatsuki_places for select to authenticated using(user_id=auth.uid());
       create policy owner_read on public.akatsuki_shops for select to authenticated using(user_id=auth.uid());`);
+    if (prepareDatabase) await prepareDatabase(db.admin);
     connection=await db.gatewayConnection();assert.equal(connection.host,'127.0.0.1');
     const uri=new URL('postgresql://127.0.0.1:'+connection.port+'/'+connection.database);
     uri.username=connection.user;uri.password=connection.password;
