@@ -515,14 +515,19 @@
     });
     form.addEventListener('submit',async event=>{
       event.preventDefault();
-      if (busy || save.disabled || !form.reportValidity()) return;
+      if (busy || save.disabled) return;
+      date.max=today();
+      if (!form.reportValidity()) return;
       if (!space.value.trim() || !note.value.trim()) {status.textContent='Enter the space and your observation.';return;}
       busy=true;save.disabled=true;
       try {
-        const review={id:crypto.randomUUID(),destination,place_id:place.research_id,place_name:place.name_ja,
+        const now=new Date(), review={id:crypto.randomUUID(),destination,place_id:place.research_id,place_name:place.name_ja,
           address:place.location.address_ja,source_hash:sourceHash,space:space.value.trim(),observed_on:date.value,
-          recorded_at:new Date().toISOString(),tag:tag.value,status:'personally_confirmed',observation:note.value.trim()};
-        record=await store.write(key,record?.rev || 0,[...(record?.payload || []),review]);
+          recorded_at:now.toISOString(),tag:tag.value,status:'personally_confirmed',observation:note.value.trim()};
+        const existing=record?.payload || [];
+        const added=local.personalAdditions({format:'setu_personal_space_reviews',version:1,reviews:[review]},
+          destination,place.research_id,existing,now);
+        if (added.length) record=await store.write(key,record?.rev || 0,[...existing,...added]);
         showHistory();form.reset();status.textContent='Personal review saved.';
       } catch(error) {
         status.textContent=error.code==='CONFLICT'?'Another tab saved a review. Close and reopen this panel before retrying.':error.message;

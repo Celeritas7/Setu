@@ -136,3 +136,83 @@ test('explicit room confirmation stays local and separate from research',async()
   await card.getByText(/Reading room · Cocoon/).waitFor();
   assert.equal((await download(page)).includes(Buffer.from('Quiet desks here')),false);
 });
+
+async function personalRecords(page) {
+  return page.evaluate(async()=>{const s=await SetuResearchStorage.open(undefined,'setu-personal-space-reviews-v1');try{return await s.list();}finally{s.close();}});
+}
+async function personalPanel(page,data) {
+  await upload(page,data);await saved(page);
+  const card=page.locator('#candidates article').first();
+  await card.getByText('Personal space reviews on this device',{exact:true}).click();
+  await card.locator('form button:enabled').waitFor();
+  return card;
+}
+
+test('personal confirmation restore rejects impossible dates and IDs before writes and restores a genuine older review once',async()=>{
+  const data=fictionalResearch({count:1}),source=await h.open(),sourceCard=await personalPanel(source.page,data);
+  const form=sourceCard.locator('form'),date=form.getByLabel('Visit date in Japan');
+  await form.getByLabel('Room or space reviewed').fill('Reading room');
+  await form.getByLabel('Experience to confirm').selectOption('Cocoon');
+  await form.locator('textarea').fill('Quiet desks in this room');
+  await form.getByRole('checkbox').check();
+  await date.fill('2099-12-31');
+  await form.getByRole('button').click();
+  assert.equal(await date.evaluate(el=>el.validity.rangeOverflow),true);
+  assert.deepEqual(await personalRecords(source.page),[]);
+  await date.fill('2024-02-29');
+  await form.getByRole('button').click();
+  await sourceCard.getByText('Personal review saved.',{exact:true}).waitFor();
+  const waiting=source.page.waitForEvent('download');
+  await sourceCard.getByRole('button',{name:'Export this place’s personal reviews',exact:true}).click();
+  const downloaded=await waiting,parts=[];
+  for await(const part of await downloaded.createReadStream())parts.push(part);
+  const file=JSON.parse(Buffer.concat(parts).toString());
+  assert.equal(file.reviews.length,1);
+  const [row]=file.reviews;
+  assert.equal(row.observed_on,'2024-02-29');
+  assert.equal(row.status,'personally_confirmed');
+
+  const target=await h.open(),card=await personalPanel(target.page,data);
+  const picker=card.getByLabel('Restore this place’s personal export',{exact:true});
+  const restore=card.getByRole('button',{name:'Restore these personal reviews',exact:true});
+  const send=async value=>picker.setInputFiles({name:'personal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(value))});
+  const researchBefore=await records(target.page);
+  const badId='11112222-3333-4444-8555-666677778888';
+  const invalid=[
+    [{...row,id:'-'.repeat(36)},/invalid space review/i],
+    [{...row,id:badId,observed_on:'2099-12-31',recorded_at:'2026-11-25T08:00:00Z'},/today in Japan/],
+    [{...row,id:badId,observed_on:'2024-02-29',recorded_at:'2024-02-28T14:59:59.999Z'},/after the recording date in Japan/],
+    [{...row,id:badId,recorded_at:'2024-02-30T12:00:00Z'},/valid ISO timestamp/],
+    [{...row,id:badId,recorded_at:'2099-12-31T00:00:00Z'},/recording time is in the future/]
+  ];
+  for(const [bad,message] of invalid) {
+    await send({...file,reviews:[row,bad]});
+    await card.getByText(message).waitFor();
+    assert.equal(await restore.count(),0);
+    assert.deepEqual(await personalRecords(target.page),[]);
+  }
+  await send(file);
+  await restore.waitFor();
+  assert.deepEqual(await personalRecords(target.page),[],'a valid preview still requires explicit restore');
+  await card.getByRole('button',{name:'Cancel restore',exact:true}).click();
+  await card.getByText('Restore cancelled.',{exact:true}).waitFor();
+  assert.deepEqual(await personalRecords(target.page),[]);
+  await send(file);
+  await restore.click();
+  await card.getByText('Personal reviews restored.',{exact:true}).waitFor();
+  const [stored]=await personalRecords(target.page);
+  assert.deepEqual(stored.payload,[row]);
+  assert.equal(stored.rev,1);
+  await send(file);
+  await card.getByText('All exported reviews are already saved.',{exact:true}).waitFor();
+  assert.deepEqual(await personalRecords(target.page),[stored]);
+  await send({...file,reviews:[{...row,tag:'Hideout'}]});
+  await card.getByText(/conflicting observations/).waitFor();
+  assert.equal(await restore.count(),0);
+  assert.deepEqual(await personalRecords(target.page),[stored]);
+  assert.deepEqual(await records(target.page),researchBefore,'personal restore cannot change research workspace');
+  await target.page.reload();await resume(target.page);
+  await card.getByText('Personal space reviews on this device',{exact:true}).click();
+  await card.getByText(/Reading room · Cocoon · 2024-02-29/).waitFor();
+  assert.deepEqual(await personalRecords(target.page),[stored]);
+});
