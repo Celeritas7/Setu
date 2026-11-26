@@ -1,4 +1,4 @@
-// Rehearsal only. The caller supplies validated L5A proposals and a local capture callback.
+// Rehearsal only. The caller supplies validated L5A proposals and a rehearsal submission callback.
 export function openConsent(container,{proposals,owner,auth,onSessionChange,capture}) {
   const rows=structuredClone(proposals);
   const selected=new Set();
@@ -78,8 +78,13 @@ export function openConsent(container,{proposals,owner,auth,onSessionChange,capt
     confirm.disabled=true;
     if (!await verified(version)) return;
     const envelope=reviewed;
-    close('Selection confirmed in rehearsal.');
-    capture(owner,envelope);
+    close('Submitting selected observations…');
+    try {
+      await capture(owner,envelope);
+      status.textContent='Selected observations confirmed in rehearsal.';
+    } catch {
+      status.textContent='Save could not be confirmed. Reopen and review before retrying.';
+    }
   };
   cancel.onclick=()=>close('Review cancelled.');
   invalidate();
