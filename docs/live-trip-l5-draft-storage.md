@@ -20,6 +20,12 @@ The regression sends invalid rows directly to PostgreSQL as the authenticated ow
 
 Run `node --test tests/postgres/live-trip-draft-concurrency.test.mjs` with the repository dependencies. The test opens independent sessions in an isolated PostgreSQL 17 cluster. It checks the server’s lock graph before releasing the first same-owner transaction. Under READ COMMITTED, an identical retry sees the committed draft, a changed retry reports a conflict, and a waiting insert succeeds if the first writer rolls back. Two different owners can submit the same source key independently and read back their own values. Both database rehearsals exercise the same insert-and-compare helper.
 
+## L5E atomic draft submission
+
+Run `node --test tests/postgres/live-trip-draft-batch.test.mjs` to exercise the test-only SQL function with a version 1 place update draft. It derives the owner from the caller, validates the envelope and source keys, and submits every proposal in one statement. An identical occurrence is counted as a retry. Any invalid or conflicting entry aborts the statement, including earlier inserts. The test verifies this by reading back the original rows after failures. Anonymous sessions are denied by the function.
+
+The fixture retains L5B’s direct table grants for the earlier rehearsals. A deployed interface would also need to constrain direct table access and verify effective grants. The SQL call alone does not establish end-user consent.
+
 ## Remaining release work
 
-The fixture covers stored row fields. Before exposing any write path, design and test request-envelope validation, explicit signed-in selection and consent, correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
+The fixture covers stored row fields. Before exposing any write path, design and test explicit signed-in selection and consent, correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
