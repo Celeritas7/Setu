@@ -283,13 +283,32 @@
     return validateWorkspace({id:existing.id,active:incoming.active,reviews:{...existing.reviews,...incoming.reviews},catalog});
   }
   function backup(workspace) {return {format:'setu_research_local_backup',schema_version:'1.0.0',exported_at:new Date().toISOString(),workspace:copy(workspace)};}
+  function personalAdditions(file, destination, placeId, existing) {
+    requireValue(file?.format === 'setu_personal_space_reviews' && file.version === 1 &&
+      Array.isArray(file.reviews) && file.reviews.length, 'Choose a personal space review export.');
+    const known = new Map(existing.map(row => [row.id,row])), added = [];
+    for (const row of file.reviews) {
+      requireValue(row?.destination === destination && row.place_id === placeId, 'This export belongs to another place or destination.');
+      requireValue(typeof row.id === 'string' && /^[a-f0-9-]{36}$/i.test(row.id) &&
+        typeof row.space === 'string' && row.space.trim() && row.space.length <= 160 &&
+        typeof row.observation === 'string' && row.observation.trim() && row.observation.length <= 2000 &&
+        model.validDate(row.observed_on) && typeof row.recorded_at === 'string' && Number.isFinite(Date.parse(row.recorded_at)) &&
+        typeof row.place_name === 'string' && typeof row.address === 'string' && typeof row.source_hash === 'string' &&
+        /^[0-9a-f]{64}$/.test(row.source_hash) && row.status === 'personally_confirmed' &&
+        ['Igloo','Cocoon','Hideout'].includes(row.tag), 'This export contains an invalid space review.');
+      const previous = known.get(row.id);
+      if (previous) requireValue(stable(previous) === stable(row), 'A review ID has conflicting observations. Restore cancelled.');
+      else {known.set(row.id,row);added.push(row);}
+    }
+    return added;
+  }
   function serializeBackup(envelope) {
     const text = JSON.stringify(envelope);
     requireValue(new TextEncoder().encode(text).length <= MAX_BACKUP_BYTES,
       'Backup exceeds 25 MiB. Export the current review separately.');
     return text;
   }
-  const api = {serializeBackup,MAX_BACKUP_BYTES,stable,digest,destinationId,placeId,emptyCatalog,effectiveSource,prepare,restoredReview,
+  const api = {personalAdditions,serializeBackup,MAX_BACKUP_BYTES,stable,digest,destinationId,placeId,emptyCatalog,effectiveSource,prepare,restoredReview,
     materialize,inspectInput,validateWorkspace,mergeWorkspace,backup};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;else root.SetuResearchLocal = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
