@@ -60,7 +60,11 @@ Run `npm run test:trip-draft-browser-api` after the local browser and API setup.
 
 Load the withdrawal fixture after the correction fixture in a disposable database. The request identifies the reviewed account, source occurrence and revision. A stale revision receives HTTP 409. A successful withdrawal advances the revision and hides the row from the review and correction functions. Repeating the withdrawal returns HTTP 404. The retained unique key prevents an old export from recreating the observation. Sibling occurrences and other owners’ records stay available.
 
-This rehearsal retains the original observation in storage. Retention, permanent erasure and recovery policies remain open decisions. Run `npm run setup:research-api` and `npm run test:research-api` for the HTTP rehearsal. Browser confirmation is a separate acceptance step.
+This rehearsal retains the original observation in storage. Retention, permanent erasure and recovery policies remain open decisions. Run `npm run setup:research-api` and `npm run test:research-api` for the HTTP rehearsal. L5M covers browser confirmation in the local rehearsal.
+
+## L5M browser withdrawal confirmation
+
+Run `npm run test:trip-draft-browser-api` with the local browser and API prerequisites. Review withdrawal identifies the saved revision, stop and space and explains that the original observation stays in storage. Cancel sends no withdrawal request. After an edit from another session, the reviewer must load the latest revision and choose withdrawal again. The Chromium test checks request bodies, visibility through the owner API and retention of the original payload after confirmation.
 
 ## Remaining release work
 
