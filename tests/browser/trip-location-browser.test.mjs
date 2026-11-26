@@ -314,3 +314,193 @@ test('competing finish preserves the losing tab’s original-trip notes through 
   assert.deepEqual(final.trips[0],completed.trips[0]);
   assert.equal(final.trips[1].report_notes,undefined);
 });
+
+async function openPlannedOuting(page,origin) {
+  await page.goto(origin+'/trip-session.html');
+  await page.evaluate(()=>sessionStorage.setItem('setu.session-outing',JSON.stringify({
+    title:'Duplicate-name outing',date:'2026-11-26',
+    stops:[{name:'Library',type:'spot',id:'first'},{name:'Library',type:'spot',id:'second'},
+      {name:'Closed room',type:'spot',id:'closed',unavailable:true}]
+  })));
+  await page.goto(origin+'/trip-session.html#outing');
+  await page.reload();
+  await page.locator('#planned-choice').waitFor();
+}
+async function observe(page,place,note) {
+  await page.getByRole('button',{name:'Add observation for '+place,exact:true}).click();
+  await page.locator('#outcome').selectOption('Visited');
+  await page.locator('#note').fill(note);
+}
+
+test('start at the second of two identically named planned stops, with its exact reference in the exported report and draft',async t=>{
+  const {page,origin}=await sessionPage(t);
+  await openPlannedOuting(page,origin);
+  const choice=page.locator('#planned-choice'), input=page.locator('#stop');
+  assert.deepEqual(await choice.locator('option').allTextContents(),['Unplanned stop / detour','1 · Library','2 · Library']);
+  assert.deepEqual(await choice.locator('option').evaluateAll(options=>options.map(option=>option.value)),['','0','1']);
+  assert.equal(await choice.inputValue(),'');
+  await choice.selectOption('1');
+  assert.equal(await input.isDisabled(),true);
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Library',{exact:true}).waitFor();
+  assert.deepEqual(await page.locator('#planned li').allTextContents(),['Library · Planned','Library · Recorded','Closed room · Unavailable']);
+  assert.deepEqual(await choice.locator('option').allTextContents(),['Unplanned stop / detour','1 · Library']);
+  assert.equal(await choice.inputValue(),'');
+  assert.equal(await input.isEnabled(),true);
+  await page.reload();
+  await page.getByText('Current stop: Library',{exact:true}).waitFor();
+  assert.deepEqual(await page.locator('#planned li').allTextContents(),['Library · Planned','Library · Recorded','Closed room · Unavailable']);
+  await observe(page,'Library','Started at the second library');
+  await page.locator('#save-observation').click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.locator('#finish').click();
+  await page.getByText('Planned vs recorded · trip report').click();
+  const download=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export this trip report'}).click();
+  const report=JSON.parse(await readFile(await (await download).path(),'utf8'));
+  assert.deepEqual(report.planned.map(stop=>stop.recorded),[false,true,false]);
+  assert.equal(report.recorded_stops.length,1);
+  assert.deepEqual([report.recorded_stops[0].kind,report.recorded_stops[0].planIndex],['planned',1]);
+  await page.getByText('Prepare place update draft').click();
+  await page.getByRole('checkbox',{name:/Library.*Visited/}).check();
+  const draftDownload=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export selected observations as draft'}).click();
+  const draft=JSON.parse(await readFile(await (await draftDownload).path(),'utf8'));
+  assert.deepEqual(draft.proposals[0].place_ref,{type:'spot',id:'second'});
+  assert.equal(draft.proposals[0].source.stop_index,0);
+});
+
+test('saving an unrelated observation preserves the next planned occurrence and its disabled manual input',async t=>{
+  const {page,origin}=await sessionPage(t);
+  await openPlannedOuting(page,origin);
+  const input=page.locator('#stop'),choice=page.locator('#planned-choice');
+  await input.fill('Station');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Station',{exact:true}).waitFor();
+  await input.fill('Possible detour');
+  await choice.selectOption('1');
+  await observe(page,'Station','Waiting room');
+  await page.locator('#save-observation').click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.getByText(/Observation saved/).waitFor();
+  assert.equal(await choice.inputValue(),'1');
+  assert.equal(await input.isDisabled(),true);
+  assert.equal(await input.inputValue(),'Possible detour');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Library',{exact:true}).waitFor();
+  assert.equal(await choice.inputValue(),'');
+  assert.equal(await input.isEnabled(),true);
+  const {trips}=await tripDownload(page,'#export');
+  assert.deepEqual(trips[0].stops.map(stop=>[stop.name,stop.planIndex??null]),[['Station',null],['Library',1]]);
+  assert.equal(trips[0].stops[0].observations[0].note,'Waiting room');
+  assert.equal(trips[0].stops[1].kind,'planned');
+});
+
+test('a competing observation refresh invalidates a recorded occurrence and requires a fresh explicit choice',async t=>{
+  const {page,origin,context}=await sessionPage(t);
+  await openPlannedOuting(page,origin);
+  await page.locator('#stop').fill('Station');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Station',{exact:true}).waitFor();
+  const choice=page.locator('#planned-choice'),input=page.locator('#stop');
+  await input.fill('Unsubmitted detour');
+  await choice.selectOption('1');
+  await observe(page,'Station','Keep this observation');
+  const other=await context.newPage();
+  await other.goto(origin+'/trip-session.html');
+  await other.getByText('Current stop: Station',{exact:true}).waitFor();
+  await other.locator('#planned-choice').selectOption('1');
+  await other.locator('#submit').click();
+  await other.getByText('Current stop: Library',{exact:true}).waitFor();
+  await page.locator('#save-observation').click();
+  await page.locator('#observation-status').filter({hasText:'Another tab changed the history'}).waitFor();
+  assert.equal(await page.locator('#note').inputValue(),'Keep this observation');
+  assert.equal(await choice.inputValue(),'choose-again');
+  assert.equal(await page.locator('#submit').isDisabled(),true);
+  // Retry the observation to the same stop; the invalidation must survive that render.
+  await page.locator('#save-observation').click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.locator('#planned-choice-status').filter({hasText:'Choose a stop again'}).waitFor();
+  assert.equal(await choice.inputValue(),'choose-again');
+  assert.equal(await input.isDisabled(),true);
+  assert.equal(await input.inputValue(),'Unsubmitted detour');
+  assert.equal(await page.locator('#submit').isDisabled(),true);
+  assert.deepEqual(await choice.locator('option').evaluateAll(options=>options.map(option=>option.value)),['choose-again','','0']);
+  await choice.selectOption('0');
+  assert.equal(await page.locator('#planned-choice-status').isHidden(),true);
+  assert.equal(await input.isDisabled(),true);
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Library',{exact:true}).waitFor();
+  await page.locator('#planned li').nth(0).filter({hasText:'Recorded'}).waitFor();
+  const {trips}=await tripDownload(page,'#export');
+  assert.deepEqual(trips[0].stops.map(stop=>[stop.name,stop.planIndex??null]),[['Station',null],['Library',1],['Library',0]]);
+  assert.equal(trips[0].stops[0].observations.length,1);
+  assert.equal(trips[0].stops[0].observations[0].note,'Keep this observation');
+});
+
+test('competing stop writes never silently turn a consumed selection into a detour; explicit detour remains available',async t=>{
+  const {page,origin,context}=await sessionPage(t);
+  await openPlannedOuting(page,origin);
+  await page.locator('#stop').fill('Station');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Station',{exact:true}).waitFor();
+  const choice=page.locator('#planned-choice'),input=page.locator('#stop');
+  await input.fill('Park');
+  await choice.selectOption('0');
+  const other=await context.newPage();
+  await other.goto(origin+'/trip-session.html');
+  await other.getByText('Current stop: Station',{exact:true}).waitFor();
+  await other.locator('#planned-choice').selectOption('0');
+  await other.locator('#submit').click();
+  await other.getByText('Current stop: Library',{exact:true}).waitFor();
+  await page.locator('#submit').click();
+  await page.getByText(/Another tab changed the history/).waitFor();
+  assert.equal(await choice.inputValue(),'choose-again');
+  assert.equal(await page.locator('#submit').isDisabled(),true);
+  const before=await tripDownload(page,'#export');
+  assert.equal(before.trips[0].stops.length,2);
+  await choice.selectOption('');
+  assert.equal(await page.locator('#planned-choice-status').isHidden(),true);
+  assert.equal(await input.isEnabled(),true);
+  assert.equal(await input.inputValue(),'Park');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Park',{exact:true}).waitFor();
+  const after=await tripDownload(page,'#export');
+  assert.deepEqual(after.trips[0].stops.slice(0,2),before.trips[0].stops);
+  assert.deepEqual([after.trips[0].stops[2].name,after.trips[0].stops[2].kind],['Park','detour']);
+  assert.equal(after.trips[0].stops[2].planIndex,undefined);
+});
+
+test('an old occurrence cannot transfer by index when another tab starts a different outing',async t=>{
+  const {page,origin,context}=await sessionPage(t);
+  await openPlannedOuting(page,origin);
+  await page.locator('#stop').fill('Old station');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Old station',{exact:true}).waitFor();
+  const choice=page.locator('#planned-choice');
+  await choice.selectOption('1');
+  const other=await context.newPage();
+  await other.goto(origin+'/trip-session.html');
+  await other.getByText('Current stop: Old station',{exact:true}).waitFor();
+  await other.locator('#finish').click();
+  await other.getByText('No active trip.',{exact:true}).waitFor();
+  await openPlannedOuting(other,origin);
+  await other.locator('#stop').fill('New station');
+  await other.locator('#submit').click();
+  await other.getByText('Current stop: New station',{exact:true}).waitFor();
+  await page.locator('#submit').click();
+  await page.getByText(/Another tab changed the history/).waitFor();
+  await page.locator('#planned-choice-status').filter({hasText:'The trip changed'}).waitFor();
+  assert.equal(await choice.inputValue(),'choose-again');
+  assert.equal(await page.locator('#submit').isDisabled(),true);
+  const {trips}=await tripDownload(page,'#export');
+  assert.equal(trips.length,2);
+  assert.equal(trips[0].stops.length,1);
+  assert.equal(trips[1].stops.length,1);
+  await choice.selectOption('1');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Library',{exact:true}).waitFor();
+  const result=await tripDownload(page,'#export');
+  assert.equal(result.trips[0].stops.length,1);
+  assert.equal(result.trips[1].stops[1].planIndex,1);
+});
