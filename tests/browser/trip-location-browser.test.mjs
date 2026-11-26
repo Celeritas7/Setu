@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import test from 'node:test';
 import {chromium} from 'playwright-core';
 import {verifiedChrome} from '../helpers/research-browser-binary.mjs';
+import {draftCases} from '../helpers/trip-draft-validation-cases.mjs';
 
 async function sessionPage(t) {
   const browser = await chromium.launch({executablePath: await verifiedChrome(), args: ['--no-sandbox']});
@@ -508,4 +509,35 @@ test('an old occurrence cannot transfer by index when another tab starts a diffe
   const result=await tripDownload(page,'#export');
   assert.equal(result.trips[0].stops.length,1);
   assert.equal(result.trips[1].stops[1].planIndex,1);
+});
+
+test('actual local preview accepts and rejects the shared PostgreSQL version 1 files without writing history',async t=>{
+  const {page,origin}=await sessionPage(t);
+  await startNoteTrip(page,origin,'Parity test station');
+  const before=await tripDownload(page,'#export');
+  await page.getByText('Preview a place update draft',{exact:true}).click();
+  const status=page.locator('#preview-status'), rows=page.locator('#preview-items li');
+  const cases=draftCases();
+  for (const item of cases) {
+    try {
+      await page.locator('#draft-file').setInputFiles({name:'shared-case.json',mimeType:'application/json',
+        buffer:Buffer.from(JSON.stringify(item.data))});
+      if (item.valid) {
+        await status.filter({hasText:item.distinct+' distinct proposals in this file. Preview only.'}).waitFor();
+        assert.equal(await rows.count(),item.distinct,item.name);
+        const expected=new Map();
+        for (const p of item.data.proposals) {
+          const key=JSON.stringify([p.source.trip_id.toLowerCase(),p.source.stop_index,p.source.observation_index]);
+          if (!expected.has(key)) expected.set(key,p);
+        }
+        const shown=(await page.locator('#preview-items pre').allTextContents()).map(text=>JSON.parse(text));
+        assert.deepEqual(shown,[...expected.values()],item.name);
+      } else {
+        await status.filter({hasText:'Preview unavailable.'}).waitFor();
+        assert.equal(await rows.count(),0,item.name);
+      }
+    } catch (error) {throw Error(item.name+': '+error.message,{cause:error});}
+  }
+  t.diagnostic('Checked '+cases.length+' shared files in the actual local preview.');
+  assert.deepEqual(await tripDownload(page,'#export'),before,'preview never changes recorded history');
 });
