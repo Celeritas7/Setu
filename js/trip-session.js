@@ -159,8 +159,62 @@
       el('save-observation').disabled=el('cancel-observation').disabled=false;
     }
   };
-  const noteFields=['transport','recovery','future'];
+  const noteFields=SetuTripNoteDrafts.fields;
+  const noteLabels={transport:'Transport issues',recovery:'Worthwhile detours or recovery stops',future:'Notes for next time'};
+  const noteDrafts=SetuTripNoteDrafts.open((()=>{try {return sessionStorage;} catch (_) {return null;}})());
   let notesTripId=null;
+  const readNoteInputs=()=>Object.fromEntries(noteFields.map(key=>[key,el(key).value]));
+  function downloadNotes(tripId,notes) {
+    downloadJSON({format:'setu_trip_note_draft',version:1,trip_id:tripId,notes},'setu-unfinished-trip-notes-'+tripId+'.json');
+  }
+  function updateNoteDraftStatus() {
+    const hasNotes=notesTripId!==null && SetuTripNoteDrafts.hasText(readNoteInputs());
+    el('download-active-notes').disabled=!hasNotes;
+    el('note-draft-status').textContent=hasNotes && noteDrafts.saved()
+      ? 'Unfinished notes saved in this tab across reloads. Finish the trip to include them in its report.'
+      : 'Notes belong to this trip and this tab. Download unfinished notes before closing the tab.';
+    const warning=el('note-storage-warning');
+    warning.hidden=noteDrafts.saved();
+    warning.textContent=noteDrafts.saved()?'':'Tab storage could not be read or updated. Keep this page open and download your unfinished notes; recovery after reload is not guaranteed.';
+  }
+  function renderRecoveredNotes() {
+    const entries=noteDrafts.entries().filter(entry=>entry.trip_id!==notesTripId);
+    el('recovered-notes').hidden=!entries.length;
+    const list=el('recovered-note-list');
+    list.replaceChildren();
+    for (const entry of entries) {
+      const trip=history().find(item=>item.id===entry.trip_id);
+      const panel=document.createElement('section'), title=document.createElement('h3');
+      title.textContent=trip?trip.stops[0].name+' · '+clock.format(new Date(trip.started_at)):'Original trip unavailable';
+      const identity=document.createElement('p');
+      identity.textContent='Trip ID: '+entry.trip_id;
+      panel.append(title,identity);
+      for (const key of noteFields) {
+        const label=document.createElement('h4'), text=document.createElement('pre');
+        label.textContent=noteLabels[key];text.textContent=entry.notes[key]||'Not entered';
+        panel.append(label,text);
+      }
+      const download=document.createElement('button'), discard=document.createElement('button');
+      download.type=discard.type='button';
+      download.textContent='Download recovered notes';
+      discard.textContent='Discard recovered notes';
+      download.onclick=()=>downloadNotes(entry.trip_id,entry.notes);
+      discard.onclick=()=>{
+        if (!window.confirm('Discard only these unfinished notes for the original trip?')) return;
+        noteDrafts.remove(entry.trip_id);
+        renderRecoveredNotes();updateNoteDraftStatus();
+      };
+      panel.append(download,discard);list.append(panel);
+    }
+  }
+  for (const key of noteFields) el(key).addEventListener('input',()=>{
+    if (notesTripId===null) return;
+    noteDrafts.set(notesTripId,readNoteInputs());
+    updateNoteDraftStatus();
+  });
+  el('download-active-notes').onclick=()=>{
+    if (notesTripId!==null && SetuTripNoteDrafts.hasText(readNoteInputs())) downloadNotes(notesTripId,readNoteInputs());
+  };
   function tripReport(trip) {
     const recordedIndices=new Set(trip.stops.map(stop=>stop.planIndex));
     const planned=trip.outing?.stops.map((stop,index)=>({
@@ -365,10 +419,12 @@
     const tripId=active()?trips.at(-1).id:null;
     el('wrap-up').hidden=!active();
     if (notesTripId!==tripId) {
-      for (const key of noteFields) el(key).value='';
-      el('wrap-up').open=false;
+      const notes=noteDrafts.get(tripId);
+      for (const key of noteFields) el(key).value=notes[key];
+      el('wrap-up').open=SetuTripNoteDrafts.hasText(notes);
       notesTripId=tripId;
     }
+    renderRecoveredNotes();updateNoteDraftStatus();
     renderPlan(active()?trips.at(-1):null);
     input.disabled=false;
     form.hidden=false;el('finish').hidden=!active();el('log').hidden=!trips.length;
@@ -414,11 +470,18 @@
     }
   }
   async function save(finish) {
-    if (busy) return;
+    if (busy || (finish && !active())) return;
+    const finishedId=finish?history().at(-1).id:null;
+    const finishNotes=finish?readNoteInputs():null;
     const plannedIndex=active() && choice.value!==''?Number(choice.value):null;
     const name=plannedIndex===null?input.value.trim():history().at(-1).outing.stops[plannedIndex].name;
     if (!finish && !name) {status.textContent='Enter a place name.';return;}
     busy=true;el('submit').disabled=el('finish').disabled=true;
+    if (finish) {
+      noteDrafts.set(finishedId,finishNotes);
+      updateNoteDraftStatus();
+      for (const key of noteFields) el(key).disabled=true;
+    }
     try {
       const trips=history().slice(), now=new Date().toISOString(), stop={name,at:now};
       if (active()) {
@@ -428,12 +491,13 @@
           if (plannedIndex!==null) stop.planIndex=plannedIndex;
         }
         if (finish) {
-          const notes=Object.fromEntries(noteFields.map(key=>[key,el(key).value.trim()||null]));
+          const notes=Object.fromEntries(noteFields.map(key=>[key,finishNotes[key].trim()||null]));
           trips[trips.length-1]={...last,state:'completed',finished_at:now,report_notes:notes};
         } else trips[trips.length-1]={...last,stops:[...last.stops,stop]};
       } else if (!finish) trips.push({id:crypto.randomUUID(),state:'active',started_at:now,stops:[stop],...(pending?{outing:pending}:{})});
       else return;
       record=await store.write('trips',record?.rev || 0,trips);
+      if (finish) noteDrafts.remove(finishedId);
       if (pending && trips.at(-1).outing===pending) {
         pending=null;sessionStorage.removeItem('setu.session-outing');
       }
@@ -443,7 +507,10 @@
         try {record=await store.read('trips');render();status.textContent+=' Another tab changed the history. Review it before retrying.';}
         catch (_) {status.textContent='Reopen trip sessions to load the latest history.';}
       } else status.textContent='Trip could not be saved: '+error.message;
-    } finally {busy=false;el('submit').disabled=el('finish').disabled=false;}
+    } finally {
+      busy=false;el('submit').disabled=el('finish').disabled=false;
+      if (finish) for (const key of noteFields) el(key).disabled=false;
+    }
   }
   try {
     store=await SetuResearchStorage.open(undefined,'setu-trip-sessions-v1');

@@ -7,19 +7,21 @@ import {verifiedChrome} from '../helpers/research-browser-binary.mjs';
 async function sessionPage(t) {
   const browser = await chromium.launch({executablePath: await verifiedChrome(), args: ['--no-sandbox']});
   t.after(() => browser.close());
-  const page = await browser.newPage();
+  const context = await browser.newContext({acceptDownloads:true});
+  const page = await context.newPage();
   const origin = 'http://127.0.0.1';
   const assets = new Map([
     ['trip-session.html', 'text/html'], ['css/research-import.css', 'text/css'],
-    ['js/trip-session.js', 'application/javascript'], ['js/research-storage.js', 'application/javascript']
+    ['js/trip-session.js', 'application/javascript'], ['js/research-storage.js', 'application/javascript'],
+    ['js/trip-note-drafts.js', 'application/javascript']
   ]);
-  await page.route('**/*', async route => {
+  await context.route('**/*', async route => {
     const url = new URL(route.request().url());
     const path = url.pathname.slice(1);
     if (url.origin !== origin || !assets.has(path)) return route.abort();
     await route.fulfill({contentType: assets.get(path), body: await readFile(new URL('../../' + path, import.meta.url))});
   });
-  return {page,origin};
+  return {page,origin,context};
 }
 
 test('trip location is explicit, temporary and cancelled in the background', async t => {
@@ -218,4 +220,97 @@ test('finished outing report matches planned occurrences and preserves unknown s
   assert.deepEqual(draft.proposals[0].place_ref,{type:'spot',id:'second'});
   assert.equal(draft.proposals[0].observation.outcome,'Passed nearby');
   assert.equal(JSON.stringify(draft).includes('Missed the bus.'),false);
+});
+
+async function startNoteTrip(page,origin,name) {
+  await page.goto(origin+'/trip-session.html');
+  await page.getByLabel('Starting place').fill(name);
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: '+name,{exact:true}).waitFor();
+}
+async function tripDownload(page,selector) {
+  const downloaded=page.waitForEvent('download');
+  await page.locator(selector).click();
+  return JSON.parse(await readFile(await (await downloaded).path(),'utf8'));
+}
+
+test('unfinished wrap-up notes survive reload and unrelated stop save; successful finish consumes only their draft',async t=>{
+  const {page,origin}=await sessionPage(t);
+  await startNoteTrip(page,origin,'Station');
+  await page.locator('#wrap-up summary').click();
+  await page.locator('#transport').fill('Last bus cancelled');
+  await page.locator('#recovery').fill('Waited at the station');
+  await page.locator('#future').fill('Check last departure');
+  const draft=await tripDownload(page,'#download-active-notes');
+  assert.equal(draft.format,'setu_trip_note_draft');
+  assert.deepEqual(draft.notes,{transport:'Last bus cancelled',recovery:'Waited at the station',future:'Check last departure'});
+  const before=await tripDownload(page,'#export');
+  assert.equal(draft.trip_id,before.trips[0].id);
+  assert.equal(before.trips[0].report_notes,undefined);
+  await page.reload();
+  await page.getByText('Current stop: Station',{exact:true}).waitFor();
+  for(const [field,note] of Object.entries(draft.notes)) assert.equal(await page.locator('#'+field).inputValue(),note);
+  await page.locator('#stop').fill('Shelter');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Shelter',{exact:true}).waitFor();
+  for(const [field,note] of Object.entries(draft.notes)) assert.equal(await page.locator('#'+field).inputValue(),note);
+  await page.locator('#finish').click();
+  await page.getByText('No active trip.',{exact:true}).waitFor();
+  await page.reload();
+  await page.getByText('No active trip.',{exact:true}).waitFor();
+  assert.equal(await page.locator('#recovered-notes').isHidden(),true);
+  assert.equal(await page.evaluate(()=>sessionStorage.getItem('setu.trip-note-drafts.v1')),null);
+  const after=await tripDownload(page,'#export');
+  assert.deepEqual(after.trips[0].report_notes,draft.notes);
+});
+
+test('competing finish preserves the losing tab’s original-trip notes through reload and a new trip',async t=>{
+  const {page,origin,context}=await sessionPage(t);
+  await startNoteTrip(page,origin,'Original station');
+  await page.locator('#wrap-up summary').click();
+  await page.locator('#transport').fill('Last bus cancelled');
+  await page.locator('#recovery').fill('Found a shelter');
+  const own=await tripDownload(page,'#download-active-notes');
+
+  const other=await context.newPage();
+  await other.goto(origin+'/trip-session.html');
+  await other.getByText('Current stop: Original station',{exact:true}).waitFor();
+  await other.locator('#wrap-up summary').click();
+  assert.equal(await other.locator('#transport').inputValue(),'');
+  await other.locator('#transport').fill('Other tab finished first');
+  await other.locator('#finish').click();
+  await other.getByText('No active trip.',{exact:true}).waitFor();
+
+  await page.locator('#finish').click();
+  await page.getByText(/Another tab changed the history/).waitFor();
+  await page.locator('#recovered-notes').waitFor();
+  assert.match(await page.locator('#recovered-note-list').innerText(),/Last bus cancelled/);
+  assert.match(await page.locator('#recovered-note-list').innerText(),/Found a shelter/);
+  assert.deepEqual(await tripDownload(page,'#recovered-note-list button:first-of-type'),own);
+  const completed=await tripDownload(page,'#export');
+  assert.equal(completed.trips[0].report_notes.transport,'Other tab finished first');
+  assert.equal(completed.trips[0].report_notes.recovery,null);
+
+  await other.getByLabel('Starting place').fill('New trip');
+  await other.locator('#submit').click();
+  await other.getByText('Current stop: New trip',{exact:true}).waitFor();
+  await page.reload();
+  await page.getByText('Current stop: New trip',{exact:true}).waitFor();
+  assert.equal(await page.locator('#transport').inputValue(),'');
+  assert.equal(await page.locator('#recovery').inputValue(),'');
+  assert.deepEqual(await tripDownload(page,'#recovered-note-list button:first-of-type'),own);
+
+  // Cancelling a discard preserves the notes. Only explicit confirmation removes them.
+  page.once('dialog',dialog=>dialog.dismiss());
+  await page.getByRole('button',{name:'Discard recovered notes'}).click();
+  assert.equal(await page.locator('#recovered-notes').isVisible(),true);
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Discard recovered notes'}).click();
+  await page.locator('#recovered-notes').waitFor({state:'hidden'});
+  await page.reload();
+  await page.getByText('Current stop: New trip',{exact:true}).waitFor();
+  assert.equal(await page.locator('#recovered-notes').isHidden(),true);
+  const final=await tripDownload(page,'#export');
+  assert.deepEqual(final.trips[0],completed.trips[0]);
+  assert.equal(final.trips[1].report_notes,undefined);
 });

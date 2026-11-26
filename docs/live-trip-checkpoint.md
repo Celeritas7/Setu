@@ -2,6 +2,27 @@
 
 **Last prepared:** 2026-11-26. **Source of truth:** `main` plus accepted/merged PRs; this document may be ahead of `main` while its own PR is under review.
 
+## Post-#78 correction queue (2026-11-27)
+
+The second development review covered merged PR #78, main `81f967c4c5246990ccd3c0f41332c262c1c79191`. Its reported aggregate baseline was 428/443 checks passing (15 Research Import/map failures); the note loss, starting-place identity and personal-confirmation restore findings were additional targeted reproductions. These are historical review results, not a new full-suite run.
+
+One row per reviewable PR, in this order. Do not skip a pending acceptance gate or resume unrelated feature/research work under a generic "next".
+
+| Order | Correction | Gate |
+| --- | --- | --- |
+| 1 | Protect unfinished trip notes | Drafts survive reload and a competing finish; retain the original trip ID, recover/download the author's text, never overwrite the completed report. |
+| 2 | Research Import controls and tests | Fix test DOM adapter and stable accessible practical/potential experience labels; run affected default and Chromium tests. |
+| 3 | Packaged map tag selector | Parser-safe dropdown, populated fixture, six pins to one Cocoon pin, reset and clear. |
+| 4 | Planned-stop identity | Explicit starting occurrence (including duplicate names) and preserve the selected next occurrence across observation saves; require a fresh selection if already recorded. |
+| 5 | Place-update draft validation parity | Identical version 1 valid/invalid inputs across local preview and disposable database; reject malformed trip IDs; distinguish unknown spending from zero. |
+| 6 | Personal-confirmation restore validation | Validate IDs, Japan-local visit date and observation chronology; retain valid historical exports and deduplicate identical reimports. |
+
+**Phase 1, prepared for review:** Unsubmitted transport, recovery and next-time notes are scoped to a trip ID in the current tab's session storage. Input changes save immediately; successful finish consumes only that trip's draft after the history transaction commits. A competing finish leaves the author's text in a separate recovery panel with download/copy and confirmed discard; it does not alter the other tab's completed report or attach to a subsequent trip. Storage failures warn and retain the in-memory text for download. This intentionally protects normal reload in the same tab, not tab closure, device loss or cross-device sync. Download before closing the tab. No history schema, cloud or service-worker changes.
+
+**Validation:** Five new default helper tests passed locally using byte-identical branch files (Git blob hashes verified). Two new browser regressions are in `tests/browser/trip-location-browser.test.mjs`, covering reload/stop save/successful finish and competing finish/new trip/download/cancel/discard. The system Chromium attempt was blocked on navigation by `ERR_BLOCKED_BY_ADMINISTRATOR`; the repository's pinned Chromium run and full regression suite remain unverified. Do not label Phase 1 accepted until the browser gate passes.
+
+Reproduce on a supported development environment: `node --test tests/trip-note-drafts.test.mjs`; then `npm ci`, `npm run setup:research-browser`, and `node --test --test-timeout=60000 tests/browser/trip-location-browser.test.mjs`. Re-run all five test groups after the six corrections, then Android/iPad acceptance for map, trip start, notes, export and cold offline reopening of Trip session. Solitro return verification, production activation and permanent erasure are separate. Logical withdrawal retains stored data.
+
 ## Current phase
 
 PRs #50–#53 merged, covering L1A, its ranking corrections, backup sizing and restore conflict choices. L2A adds practical-tag and potential-experience filters to Research Import. Both use the current report’s recorded tags. L2B adds a device-local personal history panel on research candidates. Each confirmation requires a named space, visit date, observation and explicit tag confirmation. Export personal history per place. L2C adds preview and explicit restore of a matching place’s personal export. Identical events are deduplicated and conflicting IDs block the restore. L2D previews one sourced research point on the Setu street map using numeric location.coordinates.lat/lng and a coordinate source_url. Candidate tags retain their potential status; a matching personal review can show its named space and confirmed tag. The removable pin is temporary. L2E maps sourced coordinates across all matching candidate pages. Use the street-map Research tag selector for practical or potential tags. Physical-device acceptance remains pending.
