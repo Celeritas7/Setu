@@ -25,6 +25,7 @@
   }
   function project(data, helpers) {
     const hubs = Array.isArray(data.hubs) ? data.hubs : [], byHub = new Map(hubs.map(h => [h.id,h]));
+    const shops = new Map((data.shops || []).map(shop => [String(shop.id), text(shop.name)]));
     const records = [], seen = new Set();
     for (const [type, rows] of [['food',data.foods],['spot',data.spots]]) for (const row of rows || []) {
       if (!row || !['string','number'].includes(typeof row.id) || !String(row.id).trim()) continue;
@@ -35,12 +36,14 @@
       if (row.status === 'done' && !repeat) continue;
       const facts = helpers.facts(row), hubId = row.hubId ?? row.hub_id ?? null, hub = byHub.get(hubId);
       const kind = type === 'food' ? (themes.includes('cafe') ? 'cafe' : 'food') : themes.includes('sit-long') ? 'rest' : row.kind === 'see' ? 'sight' : 'shop';
-      records.push({key,type,kind,name:text(row.name) || 'Unnamed place',hubId,hubName:text(hub?.name),
+      const linkedName = type === 'food' && row.shop_id != null ? shops.get(String(row.shop_id)) : '';
+      const named = !text(row.name) && linkedName ? {...row,name:linkedName} : row;
+      records.push({key,type,kind,name:text(named.name) || 'Unnamed place',hubId,hubName:text(hub?.name),
         address:text(row.address),lat:row.lat,lng:row.lng,hours:row.hours || null,hoursSeen:row.hoursSeen ?? row.hours_seen,
         cost:amount(row.spend ?? row.spend_yen),costSeen:row.spendSeen ?? row.spend_seen,minimum:amount(facts.min_order_yen),
         stayLimit:amount(facts.stay_limit_min),setting:facts.setting,quiet:facts.quiet,themes,
         source:helpers.safeUrl(row.url || row.source_url),checked:facts.last_checked,confidence:facts.confidence || 'unverified',
-        maps:helpers.maps(row,hub),beefFocused:type === 'food' && helpers.beef(row),dayOff:helpers.dayOff(row),
+        maps:helpers.maps(named,hub),beefFocused:type === 'food' && helpers.beef(named),dayOff:helpers.dayOff(row),
         accessBlocked:row.access_state === 'prohibited' || row.access_state === 'blocked',
         remote:row.remote===true || themes.some(t=>['remote','trail','hiking'].includes(t))});
     }
@@ -87,7 +90,8 @@
       if (record.type === 'food') warnings.push('Non-beef ingredients, stocks and broths need a menu/restaurant check.');
       if (query.weather === 'rain') warnings.push(sheltered ? 'Cover is recorded; route exposure and an available seat are unverified.' : 'Rain protection is unknown.');
       if (ceiling !== null) warnings.push('This budget is for one stop. Travel costs and extra fees are unknown.');
-      const quiet = record.quiet === 1 || record.themes.some(t => ['quiet','less-crowded'].includes(t));
+      const quiet = record.quiet === 3 || (record.quiet == null && record.themes.some(t => ['quiet','less-crowded'].includes(t)));
+      const quietPenalty = quiet ? 0 : record.quiet === 2 ? 6 : 12;
       const rest = record.themes.includes('sit-long');
       const knownWindow = evidence.fresh && ['open','short'].includes(hours.state) && !short;
       const costText = record.cost === null ? 'Visit budget unknown' : 'Recorded visit estimate ¥'+record.cost.toLocaleString('en-US');
@@ -99,11 +103,11 @@
       if (record.cost !== null) reasons.push('Visit estimate is recorded');
       const row = {...record,distanceKm:distance,travelMin:travel,arrival:arrival?.toISOString() || null,visitMin:visit,
         hoursText,hoursEvidence:evidence.label,closesAt:hours.closesAt || null,priceEvidence:dateEvidence(record.costSeen,query.date,now).label,
-        costText,minimumText,quietText:quiet ? 'Quiet/less-crowded information recorded; conditions may change' : 'Quietness unknown or not preferred',
+        costText,minimumText,quietText:quiet ? 'Quiet/less-crowded information recorded; conditions may change' : record.quiet === 1 ? 'Recorded as busy' : record.quiet === 2 ? 'Intermediate quietness recorded' : 'Quietness unknown',
         shelterText:sheltered ? 'Cover recorded; access/seating unverified' : outdoor ? 'Recorded outdoor setting' : 'Weather protection unknown',
         warnings,reasons,returnStatus:'unverified',leaveBy:null,eligibility:'needs_checks',excluded,
         _tier:knownWindow ? 0 : 1,
-        _score:(travel ?? 180)+(query.weather === 'rain' && !sheltered ? 30 : 0)+(query.quiet && !quiet ? 12 : 0)+(query.rest && !rest ? 8 : 0)+
+        _score:(travel ?? 180)+(query.weather === 'rain' && !sheltered ? 30 : 0)+(query.quiet ? quietPenalty : 0)+(query.rest && !rest ? 8 : 0)+
           (record.cost === null ? 5 : 0)+(knownWindow && hours.remainingMinutes !== null && hours.remainingMinutes-visit < 30 ? -3 : 0)};
       if (excluded.length) result.excluded.push(row);else result.rows.push(row);
     }
