@@ -1,0 +1,20 @@
+name: Phase 4 planned-stop rehearsal
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  trip:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/phase4-planned-stop-identity'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run setup:research-browser
+      - run: node --test --test-timeout=60000 tests/browser/trip-location-browser.test.mjs
