@@ -40,6 +40,30 @@ test('private place update drafts in disposable PostgreSQL', async t=>{
     return rows[0].same?'identical':'conflict';
   }
   await signIn(ownerA);
+  await t.test('storage validates each source observation before accepting it',async ()=>{
+    const personal={...observation,outcome:'Personally reviewed',note:'The seat felt uncomfortable.'};
+    const invalid=[
+      {...observation,space:'  '}, {...observation,date:'2026-02-29'}, {...observation,date:'11/26/2026'},
+      {...observation,outcome:'Confirmed'}, {...observation,spend_yen:'0'}, {...observation,spend_yen:-1},
+      {...observation,spend_yen:0.5}, {...observation,spend_yen:9007199254740992},
+      {...observation,note:undefined}, {...observation,accepted:true},
+      {...personal,note:null}, {...personal,note:'  '},
+      {...observation,comfort_answers:{noise:'Quiet'}}, {...personal,comfort_answers:[]},
+      {...personal,comfort_answers:{wifi:'Verified'}}, {...personal,comfort_answers:{unexpected:null}}
+    ];
+    for (const details of invalid) await assert.rejects(submit(details),{code:'23514'});
+    for (const ref of [{type:'spot'}, {type:'',id:'a'}, {type:'spot',id:-1}, {type:'spot',id:{}},
+      {type:'spot',id:'a',accepted:true}]) {
+      await assert.rejects(submit(observation,'Library',ref),{code:'23514'});
+    }
+    assert.deepEqual((await db.query(`select * from ${table}`)).rows,[]);
+    await db.exec('begin');
+    try {
+      const valid={...personal,date:'2024-02-29',spend_yen:0,comfort_answers:{comfort:'Uncomfortable',wifi:null}};
+      assert.equal(await submit(valid,'Library',{type:'spot',id:0}),'inserted');
+      assert.deepEqual((await db.query(`select observation from ${table}`)).rows,[{observation:valid}]);
+    } finally { await db.exec('rollback'); }
+  });
   assert.equal(await submit(observation),'inserted');
   assert.equal(await submit(observation),'identical');
   assert.equal(await submit({...observation,spend_yen:0}),'conflict');
