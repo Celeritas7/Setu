@@ -4,8 +4,10 @@
 
 ## Current phase
 
+PRs #50–#53 merged, covering L1A, its ranking corrections, backup sizing and restore conflict choices. L2A adds practical-tag and potential-experience filters to Research Import. Both use the current report’s recorded tags. Room-specific personal confirmation remains pending.
+
 - **L0 — Permanent specifications and Ogose fixture:** verified merged in PR #32, commit `f74bc76`.
-- **L1A:** read-only Next places preview prepared for review; L1B's verified route/return eligibility is still open. L2–L5 are not started. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
+- **L1A:** read-only Next places preview prepared for review; L1B's verified route/return eligibility is still open. L2A is in review. L3–L5 are pending. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
 - **Production:** no live-trip SQL, data writes, merge or deployment performed by this phase.
 - **Branch:** `feature/live-trip-l1-next-places`, from merged #49 (`f8073e3`).
 - **L0 PR:** [#32 — Phase L0 specification and fixture](https://github.com/Celeritas7/Setu/pull/32) (merged).
@@ -45,7 +47,7 @@
 | --- | --- | --- | --- |
 | L0 | [#32](https://github.com/Celeritas7/Setu/pull/32), `f74bc76` | Merged | Source files and fixture checks verified |
 | L1 | L1A preview prepared for review | In progress; not complete | Merge/device preview checks; Solitro handoff, dated route/holiday/return eligibility for L1B |
-| L2 | — | Not started | Practical + personal tag separation |
+| L2 | L2A research filters | In review | Per-space personal confirmation and history |
 | L3 | — | Not started | Explicit sessions, detours and verified return |
 | L4 | — | Not started | Per-space visits and review truthfulness |
 | L5 | — | Not started | Approved schema, RLS, sync and reporting |
