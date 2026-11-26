@@ -22,7 +22,8 @@
   const availableOccurrence=(plan,trip,index)=>Number.isInteger(index) && index>=0 &&
     !!plan?.stops[index] && !plan.stops[index].unavailable && !trip?.stops.some(stop=>stop.planIndex===index);
   function syncChoiceControls() {
-    input.disabled=choice.value!=='';
+    choice.disabled=busy;
+    input.disabled=busy || choice.value!=='';
     el('submit').disabled=busy || choice.value===CHOOSE_AGAIN;
   }
   function setChoiceNotice(message) {
@@ -524,7 +525,7 @@
       name=plan.stops[index].name;
     }
     if (!finish && !name) {status.textContent='Enter a place name.';return;}
-    busy=true;el('submit').disabled=el('finish').disabled=true;
+    busy=true;el('finish').disabled=true;syncChoiceControls();
     if (finish) {
       noteDrafts.set(finishedId,finishNotes);
       updateNoteDraftStatus();
