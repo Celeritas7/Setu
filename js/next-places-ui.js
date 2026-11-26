@@ -36,6 +36,7 @@
     const results=node('section');results.id='np-results';results.setAttribute('aria-label','Next-place preview');dialog.append(results);
     const paging=node('div',undefined,'np-actions');dialog.append(paging);
     const foot=node('p','Saved records can be incomplete. Estimates are not route directions, quotes, holiday confirmations or personally verified experiences.','np-muted');dialog.append(foot);
+    const tripLink=node('a','Open trip session');tripLink.href='trip-session.html';dialog.append(tripLink);
     if(options.browse)dialog.append(button('Browse saved places on the map',()=>{close();options.browse();}));
     let page=0;
     function scopeChanged(){if(options.getData().scope!==owner)close();}
