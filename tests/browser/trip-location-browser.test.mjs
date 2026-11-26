@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import test from 'node:test';
 import {chromium} from 'playwright-core';
 import {verifiedChrome} from '../helpers/research-browser-binary.mjs';
+import {draftCases} from '../helpers/trip-draft-validation-cases.mjs';
 
 async function sessionPage(t) {
   const browser = await chromium.launch({executablePath: await verifiedChrome(), args: ['--no-sandbox']});
@@ -13,7 +14,8 @@ async function sessionPage(t) {
   const assets = new Map([
     ['trip-session.html', 'text/html'], ['css/research-import.css', 'text/css'],
     ['js/trip-session.js', 'application/javascript'], ['js/research-storage.js', 'application/javascript'],
-    ['js/trip-note-drafts.js', 'application/javascript']
+    ['js/trip-note-drafts.js', 'application/javascript'],
+    ['js/trip-draft-validation.js', 'application/javascript']
   ]);
   await context.route('**/*', async route => {
     const url = new URL(route.request().url());
@@ -143,9 +145,9 @@ test('explicit observations keep the building and its rooms separate in a comple
       buffer:Buffer.from(JSON.stringify({...draft,proposals}))});
   };
   const proposal=draft.proposals[0];
-  const foreign={...proposal,source:{...proposal.source,trip_id:'different-trip'}};
+  const foreign={...proposal,source:{...proposal.source,trip_id:'deafbeef-0000-4000-8000-000000000001'}};
   const altered={...proposal,observation:{...proposal.observation,note:'Different text.'}};
-  await upload([proposal,{...proposal,source:{observation_index:2,stop_index:0,trip_id:trips[0].id}},foreign]);
+  await upload([proposal,{...proposal,source:{observation_index:2,stop_index:0,trip_id:trips[0].id.toUpperCase()}},foreign]);
   await page.getByText(/Matches local observation · 2 identical copies/).waitFor();
   await page.getByText(/Source trip unavailable in this browser/).waitFor();
   assert.equal(await page.locator('#preview-items li').count(),2);
@@ -153,6 +155,9 @@ test('explicit observations keep the building and its rooms separate in a comple
   await page.getByText(/Local source differs/).waitFor();
   await upload([proposal,altered]);
   await page.getByText(/Conflicting proposals/).waitFor();
+  assert.equal(await page.locator('#preview-items li').count(),0);
+  await upload([{...proposal,source:{...proposal.source,trip_id:'not-a-uuid'}}]);
+  await page.getByText(/Invalid observation/).waitFor();
   assert.equal(await page.locator('#preview-items li').count(),0);
   await upload([{...proposal,observation:{...proposal.observation,date:'2026-02-31'}}]);
   await page.getByText(/Invalid observation/).waitFor();
@@ -504,4 +509,35 @@ test('an old occurrence cannot transfer by index when another tab starts a diffe
   const result=await tripDownload(page,'#export');
   assert.equal(result.trips[0].stops.length,1);
   assert.equal(result.trips[1].stops[1].planIndex,1);
+});
+
+test('actual local preview accepts and rejects the shared PostgreSQL version 1 files without writing history',async t=>{
+  const {page,origin}=await sessionPage(t);
+  await startNoteTrip(page,origin,'Parity test station');
+  const before=await tripDownload(page,'#export');
+  await page.getByText('Preview a place update draft',{exact:true}).click();
+  const status=page.locator('#preview-status'), rows=page.locator('#preview-items li');
+  const cases=draftCases();
+  for (const item of cases) {
+    try {
+      await page.locator('#draft-file').setInputFiles({name:'shared-case.json',mimeType:'application/json',
+        buffer:Buffer.from(JSON.stringify(item.data))});
+      if (item.valid) {
+        await status.filter({hasText:item.distinct+' distinct proposals in this file. Preview only.'}).waitFor();
+        assert.equal(await rows.count(),item.distinct,item.name);
+        const expected=new Map();
+        for (const p of item.data.proposals) {
+          const key=JSON.stringify([p.source.trip_id.toLowerCase(),p.source.stop_index,p.source.observation_index]);
+          if (!expected.has(key)) expected.set(key,p);
+        }
+        const shown=(await page.locator('#preview-items pre').allTextContents()).map(text=>JSON.parse(text));
+        assert.deepEqual(shown,[...expected.values()],item.name);
+      } else {
+        await status.filter({hasText:'Preview unavailable.'}).waitFor();
+        assert.equal(await rows.count(),0,item.name);
+      }
+    } catch (error) {throw Error(item.name+': '+error.message,{cause:error});}
+  }
+  t.diagnostic('Checked '+cases.length+' shared files in the actual local preview.');
+  assert.deepEqual(await tripDownload(page,'#export'),before,'preview never changes recorded history');
 });

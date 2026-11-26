@@ -107,20 +107,7 @@
   window.addEventListener('pagehide',()=>clearLocation());
   const dialog=el('observation'), observationForm=el('observation-form');
   const japanDate=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
-  const comfortQuestions=[
-    ['noise','Noise level',['Quiet','Moderate','Loud']],
-    ['crowding','Crowding',['Few people','Moderately busy','Crowded']],
-    ['comfort','Comfort',['Comfortable','Mixed','Uncomfortable']],
-    ['seating','Seat availability',['Seat available','All seats taken','No seats']],
-    ['access','Cost to use this space',['Free','Purchase required','Entry fee']],
-    ['stay','Time you actually stayed',['Under 30 minutes','30–59 minutes','60–89 minutes','90 minutes or longer']],
-    ['study','Independent study',['Studied here','Study prohibited']],
-    ['laptop','Laptop use',['Used a laptop','Laptop use prohibited']],
-    ['wifi','Wi-Fi',['Connected successfully','Could not connect']],
-    ['food','Own food',['Allowed','Prohibited']],
-    ['drink','Own drink',['Allowed','Prohibited']],
-    ['return','Would you return?',['Yes','Maybe','No']]
-  ];
+  const {comfortQuestions,validateDraft,signature}=SetuTripDraftValidation;
   const comfortDetails=el('comfort-details');
   for (const [key,label,options] of comfortQuestions) {
     const control=document.createElement('select'), wrapper=document.createElement('label');
@@ -330,54 +317,17 @@
       stop_name:stop.name,place_ref:planned?.type && planned.id!=null ? {type:planned.type,id:planned.id} : null,
       observation:stop.observations[observationIndex]};
   }
-  function canonicalJSON(value) {
-    return JSON.stringify(value,(_,item)=>item && typeof item==='object' && !Array.isArray(item)
-      ? Object.fromEntries(Object.keys(item).sort().map(key=>[key,item[key]])) : item);
-  }
   function draftRows(data,trips) {
-    if (data?.format!=='setu_place_update_draft' || data.version!==1 || data.status!=='draft' ||
-        !Array.isArray(data.proposals) || !data.proposals.length) throw Error('Choose a version 1 place update draft.');
-    const outcomes=Array.from(el('outcome').options,option=>option.value).filter(Boolean);
-    const byId=new Map(trips.map(trip=>[trip.id,trip])), rows=new Map();
-    const textValue=value=>typeof value==='string' && value.trim().length>0;
-    const index=value=>Number.isSafeInteger(value) && value>=0;
-    const validDate=value=>{
-      if (typeof value!=='string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-      const date=new Date(value+'T00:00:00Z');
-      return Number.isFinite(date.valueOf()) && date.toISOString().slice(0,10)===value;
-    };
-    for (const proposal of data.proposals) {
-      const source=proposal?.source, observation=proposal?.observation, ref=proposal?.place_ref;
-      const answers=observation?.comfort_answers;
-      if (answers!==undefined && (observation.outcome!=='Personally reviewed' || !answers ||
-          typeof answers!=='object' || Array.isArray(answers) || Object.entries(answers).some(([key,value])=>
-            !comfortQuestions.some(([field,,choices])=>field===key && (value===null || choices.includes(value)))))) {
-        throw Error('Invalid comfort answers in the draft.');
-      }
-      if (!textValue(source?.trip_id) || !index(source.stop_index) || !index(source.observation_index) ||
-          !textValue(proposal.stop_name) || !textValue(observation?.space) || !outcomes.includes(observation.outcome) ||
-          !validDate(observation.date) ||
-          (observation.note!==null && typeof observation.note!=='string') ||
-          (observation.outcome==='Personally reviewed' && !textValue(observation.note)) ||
-          (observation.spend_yen!==null && !index(observation.spend_yen)) ||
-          (ref!==null && !(textValue(ref?.type) && (textValue(ref.id) || index(ref.id))))) {
-        throw Error('Invalid observation or source reference in the draft.');
-      }
-      const key=JSON.stringify([source.trip_id,source.stop_index,source.observation_index]);
-      const signature=canonicalJSON(proposal), previous=rows.get(key);
-      if (previous) {
-        if (previous.signature!==signature) throw Error('Conflicting proposals for the same source. Review the original draft.');
-        previous.copies++;
-        continue;
-      }
-      const trip=byId.get(source.trip_id);
-      let comparison='Source trip unavailable in this browser';
+    const rows=validateDraft(data);
+    const byId=new Map(trips.map(trip=>[trip.id.toLowerCase(),trip]));
+    for (const row of rows.values()) {
+      const source=row.proposal.source, trip=byId.get(source.trip_id.toLowerCase());
+      row.comparison='Source trip unavailable in this browser';
       if (trip) {
         const local=trip.stops[source.stop_index]?.observations?.[source.observation_index];
-        comparison=local && canonicalJSON(placeProposal(trip,source.stop_index,source.observation_index))===signature
+        row.comparison=local && signature(placeProposal(trip,source.stop_index,source.observation_index))===row.signature
           ? 'Matches local observation' : 'Local source differs';
       }
-      rows.set(key,{proposal,signature,comparison,copies:1});
     }
     return rows;
   }
