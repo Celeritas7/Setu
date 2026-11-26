@@ -267,7 +267,13 @@
     return validateWorkspace({id:existing.id,active:incoming.active,reviews:{...existing.reviews,...incoming.reviews},catalog});
   }
   function backup(workspace) {return {format:'setu_research_local_backup',schema_version:'1.0.0',exported_at:new Date().toISOString(),workspace:copy(workspace)};}
-  const api = {MAX_BACKUP_BYTES,stable,digest,destinationId,placeId,emptyCatalog,effectiveSource,prepare,restoredReview,
+  function serializeBackup(envelope) {
+    const text = JSON.stringify(envelope);
+    requireValue(new TextEncoder().encode(text).length <= MAX_BACKUP_BYTES,
+      'Backup exceeds 25 MiB. Export the current review separately.');
+    return text;
+  }
+  const api = {serializeBackup,MAX_BACKUP_BYTES,stable,digest,destinationId,placeId,emptyCatalog,effectiveSource,prepare,restoredReview,
     materialize,inspectInput,validateWorkspace,mergeWorkspace,backup};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;else root.SetuResearchLocal = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

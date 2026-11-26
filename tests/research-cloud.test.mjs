@@ -90,3 +90,16 @@ test('selective cloud merges require a current target revision and never propose
   const rebased=local.restoredReview(review,local.emptyCatalog(),'2026-11-22',input.scope,snapshot({setu_spots:[{id,rev:3}]}));
   assert.equal(rebased.review.candidates[0].decision,'pending');assert.match(rebased.warnings[0],/approval again/);
 });
+
+test('backup serialization enforces the restore limit in UTF-8 bytes', async()=>{
+  const envelope=local.backup(await workspace());
+  const roundTrip=await local.inspectInput(local.serializeBackup(envelope));
+  assert.equal(roundTrip.kind,'backup');
+  assert.deepEqual(roundTrip.workspace.catalog,envelope.workspace.catalog);
+  envelope.padding='';
+  const remaining=local.MAX_BACKUP_BYTES-Buffer.byteLength(JSON.stringify(envelope));
+  envelope.padding='旅'.repeat(Math.floor(remaining/3))+'x'.repeat(remaining%3);
+  assert.equal(Buffer.byteLength(local.serializeBackup(envelope)),local.MAX_BACKUP_BYTES);
+  envelope.padding+='x';
+  assert.throws(()=>local.serializeBackup(envelope),/25 MiB/);
+});

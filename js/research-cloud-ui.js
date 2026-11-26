@@ -13,7 +13,7 @@
     const body=node('div');dialog.append(body);document.body.append(dialog);dialog.showModal();
     let owner=null,generation=0,unsubscribe,client,records=[],plan=null,busy=false;
     const stores=Promise.all([root.SetuResearchStorage.open(),root.SetuResearchStorage.open(undefined,'setu-research-cloud-outbox-v1')]);
-    const download=(value,name)=>{const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+    const download=(value,name)=>{const url=URL.createObjectURL(new Blob([local.serializeBackup(value)],{type:'application/json'}));const a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     async function run(fn) {
       if(busy)return;busy=true;const epoch=generation;
       try{await fn();}catch(error){if(epoch===generation){status.textContent=error.uncertain?'Upload result unconfirmed. Your exact queued request is retained; use Retry pending upload.':'Could not complete: '+error.message;if(['PGRST202','PGRST205','42P01','42883'].includes(error.code))status.textContent='Cloud saving is not set up for this app yet. Local drafts and backups remain available.';}}
@@ -63,7 +63,7 @@
             const merges=model.reviewExport(plan.payload.reviews[plan.payload.active]).proposed_changes.filter(p=>p.action==='merge_selected');
             if(merges.length){const details=node('details');details.append(node('summary','Selected merge evidence'),node('pre',JSON.stringify(merges,null,2)));preview.append(details);}
           }
-          preview.append(button('Download proposed workspace backup',()=>download(local.backup(plan.payload),'setu-research-proposed-backup.json')));
+          preview.append(button('Download proposed workspace backup',()=>run(()=>download(local.backup(plan.payload),'setu-research-proposed-backup.json'))));
         }
         const prepare=button('Preview cloud batch',()=>run(async()=>{
           invalidate();const record=records[Number(select.value || 0)];if(!record)throw Error('Save or restore a local research review first.');
