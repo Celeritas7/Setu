@@ -1,0 +1,21 @@
+name: Phase 5 draft validation rehearsal
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  parity:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/phase5-draft-validation-parity'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/trip-draft-validation.test.mjs tests/live-trip-draft-schema.test.mjs tests/trip-note-drafts.test.mjs
+      - run: node --test tests/postgres/live-trip-draft-validation-parity.test.mjs tests/postgres/live-trip-draft-batch.test.mjs
+      - run: npm run setup:research-browser
+      - run: node --test --test-timeout=60000 tests/browser/trip-location-browser.test.mjs
