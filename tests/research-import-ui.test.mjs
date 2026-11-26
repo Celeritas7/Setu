@@ -12,18 +12,35 @@ const ui = fs.readFileSync(new URL('../js/research-import-ui.js', import.meta.ur
 const html = fs.readFileSync(new URL('../research-import.html', import.meta.url), 'utf8');
 
 // A small event/DOM adapter runs the shipped UI script. It cannot assess layout
-// or browser engine compatibility; those remain separate manual checks.
+// or browser engine compatibility; those remain separate Chromium/device checks.
 class Element {
-  constructor(tag = 'div') {this.tagName = tag.toUpperCase(); this.children = []; this.listeners = {}; this.value = ''; this.hidden = false; this.textContent = ''; this.files = [];}
-  append(...children) {this.children.push(...children);}
-  replaceChildren(...children) {this.children = children;}
+  constructor(tag = 'div') {this.tagName = tag.toUpperCase(); this.children = []; this.listeners = {}; this.value = ''; this.hidden = false; this.textContent = ''; this.files = []; this.id = ''; this.parentNode = null; this.attributes = new Map();}
+  append(...children) {
+    for (const child of children) {
+      if (child.tagName === 'FRAGMENT') {this.append(...child.children);continue;}
+      child.remove();child.parentNode = this;this.children.push(child);
+    }
+  }
+  replaceChildren(...children) {
+    for (const child of this.children) child.parentNode = null;
+    this.children = [];
+    if (this.tagName === 'SELECT') this.value = '';
+    this.append(...children);
+  }
+  setAttribute(name,value) {this.attributes.set(name,String(value));if (name === 'id') this.id = String(value);}
+  getAttribute(name) {return name === 'id' ? this.id || null : this.attributes.get(name) ?? null;}
   addEventListener(type, callback) {this.listeners[type] = callback;}
   async fire(type) {await this.listeners[type]?.({target:this});}
   get options() {return this.children;}
   focus() {this.focused = true;}
   scrollIntoView() {this.scrolled = true;}
   click() {this.clicked = true;}
-  remove() {this.removed = true;}
+  remove() {
+    if (this.parentNode) {
+      const siblings = this.parentNode.children;
+      siblings.splice(siblings.indexOf(this),1);this.parentNode = null;
+    }
+  }
 }
 class MemoryStorage {
   records = new Map();
@@ -39,18 +56,27 @@ class MemoryStorage {
   }
 }
 function harness(snapshot = null, backend = new MemoryStorage()) {
-  const elements = Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(match => [match[1], new Element()]));
+  const body = new Element('body'), actions = new Element('nav');
+  const elements = Object.fromEntries([...html.matchAll(/<([a-z][\w-]*)\b[^>]*\bid="([^"]+)"/gi)].map(([,tag,id]) => {
+    const element = new Element(tag);element.id = id;return [id,element];
+  }));
+  body.append(actions);
+  for (const [id,element] of Object.entries(elements)) {
+    // The adapter only models the static parent relationship used by render().
+    (['previous','page-status','next'].includes(id) ? actions : body).append(element);
+  }
+  const document = {body,getElementById(id){return walk(body).find(element => element.id === id) ?? null;},
+    createElement(tag){return new Element(tag);},createDocumentFragment(){return new Element('fragment');}};
   elements.preview.hidden = true;
   const storage = new Map(snapshot ? [[model.SNAPSHOT_KEY, JSON.stringify(snapshot)]] : []), blobs = [];
   const context = vm.createContext({
     window:{SetuResearchImport:model,SetuResearchLocal:local,SetuResearchOffline:offline,SetuResearchStorage:{async open(){return backend;}}}, Date, Intl, Blob, TextEncoder,
     URL:{createObjectURL(blob){blobs.push(blob);return 'blob:test';},revokeObjectURL(){}},setTimeout(){},
     sessionStorage:{getItem(key){return storage.get(key);},removeItem(key){storage.delete(key);}},
-    document:{body:new Element('body'),getElementById(id){assert.ok(elements[id],id);return elements[id];},
-      createElement(tag){return new Element(tag);},createDocumentFragment(){return new Element('fragment');}},
+    document,
   });
   vm.runInContext(ui, context);
-  return {elements,storage,blobs,backend};
+  return {elements,storage,blobs,backend,document};
 }
 const walk = element => [element, ...element.children.flatMap(walk)];
 const allText = element => walk(element).map(node => node.textContent).join('\n');
@@ -265,4 +291,50 @@ test('R3 a valid full backup can recover a corrupt current workspace after confi
   assert.equal([...backend.records.values()][0].payload.reviews.broken,null);
   await b.elements['restore-confirm'].fire('click');
   assert.equal([...backend.records.values()][0].payload.reviews[backup.workspace.active].candidates[0].decision,'skip');
+});
+
+test('dynamic map action is looked up only while attached and replaced on rerender', async () => {
+  const h = harness(), e = h.elements;
+  assert.equal(h.document.getElementById('research-map-group'),null);
+  await paste(h,data());
+  const original = h.document.getElementById('research-map-group');
+  assert.ok(original);
+  assert.equal(original.parentNode,e['page-status'].parentNode);
+  e['candidate-search'].value = 'missing';await e['candidate-search'].fire('input');
+  const current = h.document.getElementById('research-map-group');
+  assert.ok(current);
+  assert.notEqual(current,original);
+  assert.equal(original.parentNode,null);
+  assert.equal(walk(h.document.body).filter(element => element.id === 'research-map-group').length,1);
+  assert.match(current.textContent,/0 of 0/);
+});
+
+test('practical and potential tag filters intersect, reset and preserve decisions and source export', async () => {
+  const h = harness(), e = h.elements, report = data();
+  const first = report.places[0];first.name_ja = 'Park';first.tags.practical_candidates = ['Indoor',{tag:'Quiet'}];
+  const second = structuredClone(first);second.research_id = 'reading-room';second.name_ja = 'Reading room';
+  second.location.address_ja = 'Other address';second.source_links[0].url = 'https://example.org/reading';
+  second.tags.experiential_candidates = [{tag:'Cocoon',status:'potential'}];
+  const third = structuredClone(first);third.research_id = 'station';third.name_ja = 'Station';
+  third.location.address_ja = 'Third address';third.source_links[0].url = 'https://example.org/station';
+  third.tags.practical_candidates = [];
+  report.places.push(second,third);await paste(h,report);
+  const names = () => walk(e.candidates).filter(element => element.tagName === 'H3').map(element => element.textContent);
+  assert.deepEqual(names(),['Park','Reading room','Station']);
+  await button(e.candidates,'Skip').fire('click');
+  const practical = e['practical-filter'], experience = e['experience-filter'];
+  assert.deepEqual(practical.options.map(option => option.value),['','Indoor','Quiet']);
+  assert.deepEqual(experience.options.map(option => option.value),['','Cocoon']);
+  practical.value = 'Quiet';await practical.fire('input');
+  assert.deepEqual(names(),['Park','Reading room']);
+  experience.value = 'Cocoon';await experience.fire('input');
+  assert.deepEqual(names(),['Reading room']);
+  await e.export.fire('click');
+  const exported = JSON.parse(await h.blobs[0].text());
+  assert.deepEqual(exported.research,report);
+  assert.equal(exported.review_summary.skip,1);
+  practical.value = '';await practical.fire('input');
+  experience.value = '';await experience.fire('input');
+  assert.deepEqual(names(),['Park','Reading room','Station']);
+  assert.match(allText(e.candidates),/Skipped · original evidence retained/);
 });
