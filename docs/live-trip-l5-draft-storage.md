@@ -46,6 +46,12 @@ Run `npm run setup:research-browser` and `npm run setup:research-api`, then `npm
 
 The batch fixture removes direct table privileges from browser roles and transfers the submission function to a dedicated non-login role. This role has SELECT and INSERT on the draft table, uses the caller’s identity for row policies, and has neither table ownership nor an RLS bypass. The function has a fixed search path. Run the native batch, API and browser-to-API rehearsals to check effective privileges, denied direct reads and mutations, and successful reviewed saves. The isolated configuration still requires verification against the intended target before any installation.
 
+## L5J revision-checked observation corrections
+
+Run `npm run setup:research-api` and `npm run test:research-api`. A separate disposable fixture adds a revision starting at 1. The point lookup returns the named stop, place reference, observation and current revision for the reviewed account. A correction replaces just the observation, validated with the same rule as the original. The source occurrence and place reference remain fixed. The function locks the row and checks the reviewed revision before updating. An immediate identical retry returns the current revision. A competing change receives HTTP 409 and requires a fresh review. The HTTP test exercises concurrent edits, a successful re-review and an independent owner with the same source key.
+
+This is a rehearsal of the correction API. Browser editing, deletion and target recovery remain open.
+
 ## Remaining release work
 
-The fixture covers stored row fields. Before exposing any write path, integrate and verify consent with the actual signed-in client, and design and test correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
+The fixture covers stored row fields. Before exposing any write path, integrate and verify consent with the actual signed-in client, and design and test the correction interface, deletion and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
