@@ -13,22 +13,62 @@
       if (data && Array.isArray(data.stops) && data.stops.every(stop=>typeof stop?.name==='string')) pending=data;
     } catch (_) { /* Manual start remains available. */ }
   }
-  const choice=el('planned-choice');
-  function renderPlan(trip) {
-    const plan=trip?.outing || (!trip && pending);
-    el('plan').hidden=!plan;el('choice').hidden=!plan || !trip;
+  const choice=el('planned-choice'), choiceStatus=el('planned-choice-status');
+  const CHOOSE_AGAIN='choose-again';
+  let choiceScope=null;
+  const currentTrip=()=>active()?history().at(-1):null;
+  const planFor=trip=>trip?trip.outing:pending;
+  const scopeFor=trip=>trip?'trip:'+trip.id:pending;
+  const availableOccurrence=(plan,trip,index)=>Number.isInteger(index) && index>=0 &&
+    !!plan?.stops[index] && !plan.stops[index].unavailable && !trip?.stops.some(stop=>stop.planIndex===index);
+  function syncChoiceControls() {
+    choice.disabled=busy;
+    input.disabled=busy || choice.value!=='';
+    el('submit').disabled=busy || choice.value===CHOOSE_AGAIN;
+  }
+  function setChoiceNotice(message) {
+    choiceStatus.textContent=message;
+    choiceStatus.hidden=!message;
+  }
+  function requireNewChoice(message) {
+    if (![...choice.options].some(option=>option.value===CHOOSE_AGAIN)) {
+      const placeholder=new Option('Choose a stop again',CHOOSE_AGAIN);
+      placeholder.disabled=true;
+      choice.add(placeholder,0);
+    }
+    el('choice').hidden=false;
+    choice.value=CHOOSE_AGAIN;
+    setChoiceNotice(message);
+    syncChoiceControls();
+  }
+  function renderPlan(trip,resetChoice=false) {
+    const plan=planFor(trip), scope=scopeFor(trip), previous=resetChoice?'':choice.value;
+    const sameScope=choiceScope===scope;
+    choiceScope=scope;
+    el('plan').hidden=!plan;el('choice').hidden=!plan;
     choice.replaceChildren(new Option('Unplanned stop / detour',''));
     el('planned').replaceChildren();
-    if (!plan) return;
-    el('plan-title').textContent=plan.title+' · '+plan.date;
-    plan.stops.forEach((stop,index)=>{
-      const recorded=trip?.stops.some(entry=>entry.planIndex===index);
-      const item=document.createElement('li');
-      item.textContent=stop.name+' · '+(recorded?'Recorded':stop.unavailable?'Unavailable':'Planned');
-      el('planned').append(item);
-      if (!recorded && !stop.unavailable) choice.add(new Option(stop.name,String(index)));
-    });
-    choice.value='';
+    if (plan) {
+      el('plan-title').textContent=plan.title+' · '+plan.date;
+      plan.stops.forEach((stop,index)=>{
+        const recorded=trip?.stops.some(entry=>entry.planIndex===index);
+        const item=document.createElement('li');
+        item.textContent=stop.name+' · '+(recorded?'Recorded':stop.unavailable?'Unavailable':'Planned');
+        el('planned').append(item);
+        if (availableOccurrence(plan,trip,index)) choice.add(new Option((index+1)+' · '+stop.name,String(index)));
+      });
+    }
+    if (previous && !sameScope) {
+      requireNewChoice('The trip changed. Choose a stop again before recording.');
+    } else if (previous===CHOOSE_AGAIN) {
+      requireNewChoice(choiceStatus.textContent || 'Choose a stop again before recording.');
+    } else if (previous && !availableOccurrence(plan,trip,Number(previous))) {
+      requireNewChoice('The selected planned stop is already recorded or unavailable. Choose a stop again.');
+    } else {
+      choice.value=previous;
+      setChoiceNotice('');
+      syncChoiceControls();
+    }
   }
   const locate=el('locate'), locationResult=el('location-result');
   let locationWatch=null, requestNumber=0;
@@ -157,6 +197,7 @@
     } finally {
       busy=false;
       el('save-observation').disabled=el('cancel-observation').disabled=false;
+      syncChoiceControls();
     }
   };
   const noteFields=SetuTripNoteDrafts.fields;
@@ -412,7 +453,7 @@
     };
     panel.append(download);
   }
-  function render() {
+  function render(resetChoice=false) {
     clearLocation();
     el('location-check').hidden=!active();
     const trips=history();
@@ -425,8 +466,7 @@
       notesTripId=tripId;
     }
     renderRecoveredNotes();updateNoteDraftStatus();
-    renderPlan(active()?trips.at(-1):null);
-    input.disabled=false;
+    renderPlan(currentTrip(),resetChoice);
     form.hidden=false;el('finish').hidden=!active();el('log').hidden=!trips.length;
     el('label').textContent=active()?'New current stop':'Starting place';
     el('submit').textContent=active()?'Record stop':'Start trip';
@@ -473,10 +513,19 @@
     if (busy || (finish && !active())) return;
     const finishedId=finish?history().at(-1).id:null;
     const finishNotes=finish?readNoteInputs():null;
-    const plannedIndex=active() && choice.value!==''?Number(choice.value):null;
-    const name=plannedIndex===null?input.value.trim():history().at(-1).outing.stops[plannedIndex].name;
+    const trip=currentTrip(), plan=planFor(trip);
+    let plannedIndex=null, name=input.value.trim();
+    if (!finish && choice.value!=='') {
+      const index=Number(choice.value);
+      if (choice.value===CHOOSE_AGAIN || choiceScope!==scopeFor(trip) || !availableOccurrence(plan,trip,index)) {
+        requireNewChoice('The selected planned stop is no longer available. Choose a stop again.');
+        return;
+      }
+      plannedIndex=index;
+      name=plan.stops[index].name;
+    }
     if (!finish && !name) {status.textContent='Enter a place name.';return;}
-    busy=true;el('submit').disabled=el('finish').disabled=true;
+    busy=true;el('finish').disabled=true;syncChoiceControls();
     if (finish) {
       noteDrafts.set(finishedId,finishNotes);
       updateNoteDraftStatus();
@@ -484,12 +533,11 @@
     }
     try {
       const trips=history().slice(), now=new Date().toISOString(), stop={name,at:now};
+      if (!finish && plannedIndex!==null) {
+        stop.kind='planned';stop.planIndex=plannedIndex;
+      } else if (!finish && trip?.outing) stop.kind='detour';
       if (active()) {
         const last=trips.at(-1);
-        if (last.outing && !finish) {
-          stop.kind=plannedIndex===null?'detour':'planned';
-          if (plannedIndex!==null) stop.planIndex=plannedIndex;
-        }
         if (finish) {
           const notes=Object.fromEntries(noteFields.map(key=>[key,finishNotes[key].trim()||null]));
           trips[trips.length-1]={...last,state:'completed',finished_at:now,report_notes:notes};
@@ -501,14 +549,15 @@
       if (pending && trips.at(-1).outing===pending) {
         pending=null;sessionStorage.removeItem('setu.session-outing');
       }
-      input.value='';render();
+      input.value='';render(true);
     } catch(error) {
       if (error.code==='CONFLICT') {
         try {record=await store.read('trips');render();status.textContent+=' Another tab changed the history. Review it before retrying.';}
         catch (_) {status.textContent='Reopen trip sessions to load the latest history.';}
       } else status.textContent='Trip could not be saved: '+error.message;
     } finally {
-      busy=false;el('submit').disabled=el('finish').disabled=false;
+      busy=false;el('finish').disabled=false;
+      syncChoiceControls();
       if (finish) for (const key of noteFields) el(key).disabled=false;
     }
   }
@@ -517,7 +566,13 @@
     record=await store.read('trips');render();
   } catch(error) {status.textContent='Trip storage unavailable: '+error.message;return;}
   el('draft-file').disabled=false;
-  choice.onchange=()=>{input.disabled=choice.value!=='';};
+  choice.onchange=()=>{
+    if (choice.value!==CHOOSE_AGAIN) {
+      setChoiceNotice('');
+      el('choice').hidden=!planFor(currentTrip());
+    }
+    syncChoiceControls();
+  };
   form.onsubmit=event=>{event.preventDefault();void save(false);};
   el('finish').onclick=()=>save(true);
   function downloadJSON(data,filename) {

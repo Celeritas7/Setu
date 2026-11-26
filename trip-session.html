@@ -25,7 +25,8 @@
     <p id="location-result" role="status"></p>
   </section>
   <form id="edit" hidden>
-    <label id="choice" hidden>Stop to record<select id="planned-choice"></select></label>
+    <label id="choice" hidden>Stop to record<select id="planned-choice" aria-describedby="planned-choice-status"></select></label>
+    <p id="planned-choice-status" role="status" class="warning" hidden></p>
     <label><span id="label">Starting place</span><input id="stop" required maxlength="160"></label>
     <button id="submit">Start trip</button>
     <details id="wrap-up" hidden>
