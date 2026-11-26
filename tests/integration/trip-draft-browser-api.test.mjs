@@ -9,7 +9,7 @@ import {A,B} from '../helpers/research-cloud-fixture.mjs';
 
 test('browser confirmation sends only the reviewed observations to local PostgREST',async t=>{
   const api=await freshResearchApi({async prepareDatabase(admin){
-    for (const file of ['live-trip-draft-schema.sql','live-trip-draft-batch.sql','live-trip-draft-correction.sql']) {
+    for (const file of ['live-trip-draft-schema.sql','live-trip-draft-batch.sql','live-trip-draft-correction.sql','live-trip-draft-withdrawal.sql']) {
       await admin.query(await readFile(new URL('../fixtures/'+file,import.meta.url),'utf8'));
     }
   }});
@@ -18,7 +18,7 @@ test('browser confirmation sends only the reviewed observations to local PostgRE
   t.after(()=>browser.close());
   const page=await browser.newPage();
   const rpcPath='/rest/v1/rpc/setu_rehearse_trip_draft';
-  const bodies=[];
+  const bodies=[],withdrawals=[];
   let swapAtDispatch=false, releaseFirst;
   const firstRequestGate=new Promise(resolve=>{releaseFirst=resolve;});
   const otherToken=await api.token(B);
@@ -32,6 +32,7 @@ test('browser confirmation sends only the reviewed observations to local PostgRE
     if (url.origin!==api.url) return route.abort();
     if (url.pathname==='/') return route.fulfill({contentType:'text/html',body:'<main></main><script src="/sdk.js"></script>'});
     if (assets.has(url.pathname)) return route.fulfill({contentType:'text/javascript',body:await readFile(assets.get(url.pathname))});
+    if (url.pathname==='/rest/v1/rpc/setu_rehearse_withdraw_observation') withdrawals.push(req.postDataJSON());
     if (url.pathname===rpcPath) {
       bodies.push(req.postDataJSON());
       if (bodies.length===1) await firstRequestGate;
@@ -130,5 +131,36 @@ test('browser confirmation sends only the reviewed observations to local PostgRE
     await page.getByRole('button',{name:'Cancel'}).click();
     await page.getByText('Correction cancelled.').waitFor();
     assert.equal((await rows())[0].observation.note,'My updated note.');
+  });
+  await t.test('withdrawal requires confirmation of the current saved revision',async ()=>{
+    const {sb}=await api.sdk(A);
+    const key={expected_owner:A,trip,stop:1,occurrence:0};
+    const current=async ()=>(await sb.rpc('setu_rehearse_review_observation',key)).data;
+    const [before]=await current();
+    const open=()=>page.evaluate(()=>window.editPark());
+    const prepare=page.getByRole('button',{name:'Review withdrawal'});
+    const confirm=page.getByRole('button',{name:'Confirm withdrawal'});
+    await open();await prepare.click();
+    await page.getByText(/Its original observation stays in storage/).waitFor();
+    await page.getByRole('button',{name:'Cancel'}).click();
+    await page.getByText('Withdrawal cancelled.').waitFor();
+    assert.deepEqual(withdrawals,[]);
+    assert.deepEqual(await current(),[before]);
+    await open();await prepare.click();
+    const replacement={...before.observation,note:'Reviewed after the trip.'};
+    const edit=await sb.rpc('setu_rehearse_correct_observation',{...key,reviewed_revision:before.revision,replacement});
+    assert.equal(edit.error,null);
+    await confirm.click();
+    await page.getByText(/Another edit was saved/).waitFor();
+    assert.ok(await prepare.isDisabled());
+    await page.getByRole('button',{name:'Load latest revision'}).click();
+    await page.getByText(/Saved revision .*Reviewed after the trip/s).waitFor();
+    assert.equal(await confirm.count(),0);
+    assert.equal((await current())[0].revision,edit.data);
+    await prepare.click();await confirm.click();
+    await page.getByText('Observation withdrawn from review.').waitFor();
+    assert.deepEqual(withdrawals,[{...key,reviewed_revision:before.revision},{...key,reviewed_revision:edit.data}]);
+    assert.deepEqual(await current(),[]);
+    assert.deepEqual((await rows())[0].observation,replacement);
   });
 });
