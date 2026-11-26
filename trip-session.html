@@ -17,6 +17,12 @@
   <p class="notice">Return route and leave-by time are unverified.</p>
   <p id="status" role="status">Loading saved trips…</p>
   <section id="plan" hidden><h2 id="plan-title">Planned stops</h2><ol id="planned"></ol></section>
+  <section id="location-check" hidden>
+    <h2>Current location</h2>
+    <p>Check your coordinates once. They appear only on this screen.</p>
+    <button type="button" id="locate">Check my location</button>
+    <p id="location-result" role="status"></p>
+  </section>
   <form id="edit" hidden>
     <label id="choice" hidden>Stop to record<select id="planned-choice"></select></label>
     <label><span id="label">Starting place</span><input id="stop" required maxlength="160"></label>
