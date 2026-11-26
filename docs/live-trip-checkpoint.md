@@ -7,7 +7,7 @@
 PRs #50–#53 merged, covering L1A, its ranking corrections, backup sizing and restore conflict choices. L2A adds practical-tag and potential-experience filters to Research Import. Both use the current report’s recorded tags. L2B adds a device-local personal history panel on research candidates. Each confirmation requires a named space, visit date, observation and explicit tag confirmation. Export personal history per place. L2C adds preview and explicit restore of a matching place’s personal export. Identical events are deduplicated and conflicting IDs block the restore. L2D previews one sourced research point on the Setu street map using numeric location.coordinates.lat/lng and a coordinate source_url. Candidate tags retain their potential status; a matching personal review can show its named space and confirmed tag. The removable pin is temporary. L2E maps sourced coordinates across all matching candidate pages. Use the street-map Research tag selector for practical or potential tags. Physical-device acceptance remains pending.
 
 - **L0 — Permanent specifications and Ogose fixture:** verified merged in PR #32, commit `f74bc76`.
-- **L1A:** read-only Next places preview prepared for review; L1B's verified route/return eligibility is still open. L2A merged in #54. L2B merged in #55. L2C merged in #56. L2D merged in #57. L2E merged in #58. L3A manual local sessions are in review. L4–L5 remain pending. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
+- **L1A:** read-only Next places preview prepared for review; L1B's verified route/return eligibility is still open. L2A merged in #54. L2B merged in #55. L2C merged in #56. L2D merged in #57. L2E merged in #58. L3A merged in #59. L3B saved outings and detours are in review. L4–L5 remain pending. Existing related capabilities remain available (see `README.md` and `ROADMAP.md`).
 - **Production:** no live-trip SQL, data writes, merge or deployment performed by this phase.
 - **Branch:** `feature/live-trip-l1-next-places`, from merged #49 (`f8073e3`).
 - **L0 PR:** [#32 — Phase L0 specification and fixture](https://github.com/Celeritas7/Setu/pull/32) (merged).
@@ -48,7 +48,7 @@ PRs #50–#53 merged, covering L1A, its ranking corrections, backup sizing and r
 | L0 | [#32](https://github.com/Celeritas7/Setu/pull/32), `f74bc76` | Merged | Source files and fixture checks verified |
 | L1 | L1A preview prepared for review | In progress; not complete | Merge/device preview checks; Solitro handoff, dated route/holiday/return eligibility for L1B |
 | L2 | L2A merged #54; L2B personal space reviews | L2B merged #55; L2C merged #56; L2D merged #57; L2E merged #58 | Physical-device checks and map integration |
-| L3 | L3A local sessions | In review | Detours, outing integration and verified return |
+| L3 | L3A merged #59; L3B outing sessions | In review | Device acceptance and verified return after the Solitro handoff |
 | L4 | — | Not started | Per-space visits and review truthfulness |
 | L5 | — | Not started | Approved schema, RLS, sync and reporting |
 
