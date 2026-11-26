@@ -59,7 +59,7 @@ test('rain excludes explicitly exposed outdoor places and promotes recorded cove
   assert.equal(r.excluded[0].key,'spot:out');assert.equal(r.rows[0].key,'spot:covered');assert.match(r.rows[0].shelterText,/unverified/);
 });
 test('recorded quiet/rest preferences and category variety affect feasible previews',()=>{
-  const places=[place('a',{kind:'shop'}),place('b',{kind:'shop'}),place('c',{kind:'shop'}),place('quiet',{kind:'other',quiet:1,themes:['sit-long']}),place('sight')];
+  const places=[place('a',{kind:'shop'}),place('b',{kind:'shop'}),place('c',{kind:'shop'}),place('quiet',{kind:'other',quiet:3,themes:['sit-long']}),place('sight')];
   const r=run(places);assert.equal(r.rows[0].key,'spot:quiet');assert.ok(new Set(r.rows.slice(0,3).map(x=>x.kind)).size>=2);
 });
 test('beef-focused meals are excluded; unknown broths and vegan beef alternatives are not certified',()=>{
@@ -133,3 +133,22 @@ for (const nextOwner of [null, 'B']) for (const failure of [false, true]) {
     app.componentWillUnmount();
   });
 }
+
+test('quiet preference uses the saved busy-to-quiet scale',()=>{
+  const {rows}=run([1,2,3,null].map((quiet,i)=>place(String(i),{quiet})));
+  assert.deepEqual(rows.slice(0,2).map(row=>row.quiet),[3,2]);
+  assert.match(rows.find(row=>row.quiet===1).quietText,/busy/);
+  assert.match(rows.find(row=>row.quiet===null).quietText,/unknown/);
+});
+
+test('linked food names feed both the dietary check and Maps search',()=>{
+  const {app,helpers}=appHarness();
+  app.state.user={id:'current'};app.state.cloud=true;
+  app.researchComparison={userId:'current',tables:{setu_hubs:[hub],
+    akatsuki_shops:[{id:1,name:'Example Beef Bowl'},{id:2,name:'Example Cafe'}],
+    setu_food_notes:[1,2].map(id=>place(id,{name:null,shop_id:String(id),address:'Example street'}))}};
+  const {rows,excluded}=model.rank(app.nextPlacesData().data,query,helpers,now);
+  assert.deepEqual(excluded.map(row=>row.name),['Example Beef Bowl']);
+  assert.deepEqual(rows.map(row=>row.name),['Example Cafe']);
+  assert.match(new URL(rows[0].maps).searchParams.get('query'),/Example Cafe/);
+});
