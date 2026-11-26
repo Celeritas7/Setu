@@ -107,13 +107,33 @@ test('full backups round-trip and reject malformed versions, confirmations and d
   await assert.rejects(local.inspectInput('{"format":"setu_research_local_backup","schema_version":"99"}'),/Unsupported/);
 });
 
-test('explicit classification updates keep stable IDs and old backups retain newer local draft entries',async()=>{
+test('explicit classification updates keep stable IDs and older backups require an explicit conflict choice',async()=>{
   const input=await approved(),first=await local.materialize(input.review,local.emptyCatalog(),input.scope);
   const changed=decide(model.setDecision(input.review,'P1','accept_suggestion',{record_kind:'shop',distinct_acknowledged:true}));
   const updated=await local.materialize(changed,first.catalog,input.scope);
   assert.equal(updated.updated,1);assert.equal(updated.catalog.places.length,1);assert.equal(updated.catalog.places[0].id,first.catalog.places[0].id);
   const old={id:input.scope,active:input.report,reviews:{[input.report]:model.reviewExport(input.review)},catalog:first.catalog};
   const current={...old,catalog:updated.catalog};
-  const restored=await local.mergeWorkspace(current,old);
+  const beforeCurrent=copy(current), beforeOld=copy(old);
+  await assert.rejects(local.mergeWorkspace(current,old),/Choose a version for each conflicting draft/);
+  await assert.rejects(local.mergeWorkspace(current,old,()=>['']),/Each conflicting draft needs a choice/);
+  const choose=version=>conflicts=>{
+    assert.equal(conflicts.length,1);
+    const [conflict]=conflicts;
+    assert.equal(conflict.key,'places');
+    assert.deepEqual(conflict.device,current.catalog.places[0]);
+    assert.deepEqual(conflict.backup,old.catalog.places[0]);
+    assert.equal(conflict.device.id,conflict.backup.id);
+    return version===null?null:[version];
+  };
+  assert.equal(await local.mergeWorkspace(current,old,choose(null)),null);
+  const restored=await local.mergeWorkspace(current,old,choose('device'));
+  assert.deepEqual(restored.catalog,current.catalog);
   assert.equal(restored.catalog.places[0].record_kind,'shop');assert.equal(restored.catalog.places[0].rev,2);
+  const restoredOlder=await local.mergeWorkspace(current,old,choose('backup'));
+  assert.deepEqual(restoredOlder.catalog,old.catalog);
+  assert.equal(restoredOlder.catalog.places[0].record_kind,'see');assert.equal(restoredOlder.catalog.places[0].rev,1);
+  assert.equal(restoredOlder.catalog.places[0].id,restored.catalog.places[0].id);
+  assert.deepEqual(current,beforeCurrent,'preview and cancellation must not mutate the device workspace');
+  assert.deepEqual(old,beforeOld,'restore must not mutate the backup evidence');
 });
