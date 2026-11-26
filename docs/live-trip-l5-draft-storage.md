@@ -16,6 +16,10 @@ The fixture checks each inserted draft at the table boundary. It requires a name
 
 The regression sends invalid rows directly to PostgreSQL as the authenticated owner. It also reads back a leap-day personal review with zero spending, negative comfort feedback and an unknown Wi-Fi answer.
 
+## L5D concurrent saves
+
+Run `node --test tests/postgres/live-trip-draft-concurrency.test.mjs` with the repository dependencies. The test opens independent sessions in an isolated PostgreSQL 17 cluster. It checks the server’s lock graph before releasing the first same-owner transaction. Under READ COMMITTED, an identical retry sees the committed draft, a changed retry reports a conflict, and a waiting insert succeeds if the first writer rolls back. Two different owners can submit the same source key independently and read back their own values. Both database rehearsals exercise the same insert-and-compare helper.
+
 ## Remaining release work
 
-The fixture covers stored row fields. Before exposing any write path, design and test request-envelope validation, explicit signed-in selection and consent, concurrent retries, correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
+The fixture covers stored row fields. Before exposing any write path, design and test request-envelope validation, explicit signed-in selection and consent, correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
