@@ -18,8 +18,8 @@ test('dynamic option loops survive the bundle parser by using the renderer raw-s
   // native select would disappear despite renderVals-only tests passing.
   assert.match(bundle,/new DOMParser\(\)\.parseFromString\(template, 'text\/html'\)/);
   const selectors=Array.from(template.matchAll(/<sc-raw-select\b([^>]*)>([\s\S]*?)<\/sc-raw-select>/g));
-  assert.equal(selectors.length,8);
-  for(const name of ['seatPrefecture','seatHubId','odPrefecture','odHubId','wvPrefecture','wvHubKey']){
+  assert.equal(selectors.length,9);
+  for(const name of ['seatPrefecture','seatHubId','odPrefecture','odHubId','wvPrefecture','wvHubKey','researchTag']){
     const control=selectors.find(m=>m[1].includes(`value="{{ ${name} }}"`));
     assert.ok(control,name+' uses a parser-safe wrapper');
     assert.match(control[1],/sc-camel-on-change="\{\{ \w+ \}\}"/);
@@ -31,6 +31,11 @@ test('dynamic option loops survive the bundle parser by using the renderer raw-s
     assert.match(control[1],/sc-camel-on-change="\{\{ \w+ \}\}"/);
     assert.deepEqual(Array.from(control[2].matchAll(/<option value="([^"]+)"/g),m=>m[1]),values);
   }
+  const research=selectors.find(m=>m[1].includes('value="{{ researchTag }}"'));
+  assert.match(research[1],/aria-label="Research tag"/);
+  assert.match(research[1],/sc-camel-on-change="\{\{ changeResearchTag \}\}"/);
+  assert.match(research[2],/<option value="">All research tags<\/option>/);
+  assert.match(research[2],/list="\{\{ researchTagOptions \}\}"/);
   for(const control of template.matchAll(/<select\b[^>]*>([\s\S]*?)<\/select>/g))
     assert.doesNotMatch(control[1],/<sc-(?:for|if)\b/,'custom control flow cannot be placed inside a native select before bundle parsing');
 });

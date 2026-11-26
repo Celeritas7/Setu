@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
+import {researchPins,researchTagOptions} from './helpers/research-map-fixture.mjs';
 
 // By default test the shipped bundle, not a hand-maintained copy of the logic.
 // During editing: SETU_TEST_TEMPLATE=/absolute/path/template.html node tests/nearby-map.test.mjs
@@ -612,9 +613,15 @@ test('all Map markup root and loop bindings resolve to real renderVals data and 
   const h=harness(), x=place('dayoff',35.001,{themes:['cafe','dayoff'],by:'DAY OFF #28',url:'https://example.com/episode',hubId:'area'});
   h.app.state={...h.app.state,...state({hubs:[{id:'area',name:'Area',lat:35,lng:139,themes:[]}],spots:[x,place('pending',null,{themes:['cafe']})]}),
     screen:'map',cloud:true,mv:{...h.app.state.mv,scope:'area',areaId:'area',tag:'cafe',areaOpen:true,filtersOpen:true,sel:{key:'sdayoff'},picked:[{t:'spot',id:'dayoff'}]}};
-  const result=checkMapBindings(h.app.renderVals());
+  h.app.state.researchPins=researchPins;
+  h.app.state.researchTag='';
+  const values=h.app.renderVals();
+  assert.deepEqual(Array.from(values.researchTagOptions,tag=>tag.label),researchTagOptions);
+  const result=checkMapBindings(values);
   assert.ok(result.rootBindings.size>50,'exercise the complete Map view, not a tiny subset');
-  assert.equal(result.loopNames.size,8,'all eight Map loop models are covered');
+  assert.equal(result.loopNames.size,9,'all nine Map loop models are covered');
+  assert.ok(result.loopNames.has('researchTagOptions'),'the research-tag loop is covered');
+  assert.ok(result.loopBindings.has('tag.label'),'research option values and labels resolve');
   h.app.state.mv={...h.app.state.mv,pendingOpen:true};
   checkMapBindings(h.app.renderVals());
   t.diagnostic(`Checked ${result.rootBindings.size} root bindings, ${result.loopBindings.size} scoped member bindings and ${result.loopNames.size} loops (${result.checked} evaluations).`);
