@@ -56,6 +56,12 @@ This is a rehearsal of the correction API. The L5K browser rehearsal covers note
 
 Run `npm run test:trip-draft-browser-api` after the local browser and API setup. The test-only editor loads one observation and shows its saved revision. A reviewer can edit the note and actual yen, inspect the proposed observation and confirm. After a competing edit, the editor requires the latest revision and a new comparison. Locally edited fields survive that refresh and the replacement includes other fields from the latest observation. Cancellation discards the proposal. The Chromium rehearsal reads the disposable database back after conflict, confirmation and cancellation.
 
+## L5L logical withdrawal of a draft
+
+Load the withdrawal fixture after the correction fixture in a disposable database. The request identifies the reviewed account, source occurrence and revision. A stale revision receives HTTP 409. A successful withdrawal advances the revision and hides the row from the review and correction functions. Repeating the withdrawal returns HTTP 404. The retained unique key prevents an old export from recreating the observation. Sibling occurrences and other owners’ records stay available.
+
+This rehearsal retains the original observation in storage. Retention, permanent erasure and recovery policies remain open decisions. Run `npm run setup:research-api` and `npm run test:research-api` for the HTTP rehearsal. Browser confirmation is a separate acceptance step.
+
 ## Remaining release work
 
 The fixture covers stored row fields. Before exposing any write path, integrate and verify consent with the actual signed-in client, and design and test the correction interface, deletion and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
