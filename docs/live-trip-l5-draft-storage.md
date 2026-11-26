@@ -26,6 +26,12 @@ Run `node --test tests/postgres/live-trip-draft-batch.test.mjs` to exercise the 
 
 The fixture retains L5B’s direct table grants for the earlier rehearsals. A deployed interface would also need to constrain direct table access and verify effective grants. The SQL call alone does not establish end-user consent.
 
+## L5F signed-in consent rehearsal
+
+The browser fixture starts with an empty selection, displays the destination account and previews the complete selected envelope. It verifies the account again on confirmation. Changing the selection invalidates the preview. Cancellation, account switch, sign-out or anonymous identity prevents a pending confirmation from reaching the capture callback. The test compares the captured envelope to the displayed envelope. Run the repository browser setup, then `node --test tests/browser/trip-draft-consent.test.mjs`.
+
+Identity and transport are simulated. The fixture assumes validated proposals and captures the confirmed data locally. Future integration must bind the actual HTTP request to the same verified account even if identity changes during dispatch.
+
 ## Remaining release work
 
-The fixture covers stored row fields. Before exposing any write path, design and test explicit signed-in selection and consent, correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
+The fixture covers stored row fields. Before exposing any write path, integrate and verify consent with the actual signed-in client, and design and test correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.
