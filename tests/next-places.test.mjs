@@ -101,3 +101,35 @@ test('Home/menu use the actual callback; the preview suppresses map following wi
   assert.equal(typeof h.app.renderVals().openNextPlaces,'function');h.app.state={...h.app.state,screen:'map',mv:{...h.app.state.mv,scope:'near'}};
   h.app.nextPlacesOpen=true;assert.equal(h.app.mapLocationActive(),false);assert.equal(h.app.state.mv.scope,'near');
 });
+
+for (const nextOwner of [null, 'B']) for (const failure of [false, true]) {
+  test('pending cloud ' + (failure ? 'failure' : 'success') + ' after ' + (nextOwner || 'sign-out'), async () => {
+    const {app,window,storage} = appHarness();
+    const pending = Promise.withResolvers();
+    let auth, owner = 'A';
+    storage.set('setu.food.v1', JSON.stringify([place('local')]));
+    window.setu.onAuth = fn => { auth = fn; return () => {}; };
+    window.setu.sb = {from(table) {
+      const reply = owner === 'A' ? pending.promise : Promise.resolve({
+        data: table === 'setu_food_notes' ? [place('B-food')] : []
+      });
+      return {select(){return this;},is(){return this;},order(){return this;},limit(){return this;},
+        eq(){return this;},then(ok,fail){return reply.then(ok,fail);}};
+    }};
+    app.geocodeMissing = app.locateQuiet = () => {};
+    app.componentDidMount();
+    auth({id:'A'});
+    owner = nextOwner;
+    auth(owner ? {id:owner} : null);
+    await new Promise(resolve => setImmediate(resolve));
+    if (failure) pending.reject(Error('old account request failed'));
+    else pending.resolve({data:[place('A-food')]});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(app.state.cloudErr, '');
+    assert.equal(app.state.cloud, !!owner);
+    const expected = owner ? 'B-food' : 'local';
+    assert.deepEqual(Array.from(app.state.foods, row => row.id), [expected]);
+    assert.deepEqual(Array.from(app.nextPlacesData().data.records, row => row.key), ['food:'+expected]);
+    app.componentWillUnmount();
+  });
+}
