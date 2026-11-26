@@ -1,7 +1,16 @@
--- Disposable rehearsal only. Keep table ownership and identity under caller RLS.
+-- Disposable RPC boundary. The function owner has no login or RLS bypass.
+begin;
+create role setu_trip_draft_writer nologin noinherit nosuperuser nobypassrls;
+grant usage on schema public,auth to setu_trip_draft_writer;
+grant execute on function auth.uid(),auth.jwt() to setu_trip_draft_writer;
+revoke all on public.setu_place_update_drafts from public,anon,authenticated;
+grant select,insert on public.setu_place_update_drafts to setu_trip_draft_writer;
+alter policy read_own_drafts on public.setu_place_update_drafts to setu_trip_draft_writer;
+alter policy insert_own_drafts on public.setu_place_update_drafts to setu_trip_draft_writer;
+
 create function public.setu_rehearse_trip_draft(expected_owner uuid, batch jsonb)
 returns table(inserted integer, identical integer)
-language plpgsql security invoker set search_path = pg_catalog as $$
+language plpgsql security definer set search_path = pg_catalog, pg_temp as $$
 declare
   proposal jsonb;
   src jsonb;
@@ -67,5 +76,10 @@ begin
 end
 $$;
 
+-- Ownership transfer requires CREATE on the containing schema during setup.
+grant create on schema public to setu_trip_draft_writer;
+alter function public.setu_rehearse_trip_draft(uuid,jsonb) owner to setu_trip_draft_writer;
+revoke create on schema public from setu_trip_draft_writer;
 revoke all on function public.setu_rehearse_trip_draft(uuid,jsonb) from public,anon;
 grant execute on function public.setu_rehearse_trip_draft(uuid,jsonb) to authenticated;
+commit;

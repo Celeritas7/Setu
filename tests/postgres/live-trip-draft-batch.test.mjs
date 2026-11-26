@@ -20,6 +20,20 @@ test('atomic place update draft envelope rehearsal',async t=>{
     const {rows}=await client.query('select * from public.setu_rehearse_trip_draft($1::uuid,$2::jsonb)',[expectedOwner,JSON.stringify(batch)]);
     return rows[0];
   }
+  const table='public.setu_place_update_drafts';
+  for (const role of ['anon','authenticated','setu_trip_draft_writer']) {
+    const {rows}=await cluster.admin.query(`select privilege from
+      unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN']) as privilege
+      where has_table_privilege($1,$2,privilege) order by privilege`,[role,table]);
+    assert.deepEqual(rows.map(row=>row.privilege),role==='setu_trip_draft_writer'?['INSERT','SELECT']:[]);
+  }
+  const {rows:[authority]}=await cluster.admin.query(`select r.rolcanlogin,r.rolsuper,r.rolbypassrls,
+    pg_has_role('authenticated',r.oid,'MEMBER') as actor_member,
+    pg_has_role('anon',r.oid,'MEMBER') as anon_member,
+    has_schema_privilege(r.oid,'public','CREATE') as can_create,
+    c.relowner=r.oid as owns_table
+    from pg_roles r cross join pg_class c where r.rolname='setu_trip_draft_writer' and c.oid=$1::regclass`,[table]);
+  assert.deepEqual(Object.values(authority),Array(7).fill(false));
   const before=entry(2);
   assert.deepEqual(await submit(envelope([before,before])),{inserted:1,identical:1});
   assert.deepEqual(await submit(envelope([before])),{inserted:0,identical:1});
@@ -31,7 +45,7 @@ test('atomic place update draft envelope rehearsal',async t=>{
   await assert.rejects(submit(envelope([entry(0),changed])),{code:'P0001'});
   await assert.rejects(submit(envelope([entry(0),{...entry(1),observation:{}}])),{code:'23514'});
   await assert.rejects(submit(envelope([entry(0),{...entry(1),source:{...entry(1).source,owner_id:other}}])),{code:'22023'});
-  assert.deepEqual((await actor.query('select observation_index,observation from public.setu_place_update_drafts')).rows,
+  assert.deepEqual((await cluster.admin.query('select observation_index,observation from public.setu_place_update_drafts')).rows,
     [{observation_index:2,observation:before.observation}]);
   const otherActor=await cluster.actor(other);
   assert.deepEqual(await submit(envelope([changed]),otherActor,other),{inserted:1,identical:0});
