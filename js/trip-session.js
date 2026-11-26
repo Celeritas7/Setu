@@ -159,10 +159,78 @@
       el('save-observation').disabled=el('cancel-observation').disabled=false;
     }
   };
+  const noteFields=['transport','recovery','future'];
+  let notesTripId=null;
+  function tripReport(trip) {
+    const recordedIndices=new Set(trip.stops.map(stop=>stop.planIndex));
+    const planned=trip.outing?.stops.map((stop,index)=>({
+      ...stop,recorded:recordedIndices.has(index)
+    })) ?? null;
+    let knownYen=0n, knownEntries=0, unknownEntries=0, stopsWithoutObservations=0;
+    for (const stop of trip.stops) {
+      if (!stop.observations?.length) stopsWithoutObservations++;
+      for (const observation of stop.observations||[]) {
+        if (Number.isSafeInteger(observation.spend_yen) && observation.spend_yen>=0) {
+          knownYen+=BigInt(observation.spend_yen);
+          knownEntries++;
+        } else unknownEntries++;
+      }
+    }
+    return {
+      format:'setu_trip_report',version:1,trip_id:trip.id,started_at:trip.started_at,
+      finished_at:trip.finished_at,outing:trip.outing||null,planned,recorded_stops:trip.stops,
+      spending:{known_yen:knownEntries?knownYen.toString():null,known_entries:knownEntries,
+        unknown_entries:unknownEntries,stops_without_observations:stopsWithoutObservations},
+      notes:trip.report_notes||{}
+    };
+  }
+  function reportPanel(trip) {
+    const report=tripReport(trip), panel=document.createElement('details');
+    function line(tag,text) {
+      const node=document.createElement(tag);
+      node.textContent=text;
+      panel.append(node);
+      return node;
+    }
+    line('summary','Planned vs recorded · trip report');
+    if (report.outing) line('h4',report.outing.title+' · '+report.outing.date);
+    if (report.planned?.length) {
+      const list=line('ol','');
+      for (const stop of report.planned) {
+        const row=document.createElement('li');
+        row.textContent=stop.name+' · '+(stop.recorded?'Recorded':'Not recorded')+(stop.unavailable?' · Unavailable in plan':'');
+        list.append(row);
+      }
+    } else line('p',report.outing?'Outing has no planned stops.':'No saved outing for this trip.');
+    line('h4','Recorded order');
+    const order=line('ol','');
+    for (const stop of report.recorded_stops) {
+      const row=document.createElement('li');
+      row.textContent=clock.format(new Date(stop.at))+' · '+stop.name+(stop.kind==='detour'?' · Detour':'');
+      order.append(row);
+    }
+    const spend=report.spending;
+    line('p',spend.known_yen===null?'No spending amount recorded.':'Sum of recorded spending entries: ¥'+spend.known_yen);
+    line('p','Unknown spending entries: '+spend.unknown_entries+' · Stops without observations: '+spend.stops_without_observations);
+    for (const [key,label] of [['transport','Transport issues'],['recovery','Detours and recovery'],['future','Next time']]) {
+      line('p',label+' · '+(report.notes[key]||'Not recorded'));
+    }
+    const download=line('button','Export this trip report');
+    download.type='button';
+    download.onclick=()=>downloadJSON(report,'setu-trip-report-'+trip.id+'.json');
+    return panel;
+  }
   function render() {
     clearLocation();
     el('location-check').hidden=!active();
     const trips=history();
+    const tripId=active()?trips.at(-1).id:null;
+    el('wrap-up').hidden=!active();
+    if (notesTripId!==tripId) {
+      for (const key of noteFields) el(key).value='';
+      el('wrap-up').open=false;
+      notesTripId=tripId;
+    }
     renderPlan(active()?trips.at(-1):null);
     input.disabled=false;
     form.hidden=false;el('finish').hidden=!active();el('log').hidden=!trips.length;
@@ -204,6 +272,7 @@
         list.append(item);
       }
       el('trips').append(heading,list);
+      if (trip.state==='completed') el('trips').append(reportPanel(trip));
     }
   }
   async function save(finish) {
@@ -220,7 +289,10 @@
           stop.kind=plannedIndex===null?'detour':'planned';
           if (plannedIndex!==null) stop.planIndex=plannedIndex;
         }
-        trips[trips.length-1]=finish?{...last,state:'completed',finished_at:now}:{...last,stops:[...last.stops,stop]};
+        if (finish) {
+          const notes=Object.fromEntries(noteFields.map(key=>[key,el(key).value.trim()||null]));
+          trips[trips.length-1]={...last,state:'completed',finished_at:now,report_notes:notes};
+        } else trips[trips.length-1]={...last,stops:[...last.stops,stop]};
       } else if (!finish) trips.push({id:crypto.randomUUID(),state:'active',started_at:now,stops:[stop],...(pending?{outing:pending}:{})});
       else return;
       record=await store.write('trips',record?.rev || 0,trips);
@@ -242,9 +314,10 @@
   choice.onchange=()=>{input.disabled=choice.value!=='';};
   form.onsubmit=event=>{event.preventDefault();void save(false);};
   el('finish').onclick=()=>save(true);
-  el('export').onclick=()=>{
-    const blob=new Blob([JSON.stringify({format:'setu_trip_history',version:1,trips:history()})],{type:'application/json'});
-    const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='setu-trip-history.json';
+  function downloadJSON(data,filename) {
+    const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+    const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=filename;
     document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(link.href),1000);
-  };
+  }
+  el('export').onclick=()=>downloadJSON({format:'setu_trip_history',version:1,trips:history()},'setu-trip-history.json');
 })();

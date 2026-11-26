@@ -27,6 +27,12 @@
     <label id="choice" hidden>Stop to record<select id="planned-choice"></select></label>
     <label><span id="label">Starting place</span><input id="stop" required maxlength="160"></label>
     <button id="submit">Start trip</button>
+    <details id="wrap-up" hidden>
+      <summary>Optional notes for the finished trip</summary>
+      <label>Transport issues<textarea id="transport" maxlength="2000"></textarea></label>
+      <label>Worthwhile detours or recovery stops<textarea id="recovery" maxlength="2000"></textarea></label>
+      <label>Notes for next time<textarea id="future" maxlength="2000"></textarea></label>
+    </details>
     <button id="finish" type="button" hidden>Finish trip</button>
   </form>
   <section id="log" hidden><h2>Recorded trips</h2><div id="trips"></div>

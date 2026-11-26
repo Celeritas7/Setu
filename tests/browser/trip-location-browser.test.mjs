@@ -119,3 +119,44 @@ test('explicit observations keep the building and its rooms separate in a comple
   ]);
   assert.match(observations[0].date,/^\d{4}-\d{2}-\d{2}$/);
 });
+
+test('finished outing report matches planned occurrences and preserves unknown spending', async t => {
+  const {page,origin}=await sessionPage(t);
+  await page.goto(origin+'/trip-session.html');
+  await page.evaluate(()=>sessionStorage.setItem('setu.session-outing',JSON.stringify({
+    title:'Practice outing',date:'2026-11-26',stops:[{name:'Library'},{name:'Library'},{name:'Old stop',unavailable:true}]
+  })));
+  await page.goto(origin+'/trip-session.html#outing');
+  await page.reload();
+  await page.getByLabel('Starting place').fill('Station');
+  await page.locator('#submit').click();
+  await page.locator('#planned-choice').selectOption('1');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Library',{exact:true}).waitFor();
+  await page.locator('#stop').fill('Park');
+  await page.locator('#submit').click();
+  await page.getByText('Current stop: Park',{exact:true}).waitFor();
+  await page.locator('#wrap-up summary').click();
+  await page.locator('#transport').fill('Missed the bus.');
+  await page.locator('#finish').click();
+  await page.getByText('Planned vs recorded · trip report').waitFor();
+  await page.reload();
+  await page.getByText('Planned vs recorded · trip report').click();
+  await page.getByText('No spending amount recorded.').waitFor();
+  await page.getByText('Transport issues · Missed the bus.').waitFor();
+  await page.getByRole('button',{name:'Add observation for Park'}).click();
+  await page.locator('#outcome').selectOption('Visited');
+  await page.locator('#spend').fill('0');
+  await page.locator('#save-observation').click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.getByText('Planned vs recorded · trip report').click();
+  await page.getByText('Sum of recorded spending entries: ¥0').waitFor();
+  const downloaded=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export this trip report'}).click();
+  const report=JSON.parse(await readFile(await (await downloaded).path(),'utf8'));
+  assert.deepEqual(report.planned.map(s=>s.recorded),[false,true,false]);
+  assert.deepEqual(report.recorded_stops.map(s=>s.name),['Station','Library','Park']);
+  assert.equal(report.recorded_stops[2].kind,'detour');
+  assert.deepEqual(report.spending,{known_yen:'0',known_entries:1,unknown_entries:0,stops_without_observations:2});
+  assert.deepEqual(report.notes,{transport:'Missed the bus.',recovery:null,future:null});
+});
