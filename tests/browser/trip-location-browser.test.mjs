@@ -13,7 +13,8 @@ async function sessionPage(t) {
   const assets = new Map([
     ['trip-session.html', 'text/html'], ['css/research-import.css', 'text/css'],
     ['js/trip-session.js', 'application/javascript'], ['js/research-storage.js', 'application/javascript'],
-    ['js/trip-note-drafts.js', 'application/javascript']
+    ['js/trip-note-drafts.js', 'application/javascript'],
+    ['js/trip-draft-validation.js', 'application/javascript']
   ]);
   await context.route('**/*', async route => {
     const url = new URL(route.request().url());
@@ -143,9 +144,9 @@ test('explicit observations keep the building and its rooms separate in a comple
       buffer:Buffer.from(JSON.stringify({...draft,proposals}))});
   };
   const proposal=draft.proposals[0];
-  const foreign={...proposal,source:{...proposal.source,trip_id:'different-trip'}};
+  const foreign={...proposal,source:{...proposal.source,trip_id:'deafbeef-0000-4000-8000-000000000001'}};
   const altered={...proposal,observation:{...proposal.observation,note:'Different text.'}};
-  await upload([proposal,{...proposal,source:{observation_index:2,stop_index:0,trip_id:trips[0].id}},foreign]);
+  await upload([proposal,{...proposal,source:{observation_index:2,stop_index:0,trip_id:trips[0].id.toUpperCase()}},foreign]);
   await page.getByText(/Matches local observation · 2 identical copies/).waitFor();
   await page.getByText(/Source trip unavailable in this browser/).waitFor();
   assert.equal(await page.locator('#preview-items li').count(),2);
@@ -153,6 +154,9 @@ test('explicit observations keep the building and its rooms separate in a comple
   await page.getByText(/Local source differs/).waitFor();
   await upload([proposal,altered]);
   await page.getByText(/Conflicting proposals/).waitFor();
+  assert.equal(await page.locator('#preview-items li').count(),0);
+  await upload([{...proposal,source:{...proposal.source,trip_id:'not-a-uuid'}}]);
+  await page.getByText(/Invalid observation/).waitFor();
   assert.equal(await page.locator('#preview-items li').count(),0);
   await upload([{...proposal,observation:{...proposal.observation,date:'2026-02-31'}}]);
   await page.getByText(/Invalid observation/).waitFor();
