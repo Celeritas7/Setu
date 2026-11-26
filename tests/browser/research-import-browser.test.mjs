@@ -216,3 +216,66 @@ test('personal confirmation restore rejects impossible dates and IDs before writ
   await card.getByText(/Reading room · Cocoon · 2024-02-29/).waitFor();
   assert.deepEqual(await personalRecords(target.page),[stored]);
 });
+
+test('classification backup conflicts require a version choice and a separate restore confirmation',async()=>{
+  const data=fictionalResearch({count:3}),{page}=await h.open();
+  await prepared(page,data);
+  const old=JSON.parse((await download(page)).toString());
+  const oldDraft=old.workspace.catalog.places[0];
+  assert.equal(oldDraft.record_kind,'see');assert.equal(oldDraft.rev,1);
+  await page.locator('#candidate-search').fill(data.places[0].research_id);
+  const card=page.locator('#candidates article').filter({has:page.getByRole('heading',{name:data.places[0].name_ja,exact:true})});
+  await card.getByLabel('Suggestion category').selectOption('shop');await saved(page);
+  const ack=card.getByRole('checkbox',{name:/I reviewed the overlaps/});if(await ack.count())await ack.check();
+  await card.getByRole('button',{name:'Accept as suggestion',exact:true}).click();await saved(page);
+  await page.locator('#save-drafts').click();
+  await page.locator('#storage-status').filter({hasText:'1 classifications updated'}).waitFor();
+  const before=await records(page),newDraft=before[0].payload.catalog.places[0];
+  assert.equal(newDraft.id,oldDraft.id);assert.equal(newDraft.record_kind,'shop');assert.equal(newDraft.rev,2);
+  const dialog=page.getByRole('dialog',{name:'Resolve backup differences',exact:true});
+  const choice=dialog.getByRole('combobox',{name:'Version to keep',exact:true});
+  const confirm=page.locator('#restore-confirm');
+  const show=async()=>{
+    await page.locator('#research-file').setInputFiles({name:'older-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(old))});
+    await dialog.waitFor();
+    assert.equal(await choice.count(),1);
+    assert.equal(await choice.inputValue(),'');
+    assert.deepEqual(await records(page),before);
+  };
+  await show();
+  await dialog.getByRole('button',{name:'Preview selected versions',exact:true}).click();
+  assert.equal(await dialog.isVisible(),true);
+  assert.equal(await choice.evaluate(el=>el.validity.valueMissing),true);
+  assert.deepEqual(await records(page),before);
+  await dialog.getByRole('button',{name:'Cancel restore',exact:true}).click();
+  await page.locator('#upload-status').filter({hasText:'Restore cancelled.'}).waitFor();
+  assert.equal(await confirm.isHidden(),true);
+  assert.deepEqual(await records(page),before);
+
+  await show();
+  await choice.selectOption('device');
+  await dialog.getByRole('button',{name:'Preview selected versions',exact:true}).click();
+  await confirm.waitFor();
+  assert.deepEqual(await records(page),before,'choosing a version does not commit it');
+  const devicePreview=await local.inspectInput((await download(page)).toString());
+  assert.deepEqual(devicePreview.workspace.catalog.places,[newDraft]);
+  await confirm.click();await saved(page);
+  const kept=await records(page);
+  assert.deepEqual(kept[0].payload.catalog.places,[newDraft]);
+
+  await page.locator('#research-file').setInputFiles({name:'older-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(old))});
+  await dialog.waitFor();assert.equal(await choice.inputValue(),'');
+  await choice.selectOption('backup');
+  await dialog.getByRole('button',{name:'Preview selected versions',exact:true}).click();
+  await confirm.waitFor();
+  assert.deepEqual(await records(page),kept,'the older choice also needs final confirmation');
+  const backupPreview=await local.inspectInput((await download(page)).toString());
+  assert.deepEqual(backupPreview.workspace.catalog.places,[oldDraft]);
+  await confirm.click();await saved(page);
+  const restored=await records(page);
+  assert.deepEqual(restored[0].payload.catalog.places,[oldDraft]);
+  assert.equal(restored[0].rev,kept[0].rev+1);
+  assert.deepEqual(restored[0].previous.catalog.places,[newDraft],'the checkpoint retains the previously stored draft');
+  await page.reload();await resume(page);
+  assert.deepEqual(await records(page),restored);
+});
