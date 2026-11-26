@@ -449,6 +449,65 @@
     return panel;
   }
 
+  let spaceStore;
+  function spaceReviews(place, destination) {
+    const panel = node('details');
+    panel.append(node('summary','Personal space reviews on this device'));
+    const key = local.placeId(destination,place.research_id);
+    const status = node('p');status.setAttribute('role','status');
+    const history = node('ul'), form = node('form');
+    function field(label, control) {
+      const wrapper=node('label',label);control.required=true;wrapper.append(control);form.append(wrapper);
+      return control;
+    }
+    const space=field('Room or space reviewed',node('input'));space.maxLength=160;
+    const date=field('Visit date in Japan',node('input'));date.type='date';date.max=today();
+    const tag=field('Experience to confirm',node('select'));option(tag,'Choose a tag','');
+    for (const name of ['Igloo','Cocoon','Hideout']) option(tag,name,name);
+    const note=field('What did you experience here?',node('textarea'));note.maxLength=2000;
+    const confirm=field('I personally visited this space and confirm this tag',node('input'));confirm.type='checkbox';
+    const save=node('button','Save personal review');save.type='submit';save.disabled=true;form.append(save);
+    const exportButton=node('button','Export this place’s personal reviews');exportButton.type='button';exportButton.hidden=true;
+    panel.append(node('p','Saved in this browser profile. Use the separate personal export to keep a copy.'),history,form,status,exportButton);
+    let store, record, sourceHash, busy=false;
+    function showHistory() {
+      history.replaceChildren();
+      for (const event of record?.payload || []) {
+        const item=node('li',event.space+' · '+event.tag+' · '+event.observed_on+' · '+event.observation);
+        if (event.source_hash!==sourceHash) item.append(node('p','Research has changed since this review. Original place: '+event.place_name+' · '+event.address));
+        history.append(item);
+      }
+      exportButton.hidden=!history.children.length;
+    }
+    panel.addEventListener('toggle',async()=>{
+      if (!panel.open || busy) return;
+      busy=true;save.disabled=true;
+      try {
+        spaceStore ||= window.SetuResearchStorage.open(undefined,'setu-personal-space-reviews-v1').catch(error=>{spaceStore=null;throw error;});
+        store=await spaceStore;sourceHash=await local.digest(place);
+        record=await store.read(key);showHistory();status.textContent='';save.disabled=false;
+      } catch(error) {status.textContent=error.message;}
+      finally {busy=false;}
+    });
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      if (busy || save.disabled || !form.reportValidity()) return;
+      if (!space.value.trim() || !note.value.trim()) {status.textContent='Enter the space and your observation.';return;}
+      busy=true;save.disabled=true;
+      try {
+        const review={id:crypto.randomUUID(),destination,place_id:place.research_id,place_name:place.name_ja,
+          address:place.location.address_ja,source_hash:sourceHash,space:space.value.trim(),observed_on:date.value,
+          recorded_at:new Date().toISOString(),tag:tag.value,status:'personally_confirmed',observation:note.value.trim()};
+        record=await store.write(key,record?.rev || 0,[...(record?.payload || []),review]);
+        showHistory();form.reset();status.textContent='Personal review saved.';
+      } catch(error) {
+        status.textContent=error.code==='CONFLICT'?'Another tab saved a review. Close and reopen this panel before retrying.':error.message;
+      } finally {busy=false;save.disabled=false;}
+    });
+    exportButton.onclick=()=>download(JSON.stringify({format:'setu_personal_space_reviews',version:1,reviews:record.payload}), 'setu-personal-space-reviews.json');
+    return panel;
+  }
+
   function render() {
     if (!result) return;
     const counts = model.reviewSummary(result);
@@ -482,7 +541,7 @@
       card.append(node('h4', 'Potential experience tags'));
       const potential = place.tags.experiential_candidates.map(tag => typeof tag === 'string' ? tag : tag.tag);
       card.append(node('p', potential.length ? potential.join(' · ') + ' — potential only' : 'None suggested'));
-      card.append(node('p', 'Personally confirmed experiences: none'));
+      if (!restoring) card.append(spaceReviews(place,context.payload.id));
       evidence(card, 'Practical tags, discovery sources & facilities', {tags: place.tags, facility_facts: place.facility_facts || {}});
       card.append(node('p', 'Opening and study permissions require a current check. Library reading and visitor laptop study are separate permissions.', 'muted'));
       card.append(node('div', 'Return transport is unverified for your travel date. Historical departures cannot establish a safe return.', 'notice'));
