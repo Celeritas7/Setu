@@ -30,7 +30,44 @@
     });
     choice.value='';
   }
+  const locate=el('locate'), locationResult=el('location-result');
+  let locationWatch=null, requestNumber=0;
+  function clearLocation(message='') {
+    requestNumber++;
+    if (locationWatch!==null) navigator.geolocation.clearWatch(locationWatch);
+    locationWatch=null;
+    locate.disabled=false;
+    locationResult.textContent=message;
+  }
+  locate.onclick=()=>{
+    if (!active() || document.hidden || locationWatch!==null) return;
+    const fallback='You can still record a stop manually.';
+    if (!navigator.geolocation) {
+      clearLocation('Location is unavailable. '+fallback);
+      return;
+    }
+    const request=++requestNumber;
+    locate.disabled=true;
+    locationResult.textContent='Checking location…';
+    function complete(message) {
+      if (request===requestNumber) clearLocation(document.hidden?'':message);
+    }
+    try {
+      locationWatch=navigator.geolocation.watchPosition(position=>{
+        const {latitude,longitude,accuracy}=position.coords;
+        complete(latitude.toFixed(5)+', '+longitude.toFixed(5)+' · accuracy about '+
+          Math.ceil(accuracy)+' m · '+clock.format(new Date(position.timestamp))+' JST');
+      },error=>{
+        const reason=error.code===1?'Location permission denied.':error.code===3?'Location check timed out.':'Location is unavailable.';
+        complete(reason+' '+fallback);
+      },{maximumAge:0,timeout:10000});
+    } catch (_) { complete('Location is unavailable. '+fallback); }
+  };
+  document.addEventListener('visibilitychange',()=>{if (document.hidden) clearLocation();});
+  window.addEventListener('pagehide',()=>clearLocation());
   function render() {
+    clearLocation();
+    el('location-check').hidden=!active();
     const trips=history();
     renderPlan(active()?trips.at(-1):null);
     input.disabled=false;
