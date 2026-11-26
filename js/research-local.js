@@ -283,22 +283,50 @@
     return validateWorkspace({id:existing.id,active:incoming.active,reviews:{...existing.reviews,...incoming.reviews},catalog});
   }
   function backup(workspace) {return {format:'setu_research_local_backup',schema_version:'1.0.0',exported_at:new Date().toISOString(),workspace:copy(workspace)};}
-  function personalAdditions(file, destination, placeId, existing) {
+  const personalUUID=value=>typeof value==='string' && value.length===36 &&
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value);
+  const personalDate=value=>model.validDate(value) && value.length===10 && !value.startsWith('0000');
+  const japanDateFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
+  function japanDate(instant) {
+    const parts=Object.fromEntries(japanDateFormat.formatToParts(instant).map(part=>[part.type,part.value]));
+    return parts.year.padStart(4,'0')+'-'+parts.month+'-'+parts.day;
+  }
+  function personalRecordedTime(value) {
+    // Exported timestamps are ISO instants. Check the calendar date separately
+    // because Date.parse can normalize an impossible day into the next month.
+    if (typeof value!=='string') return null;
+    const match=value.match(/^(\d{4}-\d{2}-\d{2})T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/);
+    if (!match || match[0]!==value || !personalDate(match[1])) return null;
+    const time=Date.parse(value);
+    return Number.isFinite(time)?time:null;
+  }
+  function personalAdditions(file, destination, placeId, existing, now=new Date()) {
     requireValue(file?.format === 'setu_personal_space_reviews' && file.version === 1 &&
       Array.isArray(file.reviews) && file.reviews.length, 'Choose a personal space review export.');
-    const known = new Map(existing.map(row => [row.id,row])), added = [];
+    requireValue(Number.isFinite(now.valueOf()), 'Cannot check the current recording time.');
+    const today=japanDate(now);
+    // Keep existing records untouched. UUID letter case is not a new identity.
+    const idKey=id=>typeof id==='string'?id.toLowerCase():id;
+    const comparable=row=>stable({...row,id:idKey(row.id)});
+    const known=new Map(existing.map(row=>[idKey(row.id),row])), added=[];
     for (const row of file.reviews) {
       requireValue(row?.destination === destination && row.place_id === placeId, 'This export belongs to another place or destination.');
-      requireValue(typeof row.id === 'string' && /^[a-f0-9-]{36}$/i.test(row.id) &&
+      requireValue(personalUUID(row.id) &&
         typeof row.space === 'string' && row.space.trim() && row.space.length <= 160 &&
         typeof row.observation === 'string' && row.observation.trim() && row.observation.length <= 2000 &&
-        model.validDate(row.observed_on) && typeof row.recorded_at === 'string' && Number.isFinite(Date.parse(row.recorded_at)) &&
         typeof row.place_name === 'string' && typeof row.address === 'string' && typeof row.source_hash === 'string' &&
         /^[0-9a-f]{64}$/.test(row.source_hash) && row.status === 'personally_confirmed' &&
         ['Igloo','Cocoon','Hideout'].includes(row.tag), 'This export contains an invalid space review.');
-      const previous = known.get(row.id);
-      if (previous) requireValue(stable(previous) === stable(row), 'A review ID has conflicting observations. Restore cancelled.');
-      else {known.set(row.id,row);added.push(row);}
+      requireValue(personalDate(row.observed_on) && row.observed_on<=today,
+        'Invalid space review: visit date must be a real date on or before today in Japan.');
+      const recorded=personalRecordedTime(row.recorded_at);
+      requireValue(recorded!==null, 'Invalid space review: recording time must be a valid ISO timestamp with a time zone.');
+      requireValue(recorded<=now.valueOf(), 'Invalid space review: recording time is in the future.');
+      requireValue(row.observed_on<=japanDate(new Date(recorded)),
+        'Invalid space review: visit date is after the recording date in Japan.');
+      const key=idKey(row.id), previous=known.get(key);
+      if (previous) requireValue(comparable(previous) === comparable(row), 'A review ID has conflicting observations. Restore cancelled.');
+      else {known.set(key,row);added.push(row);}
     }
     return added;
   }
