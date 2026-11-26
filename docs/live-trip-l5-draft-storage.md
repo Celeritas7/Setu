@@ -24,7 +24,7 @@ Run `node --test tests/postgres/live-trip-draft-concurrency.test.mjs` with the r
 
 Run `node --test tests/postgres/live-trip-draft-batch.test.mjs` to exercise the test-only SQL function with a version 1 place update draft. It derives the owner from the caller, validates the envelope and source keys, and submits every proposal in one statement. An identical occurrence is counted as a retry. Any invalid or conflicting entry aborts the statement, including earlier inserts. The test verifies this by reading back the original rows after failures. Anonymous sessions are denied by the function.
 
-The fixture retains L5B’s direct table grants for the earlier rehearsals. A deployed interface would also need to constrain direct table access and verify effective grants. The SQL call alone does not establish end-user consent.
+The standalone L5B table fixture retains direct grants for the earlier row-level rehearsals. Applying the L5I batch fixture replaces those grants in the disposable API database. The SQL call alone does not establish end-user consent.
 
 ## L5F signed-in consent rehearsal
 
@@ -36,11 +36,15 @@ Identity and transport are simulated. The fixture assumes validated proposals an
 
 Run `npm run setup:research-api` and `npm run test:research-api`. The disposable RPC now requires the account ID from the review alongside the draft. PostgreSQL compares that ID with the signed request identity before processing any proposal. A Supabase JS client switching from account A to B receives HTTP 403 when submitting A’s review. An anonymous identity is also denied. Returning to the matching identity in the transport test exercises success and retry. The L5F screen independently requires a fresh review after an account switch.
 
-PostgREST and PostgreSQL are real local processes. The identity endpoint uses signed fictional accounts. L5H covers end-to-end browser dispatch in the local rehearsal. Hosted Auth and restricting direct table access remain open.
+PostgREST and PostgreSQL are real local processes. The identity endpoint uses signed fictional accounts. L5H covers end-to-end browser dispatch in the local rehearsal. Hosted Auth remains open.
 
 ## L5H browser confirmation through PostgREST
 
 Run `npm run setup:research-browser` and `npm run setup:research-api`, then `npm run test:trip-draft-browser-api`. Chromium loads the consent fixture and the pinned Supabase JS browser client. Its requests go to the local gateway. Cancelling sends no draft. Confirming sends the displayed selection, shows a pending message, and reports success after the response. A signed identity swap on the outgoing RPC yields HTTP 403 and an unconfirmed-save message. The test checks database contents after both paths. The sign-in identity endpoint remains synthetic.
+
+## L5I direct table permissions
+
+The batch fixture removes direct table privileges from browser roles and transfers the submission function to a dedicated non-login role. This role has SELECT and INSERT on the draft table, uses the caller’s identity for row policies, and has neither table ownership nor an RLS bypass. The function has a fixed search path. Run the native batch, API and browser-to-API rehearsals to check effective privileges, denied direct reads and mutations, and successful reviewed saves. The isolated configuration still requires verification against the intended target before any installation.
 
 ## Remaining release work
 
