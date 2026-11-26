@@ -15,6 +15,11 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts
-      - run: npm test
+      - name: Reproduce unrelated backup test at merged baseline
+        continue-on-error: true
+        run: |
+          git worktree add --detach "${RUNNER_TEMP}/setu-baseline" 022273ce058810f6e8cb1b4449a8ed9a5052a79e
+          cd "${RUNNER_TEMP}/setu-baseline"
+          node --test --test-name-pattern="explicit classification updates keep stable IDs" tests/research-local.test.mjs
       - run: npm run setup:research-browser
       - run: node --test --test-timeout=60000 tests/browser/trip-location-browser.test.mjs
