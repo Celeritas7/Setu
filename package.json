@@ -5,7 +5,7 @@
     "test": "node --test tests/*.test.mjs",
     "test:research-postgres": "node --test tests/postgres/*.test.mjs",
     "setup:research-api": "node scripts/prepare-research-api.mjs",
-    "test:research-api": "node --test tests/api/research-cloud-http.test.mjs",
+    "test:research-api": "node --test tests/api/*.test.mjs",
     "setup:research-browser": "node scripts/prepare-research-browser.mjs",
     "test:research-browser": "node --test --test-timeout=60000 tests/browser/*.test.mjs",
     "test:research-import-browser": "node --test --test-timeout=60000 tests/browser/research-import-browser.test.mjs",
