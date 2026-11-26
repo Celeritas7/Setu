@@ -50,7 +50,11 @@ The batch fixture removes direct table privileges from browser roles and transfe
 
 Run `npm run setup:research-api` and `npm run test:research-api`. A separate disposable fixture adds a revision starting at 1. The point lookup returns the named stop, place reference, observation and current revision for the reviewed account. A correction replaces just the observation, validated with the same rule as the original. The source occurrence and place reference remain fixed. The function locks the row and checks the reviewed revision before updating. An immediate identical retry returns the current revision. A competing change receives HTTP 409 and requires a fresh review. The HTTP test exercises concurrent edits, a successful re-review and an independent owner with the same source key.
 
-This is a rehearsal of the correction API. Browser editing, deletion and target recovery remain open.
+This is a rehearsal of the correction API. The L5K browser rehearsal covers note and spending corrections. Deletion and target recovery remain open.
+
+## L5K browser correction review
+
+Run `npm run test:trip-draft-browser-api` after the local browser and API setup. The test-only editor loads one observation and shows its saved revision. A reviewer can edit the note and actual yen, inspect the proposed observation and confirm. After a competing edit, the editor requires the latest revision and a new comparison. Locally edited fields survive that refresh and the replacement includes other fields from the latest observation. Cancellation discards the proposal. The Chromium rehearsal reads the disposable database back after conflict, confirmation and cancellation.
 
 ## Remaining release work
 
