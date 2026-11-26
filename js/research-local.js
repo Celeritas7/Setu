@@ -257,12 +257,28 @@
     }
     return {id:input.id,active:input.active,reviews,catalog,restore_warnings:warnings};
   }
-  async function mergeWorkspace(existing, incoming) {
+  async function mergeWorkspace(existing, incoming, chooseConflicts) {
     if (!existing) return validateWorkspace(incoming);
     requireValue(existing.id === incoming.id, 'Backup destination does not match.');
     const catalog = {hubs:[...existing.catalog.hubs],places:[...existing.catalog.places]};
-    for (const key of ['hubs','places']) for (const item of incoming.catalog[key]) {
-      if (!catalog[key].some(current => current.id === item.id)) catalog[key].push(item);
+    const conflicts = [];
+    for (const key of ['hubs','places']) {
+      const indices = new Map(catalog[key].map((item,index) => [item.id,index]));
+      for (const item of incoming.catalog[key]) {
+        const index = indices.get(item.id);
+        if (index === undefined) catalog[key].push(item);
+        else if (stable(catalog[key][index]) !== stable(item))
+          conflicts.push({key,index,device:catalog[key][index],backup:item});
+      }
+    }
+    if (conflicts.length) {
+      requireValue(chooseConflicts, 'Choose a version for each conflicting draft.');
+      const choices = await chooseConflicts(conflicts);
+      if (choices === null) return null;
+      conflicts.forEach(({key,index,backup},i) => {
+        requireValue(['device','backup'].includes(choices[i]), 'Each conflicting draft needs a choice.');
+        if (choices[i] === 'backup') catalog[key][index] = backup;
+      });
     }
     return validateWorkspace({id:existing.id,active:incoming.active,reviews:{...existing.reviews,...incoming.reviews},catalog});
   }

@@ -38,7 +38,38 @@
     ? 'Comparing with ' + comparison.scope + ' · loaded ' + comparison.captured_at + '. Coverage is limited to the records loaded by Setu.'
     : 'Existing-place comparison unavailable. Open Research Import from Setu Home after your places finish loading to include a fresh snapshot.';
 
+  let cancelConflictReview;
+  function chooseConflicts(conflicts) {
+    return new Promise(resolve => {
+      const dialog = node('dialog');
+      dialog.setAttribute('aria-label','Resolve backup differences');
+      dialog.append(node('h2','Choose which drafts to restore'));
+      const fields = conflicts.map(({device,backup}) => {
+        const group = node('fieldset');
+        group.append(node('legend',device.name || device.source?.name_ja || device.id));
+        const changed = Object.keys({...device,...backup}).filter(key => local.stable(device[key]) !== local.stable(backup[key]));
+        for (const [label,value] of [['On this device',device],['In the backup',backup]]) {
+          evidence(group,label,Object.fromEntries(changed.map(key => [key,value[key] ?? null])));
+        }
+        const label = node('label','Version to keep'), select = node('select');
+        option(select,'Choose a version','');option(select,'Keep device version','device');option(select,'Use backup version','backup');
+        select.required = true;label.append(select);group.append(label);dialog.append(group);
+        return select;
+      });
+      const finish = choices => {
+        cancelConflictReview = null;dialog.close();dialog.remove();resolve(choices);
+      };
+      cancelConflictReview = () => finish(null);
+      const cancel = node('button','Cancel restore'), apply = node('button','Preview selected versions');
+      cancel.onclick = cancelConflictReview;
+      apply.onclick = () => {if (fields.every(field => field.reportValidity())) finish(fields.map(field => field.value));};
+      dialog.addEventListener('cancel',event => {event.preventDefault();finish(null);});
+      dialog.append(cancel,apply);document.body.append(dialog);dialog.showModal();
+    });
+  }
+
   function resetPreview() {
+    cancelConflictReview?.();
     result = null; page = 0; forms.clear();
     context = null; restoring = false; updateSaveButtons();
     byId('preview').hidden = true;
@@ -65,7 +96,12 @@
       if (!payload) payload = {id:input.scope,active:input.report,reviews:{},catalog:local.emptyCatalog()};
       let next, warnings = [];
       if (input.kind === 'backup') {
-        payload = await local.mergeWorkspace(record && !corrupt ? payload : null,input.workspace);
+        if (sequence !== uploadSequence) return;
+        payload = await local.mergeWorkspace(record && !corrupt ? payload : null,input.workspace,chooseConflicts);
+        if (!payload) {
+          if (sequence === uploadSequence) {resetPreview();byId('upload-status').textContent='Restore cancelled.';}
+          return;
+        }
         next = payload.reviews[input.report];warnings = payload.restore_warnings || [];
       } else if (input.kind === 'review' || payload.reviews[input.report]) {
         const restored = local.restoredReview(input.kind === 'review' ? input.exported : payload.reviews[input.report],payload.catalog,today(),input.scope,input.kind === 'research' ? comparison : null);

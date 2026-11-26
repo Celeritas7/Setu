@@ -103,3 +103,22 @@ test('backup serialization enforces the restore limit in UTF-8 bytes', async()=>
   envelope.padding+='x';
   assert.throws(()=>local.serializeBackup(envelope),/25 MiB/);
 });
+
+test('conflicting draft restores require a choice regardless of revision order',async()=>{
+  const original=await workspace(), updated=copy(original);
+  Object.assign(updated.catalog.places[0],{rev:2,record_kind:'shop'});
+  for(const [device,backup] of [[original,updated],[updated,original]]) {
+    const before=copy(device);
+    await assert.rejects(local.mergeWorkspace(device,backup),/Choose a version/);
+    for(const [choice,expected] of [['device',device],['backup',backup]]) {
+      const merged=await local.mergeWorkspace(device,backup,conflicts=>{
+        assert.equal(conflicts.length,1);
+        return [choice];
+      });
+      assert.deepEqual(merged.catalog,expected.catalog);
+    }
+    assert.equal(await local.mergeWorkspace(device,backup,()=>null),null);
+    assert.deepEqual(device,before);
+  }
+  assert.deepEqual((await local.mergeWorkspace(original,original)).catalog,original.catalog);
+});
