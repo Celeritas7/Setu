@@ -67,12 +67,46 @@
   window.addEventListener('pagehide',()=>clearLocation());
   const dialog=el('observation'), observationForm=el('observation-form');
   const japanDate=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
+  const comfortQuestions=[
+    ['noise','Noise level',['Quiet','Moderate','Loud']],
+    ['crowding','Crowding',['Few people','Moderately busy','Crowded']],
+    ['comfort','Comfort',['Comfortable','Mixed','Uncomfortable']],
+    ['seating','Seat availability',['Seat available','All seats taken','No seats']],
+    ['access','Cost to use this space',['Free','Purchase required','Entry fee']],
+    ['stay','Time you actually stayed',['Under 30 minutes','30–59 minutes','60–89 minutes','90 minutes or longer']],
+    ['study','Independent study',['Studied here','Study prohibited']],
+    ['laptop','Laptop use',['Used a laptop','Laptop use prohibited']],
+    ['wifi','Wi-Fi',['Connected successfully','Could not connect']],
+    ['food','Own food',['Allowed','Prohibited']],
+    ['drink','Own drink',['Allowed','Prohibited']],
+    ['return','Would you return?',['Yes','Maybe','No']]
+  ];
+  const comfortDetails=el('comfort-details');
+  for (const [key,label,options] of comfortQuestions) {
+    const control=document.createElement('select'), wrapper=document.createElement('label');
+    control.name=key;
+    control.id='comfort-'+key;
+    wrapper.htmlFor=control.id;
+    control.add(new Option('Unknown',''));
+    for (const option of options) control.add(new Option(option,option));
+    wrapper.textContent=label;
+    el('comfort-questions').append(wrapper,control);
+  }
+  function updateComfortQuestions() {
+    comfortDetails.hidden=el('outcome').value!=='Personally reviewed';
+    if (comfortDetails.hidden) {
+      comfortDetails.open=false;
+      for (const [key] of comfortQuestions) observationForm.elements.namedItem(key).value='';
+    }
+  }
+  el('outcome').addEventListener('change',updateComfortQuestions);
   let selectedTripId, selectedStopIndex;
   function openObservation(trip,index) {
     if (busy) return;
     selectedTripId=trip.id;
     selectedStopIndex=index;
     observationForm.reset();
+    updateComfortQuestions();
     el('observation-title').textContent='Observation for '+trip.stops[index].name;
     el('space').value=trip.stops[index].name;
     el('observed').value=japanDate.format(new Date(trip.stops[index].at));
@@ -94,6 +128,10 @@
     }
     const observation={space,outcome,date:el('observed').value,note:note||null,
       spend_yen:el('spend').value===''?null:el('spend').valueAsNumber};
+    if (outcome==='Personally reviewed') {
+      observation.comfort_answers=Object.fromEntries(comfortQuestions.map(([key])=>
+        [key,observationForm.elements.namedItem(key).value || null]));
+    }
     const trips=history().slice(), index=trips.findIndex(trip=>trip.id===selectedTripId);
     const trip=trips[index], stop=trip?.stops[selectedStopIndex];
     if (!stop) { feedback.textContent='This stop is no longer available.';return; }
@@ -145,6 +183,17 @@
             observation.spend_yen===null?'Spending unknown':'¥'+observation.spend_yen,
             observation.note].filter(Boolean).join(' · ');
           item.append(detail);
+          if (observation.comfort_answers) {
+            const answers=document.createElement('ul');
+            for (const [key,label] of comfortQuestions) {
+              const answer=observation.comfort_answers[key];
+              if (!answer) continue;
+              const line=document.createElement('li');
+              line.textContent=label+' · '+answer;
+              answers.append(line);
+            }
+            if (answers.childElementCount) item.append(answers);
+          }
         }
         const add=document.createElement('button');
         add.type='button';
