@@ -135,6 +135,33 @@ test('explicit observations keep the building and its rooms separate in a comple
     source:{trip_id:trips[0].id,stop_index:0,observation_index:2},
     stop_name:'Fictional museum',place_ref:null,observation:observations[2]
   }]);
+  await page.getByText('Preview a place update draft',{exact:true}).click();
+  const upload=async proposals=>{
+    await page.locator('#draft-file').setInputFiles({name:'draft.json',mimeType:'application/json',
+      buffer:Buffer.from(JSON.stringify({...draft,proposals}))});
+  };
+  const proposal=draft.proposals[0];
+  const foreign={...proposal,source:{...proposal.source,trip_id:'different-trip'}};
+  const altered={...proposal,observation:{...proposal.observation,note:'Different text.'}};
+  await upload([proposal,{...proposal,source:{observation_index:2,stop_index:0,trip_id:trips[0].id}},foreign]);
+  await page.getByText(/Matches local observation · 2 identical copies/).waitFor();
+  await page.getByText(/Source trip unavailable in this browser/).waitFor();
+  assert.equal(await page.locator('#preview-items li').count(),2);
+  await upload([altered]);
+  await page.getByText(/Local source differs/).waitFor();
+  await upload([proposal,altered]);
+  await page.getByText(/Conflicting proposals/).waitFor();
+  assert.equal(await page.locator('#preview-items li').count(),0);
+  await upload([{...proposal,observation:{...proposal.observation,date:'2026-02-31'}}]);
+  await page.getByText(/Invalid observation/).waitFor();
+  await upload([proposal]);
+  await page.getByText(/Matches local observation/).waitFor();
+  await page.getByRole('button',{name:'Clear preview'}).click();
+  assert.equal(await page.locator('#preview-items li').count(),0);
+  const afterPreview=page.waitForEvent('download');
+  await page.locator('#export').click();
+  const after=JSON.parse(await readFile(await (await afterPreview).path(),'utf8'));
+  assert.deepEqual(after.trips,trips);
   assert.match(observations[0].date,/^\d{4}-\d{2}-\d{2}$/);
 });
 
