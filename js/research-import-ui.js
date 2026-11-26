@@ -118,7 +118,23 @@
     } catch (error) {if (sequence === uploadSequence) fail([{path:'/',message:error.message}]);}
   }
 
+  const tagFilters = [['practical-filter','practical_candidates','All practical tags'],['experience-filter','experiential_candidates','All potential experiences']];
+  let reportTags = new Map();
+  function tagNames(tags) {
+    return [...new Set(tags.map(tag => (typeof tag === 'string' ? tag : tag.tag).trim()))];
+  }
   function showReview() {
+    reportTags = new Map(result.research.places.map(place => [place.research_id, {
+      practical_candidates:tagNames(place.tags.practical_candidates),
+      experiential_candidates:tagNames(place.tags.experiential_candidates)
+    }]));
+    for (const [id,key,label] of tagFilters) {
+      const select=byId(id);
+      if (!select) continue;
+      select.replaceChildren();option(select,label,'');
+      const names=new Set([...reportTags.values()].flatMap(tags => tags[key]));
+      for (const name of [...names].sort()) option(select,name,name);
+    }
     page = 0; forms.clear();
     byId('errors').replaceChildren();
     byId('preview').hidden = false;
@@ -442,6 +458,7 @@
     const decision = byId('decision-filter').value;
     const filtered = result.candidates.filter(candidate => (!hub || candidate.hub_id === hub) &&
       (!decision || candidate.decision === decision) &&
+      tagFilters.every(([id,key]) => !byId(id)?.value || reportTags.get(candidate.research_id)[key].includes(byId(id).value)) &&
       (candidate.name + ' ' + candidate.research_id).normalize('NFKC').toLocaleLowerCase('ja').includes(query));
     page = Math.max(0, Math.min(page, Math.ceil(filtered.length / 5) - 1));
     const fragment = document.createDocumentFragment();
@@ -460,6 +477,8 @@
       candidate.price.samples.forEach(price => card.append(node('p', price.classification + ' · ¥' + price.yen + ' · ' + price.scope + ' · ' + price.evidence)));
       card.append(node('p', place.research_fields.cost.raw_text));
       card.append(node('p', 'Price checked: ' + (place.research_fields.cost.price_checked_at || 'unknown') + '. Source claims are snapshots.'));
+      const practical=reportTags.get(candidate.research_id).practical_candidates;
+      if (practical.length) card.append(node('h4','Practical tags reported in research'),node('p',practical.join(' · ')));
       card.append(node('h4', 'Potential experience tags'));
       const potential = place.tags.experiential_candidates.map(tag => typeof tag === 'string' ? tag : tag.tag);
       card.append(node('p', potential.length ? potential.join(' · ') + ' — potential only' : 'None suggested'));
@@ -522,7 +541,7 @@
     uploadSequence++; resetPreview(); byId('research-file').value = ''; byId('research-text').value = '';
     byId('upload-status').textContent = 'Review closed. Saved reviews and local suggestions remain available above.';
   });
-  ['hub-filter', 'candidate-search', 'decision-filter'].forEach(id => byId(id).addEventListener('input', () => { page = 0; render(); }));
+  ['hub-filter', 'candidate-search', 'decision-filter','practical-filter','experience-filter'].forEach(id => byId(id)?.addEventListener('input', () => { page = 0; render(); }));
   byId('previous').addEventListener('click', () => { page--; render(); });
   byId('next').addEventListener('click', () => { page++; render(); });
   byId('export').addEventListener('click', () => {

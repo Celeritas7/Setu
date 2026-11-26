@@ -97,3 +97,17 @@ test('invalid JSON and a second destination do not erase saved source research o
   await page.locator('#research-file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{}')});await page.locator('#errors').filter({hasText:'could not be validated'}).waitFor();assert.deepEqual(await records(page),before);
   await upload(page,fictionalResearch({region:'B',count:3}));await saved(page);const after=await records(page);assert.equal(after.length,2);assert.deepEqual(after.find(record=>record.id===before[0].id),before[0]);
 });
+
+test('practical and potential experience filters intersect without changing the report',async()=>{
+  const data=fictionalResearch({count:3}),{page}=await h.open();
+  data.places.forEach((place,i)=>{
+    place.tags.practical_candidates=i<2?['Indoor',{tag:'Quiet'}]:[];
+    place.tags.experiential_candidates=i===1?[{tag:'Cocoon',status:'potential'}]:[];
+  });
+  await upload(page,data);await saved(page);
+  await page.getByLabel('Practical tag',{exact:true}).selectOption('Quiet');
+  assert.equal(await page.locator('#candidates article').count(),2);
+  await page.getByLabel('Potential experience',{exact:true}).selectOption('Cocoon');
+  assert.deepEqual(await page.locator('#candidates h3').allTextContents(),[data.places[1].name_ja]);
+  assert.deepEqual((await local.inspectInput((await download(page)).toString())).research,data);
+});
