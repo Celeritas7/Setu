@@ -117,6 +117,24 @@ test('explicit observations keep the building and its rooms separate in a comple
     ['Fictional museum','Visited',0,null],['Study room','Did not enter',null,null],
     ['Courtyard','Personally reviewed',null,'Bench was uncomfortable.']
   ]);
+  await page.getByText('Planned vs recorded · trip report').click();
+  await page.getByText('Prepare place update draft').click();
+  const exportDraft=page.getByRole('button',{name:'Export selected observations as draft'});
+  assert.equal(await exportDraft.isDisabled(),true);
+  const options=page.getByRole('checkbox');
+  assert.equal(await options.count(),3);
+  await options.nth(0).check();
+  await options.nth(0).uncheck();
+  assert.equal(await exportDraft.isDisabled(),true);
+  await options.nth(2).check();
+  const draftFile=page.waitForEvent('download');
+  await exportDraft.click();
+  const draft=JSON.parse(await readFile(await (await draftFile).path(),'utf8'));
+  assert.equal(draft.status,'draft');
+  assert.deepEqual(draft.proposals,[{
+    source:{trip_id:trips[0].id,stop_index:0,observation_index:2},
+    stop_name:'Fictional museum',place_ref:null,observation:observations[2]
+  }]);
   assert.match(observations[0].date,/^\d{4}-\d{2}-\d{2}$/);
 });
 
@@ -124,7 +142,7 @@ test('finished outing report matches planned occurrences and preserves unknown s
   const {page,origin}=await sessionPage(t);
   await page.goto(origin+'/trip-session.html');
   await page.evaluate(()=>sessionStorage.setItem('setu.session-outing',JSON.stringify({
-    title:'Practice outing',date:'2026-11-26',stops:[{name:'Library'},{name:'Library'},{name:'Old stop',unavailable:true}]
+    title:'Practice outing',date:'2026-11-26',stops:[{name:'Library',type:'spot',id:'first'},{name:'Library',type:'spot',id:'second'},{name:'Old stop',unavailable:true}]
   })));
   await page.goto(origin+'/trip-session.html#outing');
   await page.reload();
@@ -159,4 +177,18 @@ test('finished outing report matches planned occurrences and preserves unknown s
   assert.equal(report.recorded_stops[2].kind,'detour');
   assert.deepEqual(report.spending,{known_yen:'0',known_entries:1,unknown_entries:0,stops_without_observations:2});
   assert.deepEqual(report.notes,{transport:'Missed the bus.',recovery:null,future:null});
+  await page.getByRole('button',{name:'Add observation for Library'}).click();
+  await page.locator('#outcome').selectOption('Passed nearby');
+  await page.locator('#save-observation').click();
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.getByText('Planned vs recorded · trip report').click();
+  await page.getByText('Prepare place update draft').click();
+  await page.getByRole('checkbox',{name:/Library.*Passed nearby/}).check();
+  const draftDownload=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Export selected observations as draft'}).click();
+  const draft=JSON.parse(await readFile(await (await draftDownload).path(),'utf8'));
+  assert.equal(draft.proposals.length,1);
+  assert.deepEqual(draft.proposals[0].place_ref,{type:'spot',id:'second'});
+  assert.equal(draft.proposals[0].observation.outcome,'Passed nearby');
+  assert.equal(JSON.stringify(draft).includes('Missed the bus.'),false);
 });
