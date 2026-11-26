@@ -16,7 +16,9 @@
   <p>Record your stops manually in this browser profile. Times are shown in Japan time.</p>
   <p class="notice">Return route and leave-by time are unverified.</p>
   <p id="status" role="status">Loading saved trips…</p>
+  <section id="plan" hidden><h2 id="plan-title">Planned stops</h2><ol id="planned"></ol></section>
   <form id="edit" hidden>
+    <label id="choice" hidden>Stop to record<select id="planned-choice"></select></label>
     <label><span id="label">Starting place</span><input id="stop" required maxlength="160"></label>
     <button id="submit">Start trip</button>
     <button id="finish" type="button" hidden>Finish trip</button>
