@@ -218,7 +218,57 @@
     const download=line('button','Export this trip report');
     download.type='button';
     download.onclick=()=>downloadJSON(report,'setu-trip-report-'+trip.id+'.json');
+    if (trip.stops.some(stop=>stop.observations?.length)) {
+      const draft=document.createElement('details'), title=document.createElement('summary');
+      title.textContent='Prepare place update draft';
+      draft.append(title);
+      draft.addEventListener('toggle',()=>{
+        if (draft.open && draft.childElementCount===1) buildDraftChoices(draft,trip);
+      });
+      panel.append(draft);
+    }
     return panel;
+  }
+  function buildDraftChoices(panel,trip) {
+    const help=document.createElement('p'), download=document.createElement('button');
+    help.textContent='Choose observations to include in a local draft for later review. Each checkbox includes the details shown below it.';
+    download.type='button';
+    download.textContent='Export selected observations as draft';
+    download.disabled=true;
+    panel.append(help);
+    const selected=new Set();
+    for (const [stopIndex,stop] of trip.stops.entries()) {
+      const planned=trip.outing?.stops[stop.planIndex];
+      const placeRef=planned?.type && planned.id!=null ? {type:planned.type,id:planned.id} : null;
+      for (const [observationIndex,observation] of (stop.observations||[]).entries()) {
+        const proposal={
+          source:{trip_id:trip.id,stop_index:stopIndex,observation_index:observationIndex},
+          stop_name:stop.name,place_ref:placeRef,observation
+        };
+        const label=document.createElement('label'), check=document.createElement('input');
+        label.className='check-label';
+        check.type='checkbox';
+        label.append(check,document.createTextNode([stop.name,observation.space,observation.outcome,observation.date].join(' · ')));
+        const detail=document.createElement('p');
+        const facts=[placeRef?'Saved place '+placeRef.type+' '+placeRef.id:'Place match needed',
+          observation.note,observation.spend_yen==null?'Spending unknown':'¥'+observation.spend_yen];
+        for (const [key,question] of comfortQuestions) {
+          if (observation.comfort_answers?.[key]) facts.push(question+' · '+observation.comfort_answers[key]);
+        }
+        detail.textContent=facts.filter(Boolean).join(' · ');
+        panel.append(label,detail);
+        check.onchange=()=>{
+          if (check.checked) selected.add(proposal);
+          else selected.delete(proposal);
+          download.disabled=selected.size===0;
+        };
+      }
+    }
+    download.onclick=()=>{
+      if (selected.size) downloadJSON({format:'setu_place_update_draft',version:1,status:'draft',
+        proposals:Array.from(selected)},'setu-place-update-draft-'+trip.id+'.json');
+    };
+    panel.append(download);
   }
   function render() {
     clearLocation();
