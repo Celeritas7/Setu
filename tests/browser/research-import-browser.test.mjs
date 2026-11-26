@@ -105,11 +105,18 @@ test('practical and potential experience filters intersect without changing the 
     place.tags.experiential_candidates=i===1?[{tag:'Cocoon',status:'potential'}]:[];
   });
   await upload(page,data);await saved(page);
+  const practical = page.getByRole('combobox',{name:'Practical tag',exact:true});
+  const experience = page.getByRole('combobox',{name:'Potential experience',exact:true});
+  assert.equal(await practical.count(),1);assert.equal(await experience.count(),1);
+  assert.equal(await practical.getAttribute('id'),'practical-filter');
+  assert.equal(await experience.getAttribute('id'),'experience-filter');
   await page.getByLabel('Practical tag',{exact:true}).selectOption('Quiet');
   assert.equal(await page.locator('#candidates article').count(),2);
   await page.getByLabel('Potential experience',{exact:true}).selectOption('Cocoon');
   assert.deepEqual(await page.locator('#candidates h3').allTextContents(),[data.places[1].name_ja]);
   assert.deepEqual((await local.inspectInput((await download(page)).toString())).research,data);
+  await experience.selectOption('');assert.equal(await page.locator('#candidates article').count(),2);
+  await practical.selectOption('');assert.equal(await page.locator('#candidates article').count(),3);
 });
 
 test('explicit room confirmation stays local and separate from research',async()=>{
