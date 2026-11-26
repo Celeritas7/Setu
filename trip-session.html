@@ -38,6 +38,13 @@
   <section id="log" hidden><h2>Recorded trips</h2><div id="trips"></div>
     <button id="export" type="button">Export trip history</button>
   </section>
+  <details>
+    <summary>Preview a place update draft</summary>
+    <label>Draft JSON file<input id="draft-file" disabled type="file" accept=".json,application/json"></label>
+    <button id="clear-preview" type="button">Clear preview</button>
+    <p id="preview-status" role="status"></p>
+    <ol id="preview-items"></ol>
+  </details>
   <dialog id="observation" aria-labelledby="observation-title">
     <form id="observation-form">
       <h2 id="observation-title">Stop observation</h2>
