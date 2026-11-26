@@ -84,6 +84,9 @@ test('explicit observations keep the building and its rooms separate in a comple
   await save.click();
   await add.click();
   await page.locator('#space').fill('Study room');
+  await page.locator('#outcome').selectOption({label:'Personally reviewed'});
+  await page.locator('#comfort-details summary').click();
+  await page.getByLabel('Noise level').selectOption('Quiet');
   await page.locator('#outcome').selectOption({label:'Did not enter'});
   await save.click();
   await add.click();
@@ -91,6 +94,10 @@ test('explicit observations keep the building and its rooms separate in a comple
   await page.locator('#outcome').selectOption({label:'Personally reviewed'});
   await save.click();
   await page.getByText('Describe what you personally experienced.').waitFor();
+  await page.locator('#comfort-details summary').click();
+  assert.equal(await page.getByLabel('Noise level').inputValue(),'');
+  await page.getByLabel('Comfort',{exact:true}).selectOption('Uncomfortable');
+  await page.getByLabel('Would you return?').selectOption('No');
   await page.locator('#note').fill('Bench was uncomfortable.');
   await save.click();
   await page.getByRole('dialog').waitFor({state:'hidden'});
@@ -100,6 +107,12 @@ test('explicit observations keep the building and its rooms separate in a comple
   await page.locator('#export').click();
   const {trips}=JSON.parse(await readFile(await (await download).path(),'utf8'));
   const {observations}=trips[0].stops[0];
+  assert.equal(observations[1].comfort_answers,undefined);
+  assert.equal(observations[2].comfort_answers.wifi,null);
+  assert.equal(observations[2].comfort_answers.noise,null);
+  assert.equal(observations[2].comfort_answers.comfort,'Uncomfortable');
+  assert.equal(observations[2].comfort_answers.return,'No');
+  await page.getByText('Comfort · Uncomfortable',{exact:true}).waitFor();
   assert.deepEqual(observations.map(o=>[o.space,o.outcome,o.spend_yen,o.note]),[
     ['Fictional museum','Visited',0,null],['Study room','Did not enter',null,null],
     ['Courtyard','Personally reviewed',null,'Bench was uncomfortable.']
