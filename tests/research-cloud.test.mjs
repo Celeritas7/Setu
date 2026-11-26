@@ -122,3 +122,15 @@ test('conflicting draft restores require a choice regardless of revision order',
   }
   assert.deepEqual((await local.mergeWorkspace(original,original)).catalog,original.catalog);
 });
+
+test('personal restore rejects mismatched destinations and conflicting IDs before writing',()=>{
+  const row={id:randomUUID(),destination:'area',place_id:'p',space:'Reading room',tag:'Cocoon',
+    observation:'Quiet',observed_on:'2026-11-25',recorded_at:'2026-11-25T08:00:00Z',source_hash:'a'.repeat(64),
+    place_name:'Library',address:'Town',status:'personally_confirmed'};
+  const file={format:'setu_personal_space_reviews',version:1,reviews:[row,row]};
+  assert.deepEqual(local.personalAdditions(file,'area','p',[]),[row]);
+  assert.deepEqual(local.personalAdditions(file,'area','p',[row]),[]);
+  assert.throws(()=>local.personalAdditions(file,'other','p',[]),/another place/);
+  assert.throws(()=>local.personalAdditions(file,'area','q',[]),/another place/);
+  assert.throws(()=>local.personalAdditions(file,'area','p',[{...row,tag:'Hideout'}]),/conflicting/);
+});

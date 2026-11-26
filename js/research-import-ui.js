@@ -504,6 +504,37 @@
         status.textContent=error.code==='CONFLICT'?'Another tab saved a review. Close and reopen this panel before retrying.':error.message;
       } finally {busy=false;save.disabled=false;}
     });
+    const picker=node('input');picker.type='file';picker.accept='.json,application/json';
+    const label=node('label','Restore this place’s personal export');label.append(picker);
+    const preview=node('div');
+    panel.append(label,preview);
+    let selection=0;
+    picker.onchange=async()=>{
+      const ticket=++selection, file=picker.files[0];preview.replaceChildren();
+      if (!file) return;
+      try {
+        if (!store) throw Error('Reopen the panel to load local storage.');
+        const data=JSON.parse(await file.text()), current=await store.read(key);
+        const added=local.personalAdditions(data,destination,place.research_id,current?.payload || []);
+        if (ticket!==selection) return;
+        if (!added.length) {status.textContent='All exported reviews are already saved.';return;}
+        status.textContent=added.length+' personal reviews ready to restore.';
+        for (const review of added) evidence(preview,review.place_name+' · '+review.space+' · '+review.tag,review);
+        const apply=node('button','Restore these personal reviews'), cancel=node('button','Cancel restore');
+        apply.type=cancel.type='button';
+        cancel.onclick=()=>{preview.replaceChildren();status.textContent='Restore cancelled.';};
+        apply.onclick=async()=>{
+          preview.replaceChildren();picker.disabled=true;
+          try {
+            record=await store.write(key,current?.rev || 0,[...(current?.payload || []),...added]);
+            showHistory();status.textContent='Personal reviews restored.';
+          } catch(error) {status.textContent=error.code==='CONFLICT'?'Local history changed. Choose the file again to review it.':error.message;}
+          finally {picker.disabled=false;}
+        };
+        preview.append(apply,cancel);
+      } catch(error) {if (ticket===selection) status.textContent=error.message;}
+      finally {if (ticket===selection) picker.value='';}
+    };
     exportButton.onclick=()=>download(JSON.stringify({format:'setu_personal_space_reviews',version:1,reviews:record.payload}), 'setu-personal-space-reviews.json');
     return panel;
   }
