@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; form-action 'none'; base-uri 'none'">
+  <title>Trip session · Setu</title>
+  <link rel="stylesheet" href="css/research-import.css">
+  <script defer src="js/research-storage.js"></script>
+  <script defer src="js/trip-session.js"></script>
+</head>
+<body>
+<header><a href="index.html">← Setu Home</a></header>
+<main>
+  <h1>Trip session</h1>
+  <p>Record your stops manually in this browser profile. Times are shown in Japan time.</p>
+  <p class="notice">Return route and leave-by time are unverified.</p>
+  <p id="status" role="status">Loading saved trips…</p>
+  <form id="edit" hidden>
+    <label><span id="label">Starting place</span><input id="stop" required maxlength="160"></label>
+    <button id="submit">Start trip</button>
+    <button id="finish" type="button" hidden>Finish trip</button>
+  </form>
+  <section id="log" hidden><h2>Recorded trips</h2><div id="trips"></div>
+    <button id="export" type="button">Export trip history</button>
+  </section>
+</main>
+</body></html>
