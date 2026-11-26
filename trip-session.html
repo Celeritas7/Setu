@@ -43,6 +43,10 @@
         <option>Did not enter</option><option>Personally reviewed</option>
       </select></label>
       <label>First-hand note (required for a personal review)<textarea id="note" maxlength="2000"></textarea></label>
+      <details id="comfort-details" hidden>
+        <summary>Comfort and study details (optional)</summary>
+        <div id="comfort-questions"></div>
+      </details>
       <label>Actual spending in yen (leave blank if unknown)<input id="spend" type="number" min="0" max="9007199254740991" step="1"></label>
       <p id="observation-status" role="status"></p>
       <button id="save-observation">Save observation</button>
