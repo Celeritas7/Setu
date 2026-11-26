@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import test from 'node:test';
+import {submitTripDraft} from './helpers/submit-trip-draft.mjs';
 import {PGlite} from '@electric-sql/pglite';
 
 const ownerA='11111111-1111-4111-8111-111111111111';
@@ -28,17 +29,7 @@ test('private place update drafts in disposable PostgreSQL', async t=>{
     await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);
   }
   const observation={space:'Reading room',outcome:'Did not enter',date:'2026-11-26',spend_yen:null,note:null};
-  async function submit(details,stopName='Library',placeRef=null) {
-    const values=[trip,JSON.stringify(details),stopName,placeRef===null?null:JSON.stringify(placeRef)];
-    const result=await db.query(`insert into ${table}
-      (trip_id,stop_index,observation_index,stop_name,observation,place_ref) values ($1,0,0,$3,$2::jsonb,$4::jsonb)
-      on conflict (owner_id,trip_id,stop_index,observation_index) do nothing returning trip_id`,
-      values);
-    if (result.rows.length) return 'inserted';
-    const {rows}=await db.query(`select observation=$2::jsonb and stop_name=$3 and (place_ref is not distinct from $4::jsonb) as same
-      from ${table} where trip_id=$1 and stop_index=0 and observation_index=0`,values);
-    return rows[0].same?'identical':'conflict';
-  }
+  const submit=(...args)=>submitTripDraft(db,trip,...args);
   await signIn(ownerA);
   await t.test('storage validates each source observation before accepting it',async ()=>{
     const personal={...observation,outcome:'Personally reviewed',note:'The seat felt uncomfortable.'};
