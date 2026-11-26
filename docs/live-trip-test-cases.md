@@ -2,6 +2,8 @@
 
 **Status:** test plan and fixture-contract checks, not proof of a functioning live companion. Read `docs/live-trip-requirements.md` and `data/trip-research/ogose-phase0.json` first.
 
+The [L1A preview report](live-trip-l1-preview.md) records 20 model/adapter checks, one map-watch regression and 12 actual browser cases. It covers quota/unknown-value/dietary behavior and partial time/rain ranking. All cards still need route/return checks; this is not full L1 verified-eligibility or physical-device acceptance. L1B requires the user's actual companion handoff and source-backed holiday/return data.
+
 ## How to verify each pull request
 
 1. Compare changed files with `ROADMAP.md` and confirm the PR targets **one** live-trip phase.

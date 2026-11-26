@@ -92,6 +92,15 @@ const state = extra => ({
 });
 const ids = rows => Array.from(rows, r=>r.id);
 
+test('a next-place preview pauses existing map watching and closing it resumes only the explicit nearby mode',async()=>{
+  const h=harness();await h.enter();h.emit(0);await h.flush();const before=h.app.state.here;
+  h.app.nextPlacesOpen=true;h.app.setState({menuOpen:false});await h.flush();
+  assert.ok(h.cleared.includes(0));assert.equal(h.app.mapLocationActive(),false);assert.deepEqual(h.app.state.here,before);
+  h.app.nextPlacesOpen=false;h.app.syncMapLocation();await h.flush();assert.equal(h.watches.size,2);
+  h.app.setState({mv:{...h.app.state.mv,scope:'all'}});h.app.nextPlacesOpen=true;h.app.nextPlacesOpen=false;h.app.syncMapLocation();await h.flush();
+  assert.equal(h.watches.size,2,'planning mode never starts an additional watch');assert.equal(h.counts.dbWrites,0);h.dispose();
+});
+
 test('entire embedded runtime parses; coordinates are finite, ranged, and not missing', () => {
   new Function(runtime);
   const h=harness();
