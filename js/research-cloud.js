@@ -78,7 +78,7 @@
         }
       }
     }
-    if (new TextEncoder().encode(JSON.stringify(payload)).length > local.MAX_BACKUP_BYTES) fail('Cloud workspace exceeds 25 MiB. Keep a local backup.');
+    local.serializeBackup(local.backup(payload));
     return {payload,checks:[...checks.values()].sort((a,b)=>(a.table+a.id).localeCompare(b.table+b.id)),summary:{created,reused,merges,local_suggestions:payload.catalog.places.length},publish};
   }
   function create({sb,owner,isCurrent,localStore,outbox,enabled=RELEASE_ENABLED,uuid=()=>root.crypto.randomUUID()}) {
