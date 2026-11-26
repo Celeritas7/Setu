@@ -65,6 +65,62 @@
   };
   document.addEventListener('visibilitychange',()=>{if (document.hidden) clearLocation();});
   window.addEventListener('pagehide',()=>clearLocation());
+  const dialog=el('observation'), observationForm=el('observation-form');
+  const japanDate=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'});
+  let selectedTripId, selectedStopIndex;
+  function openObservation(trip,index) {
+    if (busy) return;
+    selectedTripId=trip.id;
+    selectedStopIndex=index;
+    observationForm.reset();
+    el('observation-title').textContent='Observation for '+trip.stops[index].name;
+    el('space').value=trip.stops[index].name;
+    el('observed').value=japanDate.format(new Date(trip.stops[index].at));
+    el('observed').max=japanDate.format(new Date());
+    el('observation-status').textContent='';
+    dialog.showModal();
+  }
+  el('cancel-observation').onclick=()=>dialog.close();
+  dialog.oncancel=event=>{if (busy) event.preventDefault();};
+  observationForm.onsubmit=async event=>{
+    event.preventDefault();
+    if (busy) return;
+    const space=el('space').value.trim(), outcome=el('outcome').value, note=el('note').value.trim();
+    const feedback=el('observation-status');
+    if (!space || (outcome==='Personally reviewed' && !note)) {
+      feedback.textContent=space?'Describe what you personally experienced.':'Enter a place or room.';
+      (space?el('note'):el('space')).focus();
+      return;
+    }
+    const observation={space,outcome,date:el('observed').value,note:note||null,
+      spend_yen:el('spend').value===''?null:el('spend').valueAsNumber};
+    const trips=history().slice(), index=trips.findIndex(trip=>trip.id===selectedTripId);
+    const trip=trips[index], stop=trip?.stops[selectedStopIndex];
+    if (!stop) { feedback.textContent='This stop is no longer available.';return; }
+    const stops=trip.stops.slice();
+    stops[selectedStopIndex]={...stop,observations:[...(stop.observations||[]),observation]};
+    trips[index]={...trip,stops};
+    busy=true;
+    el('save-observation').disabled=el('cancel-observation').disabled=true;
+    try {
+      record=await store.write('trips',record.rev,trips);
+      dialog.close();
+      render();
+      status.textContent+=' Observation saved.';
+    } catch(error) {
+      feedback.textContent='Observation could not be saved. Your entries are still here.';
+      if (error.code==='CONFLICT') {
+        try {
+          record=await store.read('trips');
+          render();
+          feedback.textContent='Another tab changed the history. Cancel to review it or save this observation to the same stop.';
+        } catch (_) { feedback.textContent='Reopen trip sessions to load the latest history.'; }
+      }
+    } finally {
+      busy=false;
+      el('save-observation').disabled=el('cancel-observation').disabled=false;
+    }
+  };
   function render() {
     clearLocation();
     el('location-check').hidden=!active();
@@ -80,9 +136,22 @@
     for (const trip of trips.slice().reverse()) {
       const heading=document.createElement('h3'), list=document.createElement('ol');
       heading.textContent=trip.stops[0].name+' · '+trip.state;
-      for (const stop of trip.stops) {
+      for (const [index,stop] of trip.stops.entries()) {
         const item=document.createElement('li');
         item.textContent=clock.format(new Date(stop.at))+' · '+stop.name+(stop.kind==='detour'?' · Detour':'');
+        for (const observation of stop.observations||[]) {
+          const detail=document.createElement('p');
+          detail.textContent=[observation.space,observation.outcome,observation.date,
+            observation.spend_yen===null?'Spending unknown':'¥'+observation.spend_yen,
+            observation.note].filter(Boolean).join(' · ');
+          item.append(detail);
+        }
+        const add=document.createElement('button');
+        add.type='button';
+        add.textContent='Add observation';
+        add.setAttribute('aria-label','Add observation for '+stop.name);
+        add.onclick=()=>openObservation(trip,index);
+        item.append(' ',add);
         list.append(item);
       }
       el('trips').append(heading,list);
