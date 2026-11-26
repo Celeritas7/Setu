@@ -37,5 +37,19 @@ test('HTTP draft submission binds the reviewed account to the request identity',
   const saved=await submit();
   assert.equal(saved.error,null);assert.deepEqual(saved.data,[{inserted:1,identical:0}]);
   assert.deepEqual((await submit()).data,[{inserted:0,identical:1}]);
-  assert.deepEqual(await rows(),[{owner_id:A,observation}]);
+  const stored=[{owner_id:A,observation}];
+  assert.deepEqual(await rows(),stored);
+  const table=sb.from('setu_place_update_drafts');
+  const direct=[
+    ()=>table.select('owner_id'),
+    ()=>table.insert({trip_id:randomUUID(),stop_index:0,observation_index:0,stop_name:'Library',observation}),
+    ()=>table.update({stop_name:'Changed'}).eq('trip_id',source.trip_id),
+    ()=>table.delete().eq('trip_id',source.trip_id)
+  ];
+  for (const request of direct) {
+    const result=await request();
+    assert.equal(result.status,403);
+    assert.equal(result.error.code,'42501');
+  }
+  assert.deepEqual(await rows(),stored);
 });
