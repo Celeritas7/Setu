@@ -1,6 +1,6 @@
 /* Offline shell for this page only. Research JSON stays in IndexedDB/backups. */
 const PREFIX = 'setu-research-import-' + encodeURIComponent(new URL('.',self.registration.scope).pathname) + '-';
-const VERSION = 'r4-2';
+const VERSION = 'r4-3';
 const CACHE = PREFIX + VERSION;
 const ASSETS = ['research-import.html','css/research-import.css','js/research-import-schema.js',
   'js/research-import.js','js/research-local.js','js/research-storage.js','js/research-offline.js','js/research-import-ui.js','icons/icon-192.png'];
