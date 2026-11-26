@@ -9,7 +9,7 @@ import {A,B} from '../helpers/research-cloud-fixture.mjs';
 
 test('browser confirmation sends only the reviewed observations to local PostgREST',async t=>{
   const api=await freshResearchApi({async prepareDatabase(admin){
-    for (const file of ['live-trip-draft-schema.sql','live-trip-draft-batch.sql']) {
+    for (const file of ['live-trip-draft-schema.sql','live-trip-draft-batch.sql','live-trip-draft-correction.sql']) {
       await admin.query(await readFile(new URL('../fixtures/'+file,import.meta.url),'utf8'));
     }
   }});
@@ -23,6 +23,7 @@ test('browser confirmation sends only the reviewed observations to local PostgRE
   const firstRequestGate=new Promise(resolve=>{releaseFirst=resolve;});
   const otherToken=await api.token(B);
   const assets=new Map([
+    ['/correction.mjs',new URL('../fixtures/trip-draft-correction-editor.mjs',import.meta.url)],
     ['/consent.mjs',new URL('../fixtures/trip-draft-consent.mjs',import.meta.url)],
     ['/sdk.js',new URL('../../node_modules/@supabase/supabase-js/dist/umd/supabase.js',import.meta.url)]
   ]);
@@ -61,6 +62,8 @@ test('browser confirmation sends only the reviewed observations to local PostgRE
         if (result.error) throw result.error;
       }
     });
+    const {openCorrection}=await import('/correction.mjs');
+    window.editPark=()=>openCorrection(document.querySelector('main'),sb,{expected_owner:owner,trip,stop:1,occurrence:0});
     window.review();
   },{owner:A,token:await api.token(A),trip});
   const choose=async index=>{
@@ -93,4 +96,39 @@ test('browser confirmation sends only the reviewed observations to local PostgRE
   await page.getByText(/Save could not be confirmed/).waitFor();
   assert.equal(bodies.length,2);
   assert.deepEqual(await rows(),saved);
+
+  await t.test('conflicting browser edit retains input and requires a fresh comparison',async ()=>{
+    swapAtDispatch=false;
+    await page.evaluate(()=>window.editPark());
+    await page.getByText(/Saved revision 1 · Park/).waitFor();
+    const note=page.getByLabel('First-hand note'), yen=page.getByLabel(/Actual yen/);
+    const reviewEdit=page.getByRole('button',{name:'Review correction'});
+    const confirm=page.getByRole('button',{name:'Confirm correction'});
+    await note.fill('My updated note.');await yen.fill('');await reviewEdit.click();
+    const {sb:second}=await api.sdk(A);
+    const newer={...saved[0].observation,note:'Second session note.',space:'Park shelter',spend_yen:150};
+    const args={expected_owner:A,trip,stop:1,occurrence:0,reviewed_revision:1,replacement:newer};
+    assert.equal((await second.rpc('setu_rehearse_correct_observation',args)).data,2);
+    await confirm.click();
+    await page.getByText(/Another edit was saved/).waitFor();
+    assert.ok(await confirm.isDisabled());
+    assert.ok(await reviewEdit.isDisabled());
+    await page.getByRole('button',{name:'Load latest revision'}).click();
+    await page.getByText(/Saved revision 2 · Park/).waitFor();
+    assert.match(await page.locator('pre').first().innerText(),/Second session note/);
+    assert.equal(await note.inputValue(),'My updated note.');
+    assert.equal(await yen.inputValue(),'');
+    assert.ok(await confirm.isDisabled());
+    assert.deepEqual((await rows())[0].observation,newer);
+    await reviewEdit.click();await yen.fill('0');assert.ok(await confirm.isDisabled());
+    await reviewEdit.click();await confirm.click();
+    await page.getByText('Saved revision 3.').waitFor();
+    assert.deepEqual((await rows())[0].observation,{...newer,note:'My updated note.',spend_yen:0});
+    await page.evaluate(()=>window.editPark());
+    await page.getByText(/Saved revision 3 · Park/).waitFor();
+    await note.fill('Discard me');await reviewEdit.click();
+    await page.getByRole('button',{name:'Cancel'}).click();
+    await page.getByText('Correction cancelled.').waitFor();
+    assert.equal((await rows())[0].observation.note,'My updated note.');
+  });
 });
