@@ -127,7 +127,7 @@
       if (Object.keys(payload.reviews).length > 200) throw new Error('This destination has 200 research versions. Download a backup before importing another version.');
       const saved = approved ? await local.materialize(review,payload.catalog,payload.id) : null;
       if (saved) payload.catalog = saved.catalog;
-      if (new TextEncoder().encode(JSON.stringify(local.backup(payload))).length > local.MAX_BACKUP_BYTES) throw new Error('This destination exceeds the 25 MiB local workspace limit. Download a backup before importing more research.');
+      local.serializeBackup(local.backup(payload));
       try {owner.record = await storage.write(payload.id,owner.record?.rev || 0,payload);}
       catch (error) {if (error.code === 'CONFLICT') owner.blocked = true;throw error;}
       owner.payload = payload;
@@ -215,8 +215,8 @@
     } catch (error) {byId('storage-status').textContent = 'Could not resume: ' + error.message + ' Try Recover previous checkpoint or a downloaded backup.';}
   }
 
-  function download(value,filename) {
-    const url = URL.createObjectURL(new Blob([pretty(value)], {type:'application/json'}));
+  function download(text,filename) {
+    const url = URL.createObjectURL(new Blob([text], {type:'application/json'}));
     const link = node('a');link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();
     setTimeout(() => URL.revokeObjectURL(url),1000);
   }
@@ -491,9 +491,11 @@
   byId('next').addEventListener('click', () => { page++; render(); });
   byId('export').addEventListener('click', () => {
     if (!result) return;
-    download(model.reviewExport(result),'setu-research-preview-' + today() + '.json');
+    download(pretty(model.reviewExport(result)),'setu-research-preview-' + today() + '.json');
   });
-  byId('backup').addEventListener('click', () => {const workspace=currentWorkspace();if (workspace) download(local.backup(workspace),'setu-research-backup-' + today() + '.json');});
+  byId('backup').addEventListener('click', () => {const workspace=currentWorkspace();if (!workspace) return;
+    try {download(local.serializeBackup(local.backup(workspace)),'setu-research-backup-' + today() + '.json');}
+    catch (error) {byId('storage-status').textContent=error.message;}});
   byId('save-drafts').addEventListener('click', () => persist(true));
   byId('save-review').addEventListener('click', () => persist());
   byId('restore-confirm').addEventListener('click', async () => {restoring=false;updateSaveButtons();if (!await persist()) {restoring=true;updateSaveButtons();}});
