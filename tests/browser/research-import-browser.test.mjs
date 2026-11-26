@@ -111,3 +111,21 @@ test('practical and potential experience filters intersect without changing the 
   assert.deepEqual(await page.locator('#candidates h3').allTextContents(),[data.places[1].name_ja]);
   assert.deepEqual((await local.inspectInput((await download(page)).toString())).research,data);
 });
+
+test('explicit room confirmation stays local and separate from research',async()=>{
+  const data=fictionalResearch({count:3}),{page}=await h.open();await upload(page,data);await saved(page);
+  const card=page.locator('#candidates article').first();
+  await card.getByText('Personal space reviews on this device').click();
+  const form=card.locator('form');
+  await form.getByLabel('Room or space reviewed').fill('Reading room');
+  await form.getByLabel('Visit date in Japan').fill('2026-11-20');
+  await form.getByLabel('Experience to confirm').selectOption('Cocoon');
+  await form.locator('textarea').fill('Quiet desks here');
+  await form.getByRole('button').click();
+  assert.equal(await form.getByRole('checkbox').evaluate(el=>el.validity.valueMissing),true);
+  await form.getByRole('checkbox').check();await form.getByRole('button').click();
+  await card.getByText('Personal review saved.').waitFor();
+  await page.reload();await resume(page);await card.getByText('Personal space reviews on this device').click();
+  await card.getByText(/Reading room · Cocoon/).waitFor();
+  assert.equal((await download(page)).includes(Buffer.from('Quiet desks here')),false);
+});
