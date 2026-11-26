@@ -449,18 +449,25 @@
     return panel;
   }
 
-  function researchMapButton(place,label) {
+  function researchPoint(place) {
     const point=place.location.coordinates;
     if (!point || !Number.isFinite(point.lat) || Math.abs(point.lat)>90 ||
         !Number.isFinite(point.lng) || Math.abs(point.lng)>180 || !model.safeUrl(point.source_url)) return null;
-    const button=node('button','Show on Setu map');button.type='button';
+    return {lat:point.lat,lng:point.lng};
+  }
+  function mapButton(payload,title) {
+    const button=node('button',title);button.type='button';
     button.onclick=()=>{
       try {
-        sessionStorage.setItem('setu.research-map',JSON.stringify({lat:point.lat,lng:point.lng,label}));
+        sessionStorage.setItem('setu.research-map',JSON.stringify(payload));
         window.location.assign('index.html#research-map');
       } catch (_) {button.textContent='Map preview unavailable in this browser';}
     };
     return button;
+  }
+  function researchMapButton(place,label) {
+    const point=researchPoint(place);
+    return point && mapButton({...point,label},'Show on Setu map');
   }
   let spaceStore;
   function spaceReviews(place, destination) {
@@ -567,6 +574,19 @@
       (!decision || candidate.decision === decision) &&
       tagFilters.every(([id,key]) => !byId(id)?.value || reportTags.get(candidate.research_id)[key].includes(byId(id).value)) &&
       (candidate.name + ' ' + candidate.research_id).normalize('NFKC').toLocaleLowerCase('ja').includes(query));
+    const placesById=new Map(result.research.places.map(place=>[place.research_id,place]));
+    const pins=[];
+    for (const candidate of filtered) {
+      const place=placesById.get(candidate.research_id),point=researchPoint(place);
+      if (!point) continue;
+      const tags=reportTags.get(candidate.research_id);
+      const labels=[...tags.practical_candidates.map(tag=>'Practical · '+tag),...tags.experiential_candidates.map(tag=>'Potential · '+tag)];
+      pins.push({...point,label:[place.name_ja,...labels].join(' · '),tags:labels});
+    }
+    byId('research-map-group')?.remove();
+    const group=mapButton({pins},'Map matching places ('+pins.length+' of '+filtered.length+' with sourced coordinates)');
+    group.id='research-map-group';group.disabled=!pins.length;
+    byId('page-status').parentNode.append(group);
     page = Math.max(0, Math.min(page, Math.ceil(filtered.length / 5) - 1));
     const fragment = document.createDocumentFragment();
     filtered.slice(page * 5, page * 5 + 5).forEach(candidate => {
