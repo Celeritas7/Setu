@@ -152,3 +152,15 @@ test('linked food names feed both the dietary check and Maps search',()=>{
   assert.deepEqual(rows.map(row=>row.name),['Example Cafe']);
   assert.match(new URL(rows[0].maps).searchParams.get('query'),/Example Cafe/);
 });
+
+test('research map filters preserve practical versus potential tag identity',()=>{
+  const {app}=appHarness();
+  const indoor={tags:['Practical · Indoor','Potential · Cocoon']};
+  const other={tags:['Practical · Cocoon']};
+  app.state.researchPins=[indoor,other];
+  assert.deepEqual(app.filteredResearchPins(),[indoor,other]);
+  app.state.researchTag='Potential · Cocoon';
+  assert.deepEqual(app.filteredResearchPins(),[indoor]);
+  app.state.researchTag='Practical · Cocoon';
+  assert.deepEqual(app.filteredResearchPins(),[other]);
+});
