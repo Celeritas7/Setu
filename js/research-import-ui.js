@@ -449,6 +449,19 @@
     return panel;
   }
 
+  function researchMapButton(place,label) {
+    const point=place.location.coordinates;
+    if (!point || !Number.isFinite(point.lat) || Math.abs(point.lat)>90 ||
+        !Number.isFinite(point.lng) || Math.abs(point.lng)>180 || !model.safeUrl(point.source_url)) return null;
+    const button=node('button','Show on Setu map');button.type='button';
+    button.onclick=()=>{
+      try {
+        sessionStorage.setItem('setu.research-map',JSON.stringify({lat:point.lat,lng:point.lng,label}));
+        window.location.assign('index.html#research-map');
+      } catch (_) {button.textContent='Map preview unavailable in this browser';}
+    };
+    return button;
+  }
   let spaceStore;
   function spaceReviews(place, destination) {
     const panel = node('details');
@@ -475,6 +488,10 @@
       for (const event of record?.payload || []) {
         const item=node('li',event.space+' · '+event.tag+' · '+event.observed_on+' · '+event.observation);
         if (event.source_hash!==sourceHash) item.append(node('p','Research has changed since this review. Original place: '+event.place_name+' · '+event.address));
+        if (event.source_hash===sourceHash) {
+          const button=researchMapButton(place,place.name_ja+' · '+event.space+' · Personally confirmed '+event.tag);
+          if (button) item.append(button);
+        }
         history.append(item);
       }
       exportButton.hidden=!history.children.length;
@@ -572,6 +589,9 @@
       card.append(node('h4', 'Potential experience tags'));
       const potential = place.tags.experiential_candidates.map(tag => typeof tag === 'string' ? tag : tag.tag);
       card.append(node('p', potential.length ? potential.join(' · ') + ' — potential only' : 'None suggested'));
+      const mapLabel=[place.name_ja,...practical,...potential.map(tag=>'Potential '+tag)].join(' · ');
+      const mapButton=researchMapButton(place,mapLabel);
+      if (mapButton) card.append(mapButton);
       if (!restoring) card.append(spaceReviews(place,context.payload.id));
       evidence(card, 'Practical tags, discovery sources & facilities', {tags: place.tags, facility_facts: place.facility_facts || {}});
       card.append(node('p', 'Opening and study permissions require a current check. Library reading and visitor laptop study are separate permissions.', 'muted'));
