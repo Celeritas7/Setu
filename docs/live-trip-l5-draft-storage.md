@@ -36,7 +36,11 @@ Identity and transport are simulated. The fixture assumes validated proposals an
 
 Run `npm run setup:research-api` and `npm run test:research-api`. The disposable RPC now requires the account ID from the review alongside the draft. PostgreSQL compares that ID with the signed request identity before processing any proposal. A Supabase JS client switching from account A to B receives HTTP 403 when submitting A’s review. An anonymous identity is also denied. Returning to the matching identity in the transport test exercises success and retry. The L5F screen independently requires a fresh review after an account switch.
 
-PostgREST and PostgreSQL are real local processes. The identity endpoint uses signed fictional accounts. End-to-end browser dispatch, hosted Auth, and restricting direct table access remain open.
+PostgREST and PostgreSQL are real local processes. The identity endpoint uses signed fictional accounts. L5H covers end-to-end browser dispatch in the local rehearsal. Hosted Auth and restricting direct table access remain open.
+
+## L5H browser confirmation through PostgREST
+
+Run `npm run setup:research-browser` and `npm run setup:research-api`, then `npm run test:trip-draft-browser-api`. Chromium loads the consent fixture and the pinned Supabase JS browser client. Its requests go to the local gateway. Cancelling sends no draft. Confirming sends the displayed selection, shows a pending message, and reports success after the response. A signed identity swap on the outgoing RPC yields HTTP 403 and an unconfirmed-save message. The test checks database contents after both paths. The sign-in identity endpoint remains synthetic.
 
 ## Remaining release work
 
