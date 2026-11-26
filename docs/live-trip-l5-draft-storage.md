@@ -32,6 +32,12 @@ The browser fixture starts with an empty selection, displays the destination acc
 
 Identity and transport are simulated. The fixture assumes validated proposals and captures the confirmed data locally. Future integration must bind the actual HTTP request to the same verified account even if identity changes during dispatch.
 
+## L5G HTTP account verification
+
+Run `npm run setup:research-api` and `npm run test:research-api`. The disposable RPC now requires the account ID from the review alongside the draft. PostgreSQL compares that ID with the signed request identity before processing any proposal. A Supabase JS client switching from account A to B receives HTTP 403 when submitting A’s review. An anonymous identity is also denied. Returning to the matching identity in the transport test exercises success and retry. The L5F screen independently requires a fresh review after an account switch.
+
+PostgREST and PostgreSQL are real local processes. The identity endpoint uses signed fictional accounts. End-to-end browser dispatch, hosted Auth, and restricting direct table access remain open.
+
 ## Remaining release work
 
 The fixture covers stored row fields. Before exposing any write path, integrate and verify consent with the actual signed-in client, and design and test correction/deletion and revision handling, and backup/recovery against the proposed target. Test real Supabase Auth and PostgREST with two accounts. Add installation SQL to the migration path only as a separately reviewed change. Production installation and enabling cloud saving each need their own approval.

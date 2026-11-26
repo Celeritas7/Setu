@@ -16,8 +16,8 @@ test('atomic place update draft envelope rehearsal',async t=>{
   const envelope=proposals=>({format:'setu_place_update_draft',version:1,status:'draft',proposals});
   const entry=index=>({source:{trip_id:trip,stop_index:2,observation_index:index},stop_name:'Library',
     place_ref:null,observation:{space:'Lobby',date:'2026-11-26',outcome:'Visited',note:null,spend_yen:0}});
-  async function submit(batch,client=actor) {
-    const {rows}=await client.query('select * from public.setu_rehearse_trip_draft($1::jsonb)',[JSON.stringify(batch)]);
+  async function submit(batch,client=actor,expectedOwner=owner) {
+    const {rows}=await client.query('select * from public.setu_rehearse_trip_draft($1::uuid,$2::jsonb)',[expectedOwner,JSON.stringify(batch)]);
     return rows[0];
   }
   const before=entry(2);
@@ -34,7 +34,7 @@ test('atomic place update draft envelope rehearsal',async t=>{
   assert.deepEqual((await actor.query('select observation_index,observation from public.setu_place_update_drafts')).rows,
     [{observation_index:2,observation:before.observation}]);
   const otherActor=await cluster.actor(other);
-  assert.deepEqual(await submit(envelope([changed]),otherActor),{inserted:1,identical:0});
+  assert.deepEqual(await submit(envelope([changed]),otherActor,other),{inserted:1,identical:0});
   for (const client of [await cluster.actor(other,true),await cluster.actor(null,false,'anon')]) {
     await assert.rejects(submit(batch,client),{code:'42501'});
   }

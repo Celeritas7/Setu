@@ -1,5 +1,5 @@
 -- Disposable rehearsal only. Keep table ownership and identity under caller RLS.
-create function public.setu_rehearse_trip_draft(batch jsonb)
+create function public.setu_rehearse_trip_draft(expected_owner uuid, batch jsonb)
 returns table(inserted integer, identical integer)
 language plpgsql security invoker set search_path = pg_catalog as $$
 declare
@@ -10,8 +10,8 @@ declare
   item_observation integer;
   ref jsonb;
 begin
-  if auth.uid() is null or coalesce(auth.jwt()->>'is_anonymous','false') <> 'false' then
-    raise exception 'A signed-in account is required' using errcode = '42501';
+  if expected_owner is null or auth.uid() is distinct from expected_owner or coalesce(auth.jwt()->>'is_anonymous','false') <> 'false' then
+    raise exception 'Reviewed account does not match the signed-in account' using errcode = '42501';
   end if;
   if jsonb_typeof(batch) is distinct from 'object' then
     raise exception 'Invalid draft envelope' using errcode = '22023';
@@ -67,5 +67,5 @@ begin
 end
 $$;
 
-revoke all on function public.setu_rehearse_trip_draft(jsonb) from public,anon;
-grant execute on function public.setu_rehearse_trip_draft(jsonb) to authenticated;
+revoke all on function public.setu_rehearse_trip_draft(uuid,jsonb) from public,anon;
+grant execute on function public.setu_rehearse_trip_draft(uuid,jsonb) to authenticated;
