@@ -177,6 +177,7 @@ test('finished outing report matches planned occurrences and preserves unknown s
   await page.reload();
   await page.getByLabel('Starting place').fill('Station');
   await page.locator('#submit').click();
+  await page.getByText('Current stop: Station',{exact:true}).waitFor();
   await page.locator('#planned-choice').selectOption('1');
   await page.locator('#submit').click();
   await page.getByText('Current stop: Library',{exact:true}).waitFor();
