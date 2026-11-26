@@ -164,3 +164,16 @@ test('research map filters preserve practical versus potential tag identity',()=
   app.state.researchTag='Practical · Cocoon';
   assert.deepEqual(app.filteredResearchPins(),[other]);
 });
+
+test('outing preview keeps ordered typed references and rejects a stale account',()=>{
+  const h=appHarness(), app=h.app, outing={id:'day',status:'planned',date:'2026-11-26',title:'Day trip',
+    stops:[{t:'spot',id:'a'},{t:'food',id:'missing'},{t:'spot',id:'a'}]};
+  const writes=[],urls=[];
+  h.context.sessionStorage={setItem:(key,value)=>writes.push(JSON.parse(value))};
+  h.window.location={assign:url=>urls.push(url)};
+  app.state={...app.state,user:{id:'A'},cloud:true,outingOwner:'A',outings:[outing],spots:[place('a')]};
+  app.previewOutingSession(outing);
+  assert.deepEqual(writes[0].stops.map(row=>[row.type,row.id,row.unavailable]),[['spot','a',false],['food','missing',true],['spot','a',false]]);
+  app.state.user={id:'B'};app.previewOutingSession(outing);
+  assert.equal(writes.length,1);assert.deepEqual(urls,['trip-session.html#outing']);
+});
